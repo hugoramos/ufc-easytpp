@@ -1,0 +1,58 @@
+SmurfTHP_resid_True:
+  base_config:
+    backend: torch
+    base_dir: ./logs
+    dataset_id: synthetic
+    model_id: SmurfTHP
+    specs:
+      saved_model_dir: ./checkpoints
+    stage: train
+  model_config:
+    dropout_rate: 0.1
+    gpu: -1
+    head_num: 2
+    hidden_size: 32
+    mc_num_sample_per_step: 20
+    model_id: SmurfTHP
+    model_specs:
+      num_classes_sigma: 20
+      sampling_steps: 20
+      sigma_begin: 10.0
+      sigma_end: 0.01
+      step_lr: 2.0e-05
+    num_heads: 2
+    num_layers: 1
+    thinning:
+      dtime_max: 5.0
+      dtime_min: 0.001
+      max_len: 40
+      num_exp: 50
+      num_sample: 100
+      num_samples_boundary: 5
+      num_seq: 10
+      num_step_gen: 1
+      over_sample_rate: 5
+      patience_counter: 5
+    time_emb_size: 32
+    use_ln: true
+    use_residual: true
+  trainer_config:
+    batch_size: 4
+    gpu: -1
+    learning_rate: 0.001
+    max_epoch: 2
+    seed: 42
+    valid_freq: 1
+data:
+  synthetic:
+    data_format: json
+    data_specs:
+      max_len: 40
+      num_event_types: 3
+      pad_token_id: 3
+      padding_side: right
+      truncation_side: right
+    test_dir: examples/synthetic_data.json
+    train_dir: examples/synthetic_data.json
+    valid_dir: examples/synthetic_data.json
+pipeline_config_id: runner_config

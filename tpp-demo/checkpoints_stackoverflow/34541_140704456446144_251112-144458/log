@@ -1,0 +1,136 @@
+2025-11-12 14:44:58,093 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251112-144458/log
+2025-11-12 14:44:58,228 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 9822
+2025-11-12 14:44:58,312 - base_runner.py[pid:34541;line:98:train] - INFO: Data 'stackoverflow' loaded...
+2025-11-12 14:44:58,314 - base_runner.py[pid:34541;line:103:train] - INFO: Start RMTPP training...
+2025-11-12 14:44:59,821 - tpp_runner.py[pid:34541;line:96:_train_model] - INFO: [ Epoch 0 (train) ]: train loglike is -12231690.143259525, num_events is 74201
+2025-11-12 14:44:59,953 - tpp_runner.py[pid:34541;line:107:_train_model] - INFO: [ Epoch 0 (valid) ]:  valid loglike is -12845269.629442692, num_events is 9510
+2025-11-12 14:45:00,231 - tpp_runner.py[pid:34541;line:122:_train_model] - INFO: [ Epoch 0 (test) ]: test loglike is -12859182.528476242, num_events is 20561
+2025-11-12 14:45:00,232 - tpp_runner.py[pid:34541;line:124:_train_model] - CRITICAL: current best loglike on valid set is -12845269.6294 (updated at epoch-0), best updated at this epoch
+2025-11-12 14:45:01,639 - tpp_runner.py[pid:34541;line:96:_train_model] - INFO: [ Epoch 1 (train) ]: train loglike is -11791661.579116184, num_events is 74201
+2025-11-12 14:45:01,767 - tpp_runner.py[pid:34541;line:107:_train_model] - INFO: [ Epoch 1 (valid) ]:  valid loglike is -12433883.067087276, num_events is 9510
+2025-11-12 14:45:02,018 - tpp_runner.py[pid:34541;line:122:_train_model] - INFO: [ Epoch 1 (test) ]: test loglike is -12450122.791693011, num_events is 20561
+2025-11-12 14:45:02,019 - tpp_runner.py[pid:34541;line:124:_train_model] - CRITICAL: current best loglike on valid set is -12433883.0671 (updated at epoch-1), best updated at this epoch
+2025-11-12 14:45:03,470 - tpp_runner.py[pid:34541;line:96:_train_model] - INFO: [ Epoch 2 (train) ]: train loglike is -11397063.141778976, num_events is 74200
+2025-11-12 14:45:03,597 - tpp_runner.py[pid:34541;line:107:_train_model] - INFO: [ Epoch 2 (valid) ]:  valid loglike is -12026958.603575185, num_events is 9510
+2025-11-12 14:45:03,846 - tpp_runner.py[pid:34541;line:122:_train_model] - INFO: [ Epoch 2 (test) ]: test loglike is -12047761.761003843, num_events is 20561
+2025-11-12 14:45:03,848 - tpp_runner.py[pid:34541;line:124:_train_model] - CRITICAL: current best loglike on valid set is -12026958.6036 (updated at epoch-2), best updated at this epoch
+2025-11-12 14:45:05,463 - tpp_runner.py[pid:34541;line:96:_train_model] - INFO: [ Epoch 3 (train) ]: train loglike is -11018641.093462352, num_events is 74201
+2025-11-12 14:45:05,593 - tpp_runner.py[pid:34541;line:107:_train_model] - INFO: [ Epoch 3 (valid) ]:  valid loglike is -11634319.74763407, num_events is 9510
+2025-11-12 14:45:05,840 - tpp_runner.py[pid:34541;line:122:_train_model] - INFO: [ Epoch 3 (test) ]: test loglike is -11655800.79723749, num_events is 20561
+2025-11-12 14:45:05,841 - tpp_runner.py[pid:34541;line:124:_train_model] - CRITICAL: current best loglike on valid set is -11634319.7476 (updated at epoch-3), best updated at this epoch
+2025-11-12 14:45:07,253 - tpp_runner.py[pid:34541;line:96:_train_model] - INFO: [ Epoch 4 (train) ]: train loglike is -10654763.42971119, num_events is 74201
+2025-11-12 14:45:07,381 - tpp_runner.py[pid:34541;line:107:_train_model] - INFO: [ Epoch 4 (valid) ]:  valid loglike is -11223177.825446898, num_events is 9510
+2025-11-12 14:45:07,626 - tpp_runner.py[pid:34541;line:122:_train_model] - INFO: [ Epoch 4 (test) ]: test loglike is -11247473.364135986, num_events is 20561
+2025-11-12 14:45:07,628 - tpp_runner.py[pid:34541;line:124:_train_model] - CRITICAL: current best loglike on valid set is -11223177.8254 (updated at epoch-4), best updated at this epoch
+2025-11-12 14:45:09,036 - tpp_runner.py[pid:34541;line:96:_train_model] - INFO: [ Epoch 5 (train) ]: train loglike is -10271182.11862374, num_events is 74201
+2025-11-12 14:45:09,168 - tpp_runner.py[pid:34541;line:107:_train_model] - INFO: [ Epoch 5 (valid) ]:  valid loglike is -10791684.25320715, num_events is 9510
+2025-11-12 14:45:09,413 - tpp_runner.py[pid:34541;line:122:_train_model] - INFO: [ Epoch 5 (test) ]: test loglike is -10817377.227955839, num_events is 20561
+2025-11-12 14:45:09,414 - tpp_runner.py[pid:34541;line:124:_train_model] - CRITICAL: current best loglike on valid set is -10791684.2532 (updated at epoch-5), best updated at this epoch
+2025-11-12 14:45:10,819 - tpp_runner.py[pid:34541;line:96:_train_model] - INFO: [ Epoch 6 (train) ]: train loglike is -9876911.164431747, num_events is 74201
+2025-11-12 14:45:10,945 - tpp_runner.py[pid:34541;line:107:_train_model] - INFO: [ Epoch 6 (valid) ]:  valid loglike is -10368818.553943217, num_events is 9510
+2025-11-12 14:45:11,190 - tpp_runner.py[pid:34541;line:122:_train_model] - INFO: [ Epoch 6 (test) ]: test loglike is -10390753.757112982, num_events is 20561
+2025-11-12 14:45:11,191 - tpp_runner.py[pid:34541;line:124:_train_model] - CRITICAL: current best loglike on valid set is -10368818.5539 (updated at epoch-6), best updated at this epoch
+2025-11-12 14:45:12,660 - tpp_runner.py[pid:34541;line:96:_train_model] - INFO: [ Epoch 7 (train) ]: train loglike is -9519225.608711474, num_events is 74201
+2025-11-12 14:45:12,792 - tpp_runner.py[pid:34541;line:107:_train_model] - INFO: [ Epoch 7 (valid) ]:  valid loglike is -10029186.503470032, num_events is 9510
+2025-11-12 14:45:13,038 - tpp_runner.py[pid:34541;line:122:_train_model] - INFO: [ Epoch 7 (test) ]: test loglike is -10040728.932639463, num_events is 20561
+2025-11-12 14:45:13,040 - tpp_runner.py[pid:34541;line:124:_train_model] - CRITICAL: current best loglike on valid set is -10029186.5035 (updated at epoch-7), best updated at this epoch
+2025-11-12 14:45:14,442 - tpp_runner.py[pid:34541;line:96:_train_model] - INFO: [ Epoch 8 (train) ]: train loglike is -9225054.356464198, num_events is 74201
+2025-11-12 14:45:14,566 - tpp_runner.py[pid:34541;line:107:_train_model] - INFO: [ Epoch 8 (valid) ]:  valid loglike is -9733457.026288118, num_events is 9510
+2025-11-12 14:45:14,809 - tpp_runner.py[pid:34541;line:122:_train_model] - INFO: [ Epoch 8 (test) ]: test loglike is -9752549.504790623, num_events is 20561
+2025-11-12 14:45:14,811 - tpp_runner.py[pid:34541;line:124:_train_model] - CRITICAL: current best loglike on valid set is -9733457.0263 (updated at epoch-8), best updated at this epoch
+2025-11-12 14:45:16,198 - tpp_runner.py[pid:34541;line:96:_train_model] - INFO: [ Epoch 9 (train) ]: train loglike is -8952620.205981052, num_events is 74201
+2025-11-12 14:45:16,324 - tpp_runner.py[pid:34541;line:107:_train_model] - INFO: [ Epoch 9 (valid) ]:  valid loglike is -9435176.055520505, num_events is 9510
+2025-11-12 14:45:16,565 - tpp_runner.py[pid:34541;line:122:_train_model] - INFO: [ Epoch 9 (test) ]: test loglike is -9453341.29662954, num_events is 20561
+2025-11-12 14:45:16,567 - tpp_runner.py[pid:34541;line:124:_train_model] - CRITICAL: current best loglike on valid set is -9435176.0555 (updated at epoch-9), best updated at this epoch
+2025-11-12 14:45:16,568 - base_runner.py[pid:34541;line:110:train] - INFO: End RMTPP train! Cost time: 0.304m
+2025-11-12 14:45:16,839 - tpp_runner.py[pid:34541;line:148:_evaluate_model] - CRITICAL: Evaluation result: loglike is -9453341.29662954, num_events is 20561
+2025-11-12 14:56:05,243 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-12 14:56:05,258 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model NHP using CPU with torch backend
+2025-11-12 14:56:05,282 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints_stackoverflow/34541_140704456446144_251112-145605/NHP_train_output.yaml
+2025-11-12 14:56:05,288 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251112-145605/log
+2025-11-12 14:56:05,590 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 59156
+2025-11-12 15:04:41,221 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-12 15:04:41,227 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model RMTPP using CPU with torch backend
+2025-11-12 15:04:41,239 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints_stackoverflow/34541_140704456446144_251112-150441/RMTPP_train_output.yaml
+2025-11-12 15:04:41,241 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251112-150441/log
+2025-11-12 15:04:41,547 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 9822
+2025-11-12 15:22:08,762 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-12 15:22:08,777 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model NHP using CPU with torch backend
+2025-11-12 15:22:08,803 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints_stackoverflow/34541_140704456446144_251112-152208/NHP_train_output.yaml
+2025-11-12 15:22:08,807 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251112-152208/log
+2025-11-12 15:22:09,090 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 59156
+2025-11-12 15:30:57,717 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-12 15:30:57,725 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model RMTPP using CPU with torch backend
+2025-11-12 15:30:57,735 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints_stackoverflow/34541_140704456446144_251112-153057/RMTPP_train_output.yaml
+2025-11-12 15:30:57,738 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251112-153057/log
+2025-11-12 15:30:58,044 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 9822
+2025-11-12 16:56:46,685 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-12 16:56:46,716 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model NHP using CPU with torch backend
+2025-11-12 16:56:46,735 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints/34541_140704456446144_251112-165646/NHP_train_output.yaml
+2025-11-12 16:56:46,740 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints/34541_140704456446144_251112-165646/log
+2025-11-12 16:56:46,979 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 59156
+2025-11-12 16:57:36,396 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-12 16:57:36,414 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model NHP using CPU with torch backend
+2025-11-12 16:57:36,434 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints/34541_140704456446144_251112-165736/NHP_train_output.yaml
+2025-11-12 16:57:36,438 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints/34541_140704456446144_251112-165736/log
+2025-11-12 16:57:36,645 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 59156
+2025-11-12 16:58:15,620 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-12 16:58:15,624 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model RMTPP using CPU with torch backend
+2025-11-12 16:58:15,637 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints/34541_140704456446144_251112-165815/RMTPP_train_output.yaml
+2025-11-12 16:58:15,639 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints/34541_140704456446144_251112-165815/log
+2025-11-12 16:58:15,764 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 9822
+2025-11-12 16:58:19,757 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-12 16:58:19,760 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model THP using CPU with torch backend
+2025-11-12 16:58:19,778 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints/34541_140704456446144_251112-165819/THP_train_output.yaml
+2025-11-12 16:58:19,784 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints/34541_140704456446144_251112-165819/log
+2025-11-12 16:58:19,933 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 42920
+2025-11-12 16:58:31,262 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-12 16:58:31,266 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model SAHP using CPU with torch backend
+2025-11-12 16:58:31,278 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints/34541_140704456446144_251112-165831/SAHP_train_output.yaml
+2025-11-12 16:58:31,281 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints/34541_140704456446144_251112-165831/log
+2025-11-12 16:58:31,424 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 28276
+2025-11-13 08:38:45,804 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-13 08:38:45,819 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model NHP using CPU with torch backend
+2025-11-13 08:38:45,835 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints_stackoverflow/34541_140704456446144_251113-083845/NHP_train_output.yaml
+2025-11-13 08:38:45,842 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251113-083845/log
+2025-11-13 08:38:46,264 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 59156
+2025-11-13 08:50:04,082 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-13 08:50:04,091 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model RMTPP using CPU with torch backend
+2025-11-13 08:50:04,104 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints_stackoverflow/34541_140704456446144_251113-085004/RMTPP_train_output.yaml
+2025-11-13 08:50:04,106 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251113-085004/log
+2025-11-13 08:50:04,507 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 9822
+2025-11-13 08:51:26,340 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-13 08:51:26,345 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model THP using CPU with torch backend
+2025-11-13 08:51:26,373 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints_stackoverflow/34541_140704456446144_251113-085126/THP_train_output.yaml
+2025-11-13 08:51:26,379 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251113-085126/log
+2025-11-13 08:51:27,029 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 42920
+2025-11-13 08:55:36,181 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-13 08:55:36,188 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model SAHP using CPU with torch backend
+2025-11-13 08:55:36,200 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints_stackoverflow/34541_140704456446144_251113-085536/SAHP_train_output.yaml
+2025-11-13 08:55:36,204 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251113-085536/log
+2025-11-13 08:55:36,550 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 28276
+2025-11-13 09:52:10,983 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-13 09:52:11,020 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model NHP using CPU with torch backend
+2025-11-13 09:52:11,037 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints_stackoverflow/34541_140704456446144_251113-095211/NHP_train_output.yaml
+2025-11-13 09:52:11,044 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251113-095211/log
+2025-11-13 09:52:11,829 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 59156
+2025-11-13 10:13:53,228 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-13 10:13:53,245 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model RMTPP using CPU with torch backend
+2025-11-13 10:13:53,273 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints_stackoverflow/34541_140704456446144_251113-101353/RMTPP_train_output.yaml
+2025-11-13 10:13:53,280 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251113-101353/log
+2025-11-13 10:13:55,814 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 9822
+2025-11-13 10:15:48,082 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-13 10:15:48,090 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model THP using CPU with torch backend
+2025-11-13 10:15:48,109 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints_stackoverflow/34541_140704456446144_251113-101548/THP_train_output.yaml
+2025-11-13 10:15:48,112 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251113-101548/log
+2025-11-13 10:15:48,787 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 42920
+2025-11-13 10:22:28,329 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-13 10:22:28,339 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model SAHP using CPU with torch backend
+2025-11-13 10:22:28,355 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints_stackoverflow/34541_140704456446144_251113-102228/SAHP_train_output.yaml
+2025-11-13 10:22:28,358 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251113-102228/log
+2025-11-13 10:22:28,920 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 28276
+2025-11-14 14:21:55,172 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-14 14:21:55,211 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model THP using CPU with torch backend
+2025-11-14 14:21:55,236 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints_stackoverflow/34541_140704456446144_251114-142155/THP_train_output.yaml
+2025-11-14 14:21:55,243 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251114-142155/log
+2025-11-14 14:21:56,067 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 42920

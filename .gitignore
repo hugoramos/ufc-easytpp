@@ -1,0 +1,36 @@
+# Large data folders
+tpp-demo/data/
+data/
+output/
+logs/
+checkpoints/
+
+# Large file types
+*.pkl
+*.txt
+*.txt.gz
+*.tar.gz
+*.zip
+*.pth
+*.pt
+*.h5
+*.hdf5
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Mac
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

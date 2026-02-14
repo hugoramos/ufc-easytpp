@@ -1,0 +1,2 @@
+2025-11-14 16:27:09,554 - base_runner.py[pid:44912;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/44912_140704456446144_251114-162709/log
+2025-11-14 16:27:10,725 - tpp_runner.py[pid:44912;line:60:_init_model] - INFO: Num of model parameters 42920

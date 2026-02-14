@@ -1,0 +1,75 @@
+pipeline_config_id: runner_config
+
+data:
+  taxi:
+    data_format: pkl
+    train_dir: ./data/taxi/train.pkl
+    valid_dir: ./data/taxi/dev.pkl
+    test_dir: ./data/taxi/test.pkl
+    data_specs:
+      num_event_types: 10 # num of types excluding pad events.
+      pad_token_id: 10 # event type index for pad events
+      padding_side: right # pad at the right end of the sequence
+      truncation_side: right # truncate at the right end of the sequence
+      max_len: 100 # max sequence length used as model input
+
+NHP_train:
+  base_config:
+    stage: train # train | eval | generate
+    backend: torch
+    dataset_id: taxi
+    runner_id: std_tpp
+    model_id: NHP # outros: RMTPP | THP | SAHP | ...
+    base_dir: ./checkpoints/
+  model_config:
+    hidden_size: 64
+    time_emb_size: 16
+    num_layers: 2
+    num_heads: 2
+    dropout: 0.1
+    use_ln: false
+    thinning_params:
+      num_seq: 10
+      num_sample: 1
+      num_exp: 500
+      look_ahead_time: 10
+      patience_counter: 5
+      over_sample_rate: 5
+      num_samples_boundary: 5
+      dtime_max: 5
+  trainer_config:
+    seed: 2019
+    gpu: -1 # 0 # CPU => 0 continua ok; se tiver CUDA: 0 é a GPU-0
+    batch_size: 256
+    max_epoch: 10
+    optimizer: adam
+    learning_rate: 1e-3
+    valid_freq: 1
+    use_tfb: false # true se quiser TensorBoard
+    metrics: ["acc", "rmse"] # combine tipo + tempo
+
+NHP_eval:
+  base_config:
+    stage: eval
+    backend: torch
+    dataset_id: taxi
+    runner_id: std_tpp
+    model_id: NHP
+    base_dir: ./checkpoints/
+    pretrained_model_dir: ./checkpoints/NHP_train/models/saved_model
+
+  model_config:
+    # necessário para predição de tempos (RMSE)
+    thinning_params:
+      num_seq: 10
+      num_sample: 1
+      num_exp: 500
+      look_ahead_time: 10
+      patience_counter: 5
+      over_sample_rate: 5
+      num_samples_boundary: 5
+      dtime_max: 5
+
+  trainer_config:
+    batch_size: 256
+    metrics: ["acc", "rmse"] # mantém rmse para satisfazer o retorno do runner

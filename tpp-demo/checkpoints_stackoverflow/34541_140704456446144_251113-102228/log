@@ -1,0 +1,7 @@
+2025-11-13 10:22:28,358 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251113-102228/log
+2025-11-13 10:22:28,920 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 28276
+2025-11-14 14:21:55,172 - config.py[pid:34541;line:34:build_from_yaml_file] - CRITICAL: Load pipeline config class RunnerConfig
+2025-11-14 14:21:55,211 - runner_config.py[pid:34541;line:140:update_config] - CRITICAL: train model THP using CPU with torch backend
+2025-11-14 14:21:55,236 - runner_config.py[pid:34541;line:35:__init__] - INFO: Save the config to ./checkpoints_stackoverflow/34541_140704456446144_251114-142155/THP_train_output.yaml
+2025-11-14 14:21:55,243 - base_runner.py[pid:34541;line:176:save_log] - INFO: Save the log to ./checkpoints_stackoverflow/34541_140704456446144_251114-142155/log
+2025-11-14 14:21:56,067 - tpp_runner.py[pid:34541;line:60:_init_model] - INFO: Num of model parameters 42920
