@@ -4,12 +4,12 @@ import torch.nn.functional as F
 from easy_tpp.model.torch_model.torch_thp import THP
 
 def get_sm_loss(t_var, score, non_pad_mask):
-    """Calcula Hyvarinen Score Matching Loss: tr(Hessian) + 0.5*||score||^2"""
-    # Gradiente do score em relação a t (divergência do score)
-    # create_graph=True é necessário para calcular derivadas de segunda ordem durante backprop
+    """Calcula Hyvarinen Score Matching Loss"""
+    # Garantir contiguidade
+    if not t_var.is_contiguous(): t_var = t_var.contiguous()
+    if not score.is_contiguous(): score = score.contiguous()
     
-    # Calcular divergência (d_score/dt)
-    # Precisamos da derivada da soma dos scores em relação a t
+    # Gradiente do score em relação a t
     grad_t = torch.autograd.grad(
         score.sum(), t_var, 
         create_graph=True, 
@@ -17,7 +17,6 @@ def get_sm_loss(t_var, score, non_pad_mask):
         only_inputs=True
     )[0]
     
-    # Loss SM = div(s) + 0.5 * ||s||^2
     loss = grad_t + 0.5 * (score ** 2)
     
     if non_pad_mask is not None:
@@ -26,7 +25,6 @@ def get_sm_loss(t_var, score, non_pad_mask):
     return loss.sum()
 
 class IntensityEncode(nn.Module):
-    """Módulo que modela a intensidade parametrizada para Score Matching"""
     def __init__(self, d_model, d_inner):
         super().__init__()
         self.affect_layer = nn.Sequential(
@@ -42,28 +40,24 @@ class IntensityEncode(nn.Module):
         )
         
     def get_score(self, enc_output, t):
-        # enc_output: [B, L, D]
-        # t: [B, L, 1]
-        
         if not t.requires_grad:
             t.requires_grad_(True)
+            
+        enc_output = enc_output.contiguous()
+        t = t.contiguous()
             
         affect = self.affect_layer(enc_output)
         base = self.base_layer(enc_output)
         
-        # Formula do Github: tanh(affect * t + base)
-        # Nota: multiplicacao broadcasting [B,L,D] * [B,L,1]
+        # [B, L, D] * [B, L, 1] + [B, L, D]
         hidden = torch.tanh(affect * t + base)
-        intensity = self.intensity_layer(hidden) # [B, L, 1]
+        intensity = self.intensity_layer(hidden)
         
-        # Estabilidade Numérica: Clamp intensidade para evitar log(0) e explosão
-        # Softplus é sempre positivo, mas float precision pode dar 0
+        # Clamp para estabilidade
         intensity = torch.clamp(intensity, min=1e-5, max=1e5)
-        
-        # Score = d/dt (log lambda) - lambda
         log_intensity = intensity.log()
         
-        # Calcular gradiente d(log_lambda)/dt
+        # Gradiente
         grad_log_intensity = torch.autograd.grad(
             log_intensity.sum(), t, 
             create_graph=True, 
@@ -71,27 +65,19 @@ class IntensityEncode(nn.Module):
             only_inputs=True
         )[0]
         
-        # Proteção contra NaN no gradiente
+        # Tratamento de NaNs (substituir por 0 para não quebrar o treino, embora o gradiente fique enviesado)
         if torch.isnan(grad_log_intensity).any():
-            # print("Warning: NaN detected in grad_log_intensity, replacing with 0")
-            grad_log_intensity = torch.nan_to_num(grad_log_intensity, nan=0.0, posinf=1e5, neginf=-1e5)
+            grad_log_intensity = torch.nan_to_num(grad_log_intensity, nan=0.0)
             
         score = grad_log_intensity - intensity
         return score, intensity
 
 class SmurfTHP(THP):
-    """Implementação do SMURF-THP adaptada para EasyTPP.
-    Reference: SMURF-THP: Score Matching-based UnceRtainty quantiFication for Transformer Hawkes Process (ICML 2023)
-    """
     def __init__(self, model_config):
         super().__init__(model_config)
-        # Substitui a camada de intensidade padrão do THP pelo Score Module
-        # d_inner é geralmente 2x d_model no paper/código original
         d_inner = model_config.hidden_size * 2
         self.score_net = IntensityEncode(model_config.hidden_size, d_inner)
         
-        # Preditor de tipo dependente do tempo (como no paper)
-        # Input: hidden state + time gap
         self.type_classifier_t = nn.Sequential(
             nn.Linear(model_config.hidden_size + 1, model_config.hidden_size),
             nn.ReLU(),
@@ -99,61 +85,37 @@ class SmurfTHP(THP):
         )
 
     def loglike_loss(self, batch):
-        """Calcula a loss total (Score Matching + Cross Entropy)."""
-        # Batch unpacking
         time_seqs, time_delta_seqs, type_seqs, batch_non_pad_mask, attention_mask = batch
         
-        # 1. Forward Transformer (Encoder)
         enc_out = self.forward(time_seqs[:, :-1], type_seqs[:, :-1], attention_mask[:, :-1, :-1])
         
-        # 2. Score Matching Loss (Tempo)
-        # Targets: Delta t_1 ... t_N
-        # DETACH é importante aqui? Não, precisamos que t tenha gradiente para get_score, 
-        # mas 'target_deltas' é o dado real, é constante.
-        # Porém, get_score precisa calcular d(score)/dt, então t precisa de requires_grad=True
-        # Mas 'enc_out' também entra no get_score.
-        
-        target_deltas = time_delta_seqs[:, 1:].unsqueeze(-1).clone().detach() # [B, L, 1]
+        target_deltas = time_delta_seqs[:, 1:].unsqueeze(-1).clone().detach()
         target_deltas.requires_grad_(True)
-        target_mask = batch_non_pad_mask[:, 1:] # [B, L]
+        target_mask = batch_non_pad_mask[:, 1:]
         
-        # Calcula Score e Intensidade
         score, _ = self.score_net.get_score(enc_out, target_deltas)
-        
-        # Calcula Loss de SM
         sm_loss = get_sm_loss(target_deltas, score, target_mask)
         
-        # 3. Type Prediction Loss (Cross Entropy)
-        # Concatenar hidden state + tempo futuro
-        # Detach target_deltas para não influenciar gradiente do tempo via classificador?
-        # O paper não especifica, mas geralmente sim.
         type_input = torch.cat([enc_out, target_deltas.detach()], dim=-1)
         type_logits = self.type_classifier_t(type_input)
         
         type_loss = F.cross_entropy(type_logits.transpose(1, 2), type_seqs[:, 1:], reduction='none')
         type_loss = (type_loss * target_mask).sum()
         
-        # Normalizar loss pelo número de eventos para evitar valores gigantes
+        total_loss = sm_loss + type_loss
         num_events = target_mask.sum() + 1e-9
-        
-        # Scaling factor para equilibrar as losses
-        total_loss = (sm_loss + type_loss)
         
         return total_loss, num_events
 
     def predict_one_step_at_every_event(self, batch):
-        """Predição usando Langevin Dynamics Sampling."""
-        # Batch unpacking
         time_seqs, time_delta_seqs, type_seqs, batch_non_pad_mask, attention_mask = batch
         
         with torch.no_grad():
             enc_out = self.forward(time_seqs[:, :-1], type_seqs[:, :-1], attention_mask[:, :-1, :-1])
             
-        # Inicialização aleatória para Langevin
         B, L, _ = enc_out.shape
         t_sample = torch.ones(B, L, 1, device=enc_out.device, requires_grad=True)
         
-        # Langevin loop parameters
         n_steps = 20 
         step_size = 0.1
         
@@ -162,10 +124,8 @@ class SmurfTHP(THP):
                 score, _ = self.score_net.get_score(enc_out.detach(), t_sample)
             
             noise = torch.randn_like(t_sample) * (2 * step_size)**0.5
-            # Atualização Langevin: t_new = t + eps * score + noise
-            # Detach para não acumular grafo
             t_sample = t_sample.detach() + step_size * score.detach() + noise
-            t_sample = F.relu(t_sample) # Tempo deve ser positivo
+            t_sample = F.relu(t_sample)
             t_sample.requires_grad_(True)
             
         dtimes_pred = t_sample.squeeze(-1).detach()
@@ -177,17 +137,14 @@ class SmurfTHP(THP):
         return dtimes_pred, types_pred
 
     def compute_intensities_at_sample_times(self, time_seqs, time_delta_seqs, type_seqs, sample_dtimes, **kwargs):
-        """Calcula intensidade para visualização."""
         attention_mask = kwargs.get('attention_mask')
         enc_out = self.forward(time_seqs, type_seqs, attention_mask)
         
         K = sample_dtimes.shape[-1]
         enc_expanded = enc_out.unsqueeze(2).expand(-1, -1, K, -1)
-        
-        t_expanded = sample_dtimes.unsqueeze(-1) # [B, L, K, 1]
+        t_expanded = sample_dtimes.unsqueeze(-1)
         t_expanded.requires_grad_(True)
         
         _, intensity = self.score_net.get_score(enc_expanded, t_expanded)
-        
         intensity_total = intensity.expand(-1, -1, -1, self.num_event_types)
         return intensity_total
