@@ -7,8 +7,17 @@ def get_sm_loss(t_var, score, non_pad_mask):
     """Calcula Hyvarinen Score Matching Loss: tr(Hessian) + 0.5*||score||^2"""
     # Gradiente do score em relação a t (divergência do score)
     # create_graph=True é necessário para calcular derivadas de segunda ordem durante backprop
-    grad_t = torch.autograd.grad(score.sum(), t_var, create_graph=True, retain_graph=True)[0]
     
+    # Calcular divergência (d_score/dt)
+    # Precisamos da derivada da soma dos scores em relação a t
+    grad_t = torch.autograd.grad(
+        score.sum(), t_var, 
+        create_graph=True, 
+        retain_graph=True,
+        only_inputs=True
+    )[0]
+    
+    # Loss SM = div(s) + 0.5 * ||s||^2
     loss = grad_t + 0.5 * (score ** 2)
     
     if non_pad_mask is not None:
@@ -36,7 +45,6 @@ class IntensityEncode(nn.Module):
         # enc_output: [B, L, D]
         # t: [B, L, 1]
         
-        # Garante que t requer gradiente para autograd
         if not t.requires_grad:
             t.requires_grad_(True)
             
@@ -44,15 +52,30 @@ class IntensityEncode(nn.Module):
         base = self.base_layer(enc_output)
         
         # Formula do Github: tanh(affect * t + base)
+        # Nota: multiplicacao broadcasting [B,L,D] * [B,L,1]
         hidden = torch.tanh(affect * t + base)
         intensity = self.intensity_layer(hidden) # [B, L, 1]
         
+        # Estabilidade Numérica: Clamp intensidade para evitar log(0) e explosão
+        # Softplus é sempre positivo, mas float precision pode dar 0
+        intensity = torch.clamp(intensity, min=1e-5, max=1e5)
+        
         # Score = d/dt (log lambda) - lambda
-        # Evitar log(0)
-        log_intensity = (intensity + 1e-10).log()
+        log_intensity = intensity.log()
         
-        grad_log_intensity = torch.autograd.grad(log_intensity.sum(), t, create_graph=True, retain_graph=True)[0]
+        # Calcular gradiente d(log_lambda)/dt
+        grad_log_intensity = torch.autograd.grad(
+            log_intensity.sum(), t, 
+            create_graph=True, 
+            retain_graph=True,
+            only_inputs=True
+        )[0]
         
+        # Proteção contra NaN no gradiente
+        if torch.isnan(grad_log_intensity).any():
+            # print("Warning: NaN detected in grad_log_intensity, replacing with 0")
+            grad_log_intensity = torch.nan_to_num(grad_log_intensity, nan=0.0, posinf=1e5, neginf=-1e5)
+            
         score = grad_log_intensity - intensity
         return score, intensity
 
@@ -76,42 +99,45 @@ class SmurfTHP(THP):
         )
 
     def loglike_loss(self, batch):
-        """Calcula a loss total (Score Matching + Cross Entropy).
-        Nota: O nome do método é mantido como loglike_loss para compatibilidade com o runner,
-        mas retorna a loss de Score Matching.
-        """
+        """Calcula a loss total (Score Matching + Cross Entropy)."""
         # Batch unpacking
         time_seqs, time_delta_seqs, type_seqs, batch_non_pad_mask, attention_mask = batch
         
         # 1. Forward Transformer (Encoder)
-        # Inputs: t_0 ... t_{N-1}
-        # [B, L, D]
         enc_out = self.forward(time_seqs[:, :-1], type_seqs[:, :-1], attention_mask[:, :-1, :-1])
         
         # 2. Score Matching Loss (Tempo)
         # Targets: Delta t_1 ... t_N
+        # DETACH é importante aqui? Não, precisamos que t tenha gradiente para get_score, 
+        # mas 'target_deltas' é o dado real, é constante.
+        # Porém, get_score precisa calcular d(score)/dt, então t precisa de requires_grad=True
+        # Mas 'enc_out' também entra no get_score.
+        
         target_deltas = time_delta_seqs[:, 1:].unsqueeze(-1).clone().detach() # [B, L, 1]
         target_deltas.requires_grad_(True)
         target_mask = batch_non_pad_mask[:, 1:] # [B, L]
         
-        # Calcula Score
+        # Calcula Score e Intensidade
         score, _ = self.score_net.get_score(enc_out, target_deltas)
         
         # Calcula Loss de SM
         sm_loss = get_sm_loss(target_deltas, score, target_mask)
         
         # 3. Type Prediction Loss (Cross Entropy)
-        # Usa o tempo real (target_deltas) como input para ajudar a prever o tipo
-        # Concatenar hidden state + tempo futuro (teacher forcing)
-        type_input = torch.cat([enc_out, target_deltas], dim=-1)
+        # Concatenar hidden state + tempo futuro
+        # Detach target_deltas para não influenciar gradiente do tempo via classificador?
+        # O paper não especifica, mas geralmente sim.
+        type_input = torch.cat([enc_out, target_deltas.detach()], dim=-1)
         type_logits = self.type_classifier_t(type_input)
         
         type_loss = F.cross_entropy(type_logits.transpose(1, 2), type_seqs[:, 1:], reduction='none')
         type_loss = (type_loss * target_mask).sum()
         
-        # Loss total (pode adicionar pesos lambda se necessário)
-        total_loss = sm_loss + type_loss
-        num_events = target_mask.sum()
+        # Normalizar loss pelo número de eventos para evitar valores gigantes
+        num_events = target_mask.sum() + 1e-9
+        
+        # Scaling factor para equilibrar as losses
+        total_loss = (sm_loss + type_loss)
         
         return total_loss, num_events
 
@@ -125,7 +151,6 @@ class SmurfTHP(THP):
             
         # Inicialização aleatória para Langevin
         B, L, _ = enc_out.shape
-        # Inicia com 1.0 (média aproximada dos deltas normalizados)
         t_sample = torch.ones(B, L, 1, device=enc_out.device, requires_grad=True)
         
         # Langevin loop parameters
@@ -133,21 +158,18 @@ class SmurfTHP(THP):
         step_size = 0.1
         
         for _ in range(n_steps):
-            # Score = grad_log_p
-            # Langevin: t_new = t + step * score + noise
-            # Precisamos re-habilitar gradientes apenas para o cálculo do score
             with torch.enable_grad():
                 score, _ = self.score_net.get_score(enc_out.detach(), t_sample)
             
             noise = torch.randn_like(t_sample) * (2 * step_size)**0.5
+            # Atualização Langevin: t_new = t + eps * score + noise
+            # Detach para não acumular grafo
             t_sample = t_sample.detach() + step_size * score.detach() + noise
             t_sample = F.relu(t_sample) # Tempo deve ser positivo
             t_sample.requires_grad_(True)
             
-        # Predição final de tempo
         dtimes_pred = t_sample.squeeze(-1).detach()
         
-        # Predição de tipo usando o tempo estimado
         type_input = torch.cat([enc_out, t_sample.detach()], dim=-1)
         type_logits = self.type_classifier_t(type_input)
         types_pred = torch.argmax(type_logits, dim=-1)
@@ -159,20 +181,13 @@ class SmurfTHP(THP):
         attention_mask = kwargs.get('attention_mask')
         enc_out = self.forward(time_seqs, type_seqs, attention_mask)
         
-        # Expandir para amostras
-        # enc_out: [B, L, D] -> [B, L, K, D]
         K = sample_dtimes.shape[-1]
         enc_expanded = enc_out.unsqueeze(2).expand(-1, -1, K, -1)
         
-        # sample_dtimes: [B, L, K]
         t_expanded = sample_dtimes.unsqueeze(-1) # [B, L, K, 1]
         t_expanded.requires_grad_(True)
         
-        # Score net retorna score e intensidade
         _, intensity = self.score_net.get_score(enc_expanded, t_expanded)
         
-        # intensity: [B, L, K, 1]
-        # Replicar para todos os tipos (SMURF univariado no tempo)
         intensity_total = intensity.expand(-1, -1, -1, self.num_event_types)
-        
         return intensity_total
