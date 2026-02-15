@@ -10,6 +10,7 @@ def get_sm_loss(t_var, score, non_pad_mask):
     if not score.is_contiguous(): score = score.contiguous()
     
     # Gradiente do score em relação a t
+    # create_graph=True é necessário para calcular derivadas de segunda ordem durante backprop
     grad_t = torch.autograd.grad(
         score.sum(), t_var, 
         create_graph=True, 
@@ -40,37 +41,57 @@ class IntensityEncode(nn.Module):
         )
         
     def get_score(self, enc_output, t):
-        if not t.requires_grad:
-            t.requires_grad_(True)
-            
-        enc_output = enc_output.contiguous()
-        t = t.contiguous()
-            
-        affect = self.affect_layer(enc_output)
-        base = self.base_layer(enc_output)
+        # Executar em float64 (Double) para evitar instabilidade numérica no cálculo de derivadas de segunda ordem
+        # Isso previne erros de CUBLAS em GPUs como L4/A100 em certas operações sensíveis
+        orig_dtype = enc_output.dtype
         
-        # [B, L, D] * [B, L, 1] + [B, L, D]
-        hidden = torch.tanh(affect * t + base)
-        intensity = self.intensity_layer(hidden)
+        # Cast inputs para double
+        enc_output_d = enc_output.double().contiguous()
+        t_d = t.double().contiguous()
         
-        # Clamp para estabilidade
+        if not t_d.requires_grad:
+            t_d.requires_grad_(True)
+            
+        # Cast pesos temporariamente para double (functional call)
+        # Nota: Isso é ineficiente mas seguro. 
+        # Idealmente, a rede toda seria double, mas o transformer é pesado.
+        
+        def linear_double(layer, x):
+            return F.linear(x, layer.weight.double(), layer.bias.double() if layer.bias is not None else None)
+            
+        # Affect layer manual
+        h1 = linear_double(self.affect_layer[0], enc_output_d)
+        affect = torch.tanh(h1)
+        
+        # Base layer manual
+        base = linear_double(self.base_layer[0], enc_output_d)
+        
+        # Hidden
+        hidden = torch.tanh(affect * t_d + base)
+        
+        # Intensity layer manual
+        h2 = linear_double(self.intensity_layer[0], hidden)
+        intensity = F.softplus(h2, beta=1.0)
+        
+        # Clamp
         intensity = torch.clamp(intensity, min=1e-5, max=1e5)
         log_intensity = intensity.log()
         
-        # Gradiente
+        # Gradiente em Double
         grad_log_intensity = torch.autograd.grad(
-            log_intensity.sum(), t, 
+            log_intensity.sum(), t_d, 
             create_graph=True, 
             retain_graph=True,
             only_inputs=True
         )[0]
         
-        # Tratamento de NaNs (substituir por 0 para não quebrar o treino, embora o gradiente fique enviesado)
         if torch.isnan(grad_log_intensity).any():
             grad_log_intensity = torch.nan_to_num(grad_log_intensity, nan=0.0)
             
         score = grad_log_intensity - intensity
-        return score, intensity
+        
+        # Retorna para float original (float32)
+        return score.to(orig_dtype), intensity.to(orig_dtype)
 
 class SmurfTHP(THP):
     def __init__(self, model_config):
@@ -87,13 +108,17 @@ class SmurfTHP(THP):
     def loglike_loss(self, batch):
         time_seqs, time_delta_seqs, type_seqs, batch_non_pad_mask, attention_mask = batch
         
+        # Transformer roda em float32 (ou AMP se ativado, mas desativamos para SMURF)
         enc_out = self.forward(time_seqs[:, :-1], type_seqs[:, :-1], attention_mask[:, :-1, :-1])
         
         target_deltas = time_delta_seqs[:, 1:].unsqueeze(-1).clone().detach()
         target_deltas.requires_grad_(True)
         target_mask = batch_non_pad_mask[:, 1:]
         
+        # Score calculation faz cast interno para double
         score, _ = self.score_net.get_score(enc_out, target_deltas)
+        
+        # Loss calculation
         sm_loss = get_sm_loss(target_deltas, score, target_mask)
         
         type_input = torch.cat([enc_out, target_deltas.detach()], dim=-1)
