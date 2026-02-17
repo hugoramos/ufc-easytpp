@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from easy_tpp.model.torch_model.torch_rothp import RoTHP, RotaryEmbedding, apply_rotary_pos_emb
-from easy_tpp.model.torch_model.torch_baselayer import RotaryEncoderLayer, RotaryMultiHeadAttention
+# Corrigindo imports: As classes Rotary estão em torch_rothp, não em baselayer
+from easy_tpp.model.torch_model.torch_rothp import RoTHP, RotaryEmbedding, apply_rotary_pos_emb, RotaryEncoderLayer, RotaryMultiHeadAttention
 
 class IntensityModulatedRotaryEmbedding(RotaryEmbedding):
     """
