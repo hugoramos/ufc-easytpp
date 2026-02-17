@@ -9,7 +9,8 @@ def attention(query, key, value, mask=None, dropout=None):
     scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
     if mask is not None:
         # small change here -- we use "1" for masked element
-        scores = scores.masked_fill(mask > 0, -1e9)
+        # Use -1e4 instead of -1e9 for FP16 stability
+        scores = scores.masked_fill(mask > 0, -1e4)
     p_attn = torch.softmax(scores, dim=-1)
     if dropout is not None:
         p_attn = dropout(p_attn)
