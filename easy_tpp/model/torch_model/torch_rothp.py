@@ -13,55 +13,32 @@ class RotaryEmbedding(nn.Module):
         self.dim = dim
         self.max_freq = max_freq
         
-        # Eq (17): theta_j = 10000^(-2(j-1)/d)
-        # Vamos calcular exatamente como na equação, sem truques de inversão
+        # equação 17 do RoTHP: theta_j = 10000^(-2(j-1)/d)
         thetas = []
         for j in range(1, dim // 2 + 1):
             theta_j = max_freq ** (-2 * (j - 1) / dim)
             thetas.append(theta_j)
-            
-        # Convertemos para tensor
-        self.register_buffer('thetas', torch.tensor(thetas))
+
+        self.thetas = torch.tensor(thetas)
+        # self.register_buffer('thetas', torch.tensor(thetas))
 
     def forward(self, t):
-        """
-        Args:
-            t: [batch, seq_len] (timestamps)
-        Returns:
-            cos, sin: [batch, seq_len, dim]
-        """
-        batch_size, seq_len = t.shape
-        
-        # Queremos calcular m * theta_j para cada tempo m e cada theta_j
-        # t tem shape [batch, seq_len]
-        # thetas tem shape [dim/2]
-        
-        # Expandimos t para [batch, seq_len, 1]
+        # t original: [batch, seq_len]
+        # t_expanded: [batch, seq_len, 1]
         t_expanded = t.unsqueeze(-1)
         
-        # Expandimos thetas para [1, 1, dim/2]
+        # self.thetas: [dim/2] (vetor com as frequencias)
+        # thetas_expanded: [1, 1, dim/2]
         thetas_expanded = self.thetas.view(1, 1, -1)
         
-        # Multiplicamos: args = t * theta
-        # Resultado shape: [batch, seq_len, dim/2]
+        # args = t * theta (tempo * frequência)
+        # args: [batch, seq_len, dim/2]
         args = t_expanded * thetas_expanded
         
-        # Calculamos cos e sin
-        # o tamanho desses tensores será dim 
         cos_args = torch.cos(args)
         sin_args = torch.sin(args)
         
-        # O paper sugere aplicar a rotação em pares de dimensões.
-        # A matriz R tem blocos diagonais.
-        # Para facilitar a visualização da multiplicação depois, vamos duplicar os valores
-        # para que tenham a dimensão 'dim' completa (não só dim/2)
-        # Repetimos cada valor 2 vezes consecutivas para casar com os pares (2j-1, 2j)
-        # Ex: [cos1, cos2] -> [cos1, cos1, cos2, cos2]
-        
-        cos = torch.repeat_interleave(cos_args, 2, dim=-1)
-        sin = torch.repeat_interleave(sin_args, 2, dim=-1)
-        
-        return cos, sin
+        return cos_args, sin_args
 
 
 def apply_rotary_pos_emb(q, k, cos, sin):
@@ -83,7 +60,7 @@ def apply_rotary_pos_emb(q, k, cos, sin):
         sin: [batch, seq_len, dim]
     """
     # Ajustamos dimensões de cos e sin para broadcasting com q e k
-    # [batch, seq_len, dim] -> [batch, 1, seq_len, dim]
+    # [batch, seq_len, dim/2] -> [batch, 1, seq_len, dim/2]
     cos = cos.unsqueeze(1)
     sin = sin.unsqueeze(1)
     
@@ -93,16 +70,17 @@ def apply_rotary_pos_emb(q, k, cos, sin):
     # Pegamos os elementos nos índices pares (0, 2, 4...) como x1
     # e nos ímpares (1, 3, 5...) como x2
     
+    # Shapes resultantes: [..., dim/2]
     q1 = q[..., 0::2]
     q2 = q[..., 1::2]
     
     k1 = k[..., 0::2]
     k2 = k[..., 1::2]
     
-    # Também precisamos separar cos e sin correspondentes a esses pares.
-    # Como construímos cos/sin com repeat_interleave, os valores em 0 e 1 são iguais.
-    c = cos[..., 0::2]
-    s = sin[..., 0::2]
+    # [OTIMIZAÇÃO] Não precisamos mais fazer slicing no cos/sin.
+    # Eles já vêm com o tamanho correto [dim/2] do RotaryEmbedding.forward otimizado.
+    c = cos
+    s = sin
     
     # Aplicamos a fórmula da rotação explicitamente:
     # x1_rot = x1 * cos - x2 * sin
@@ -170,8 +148,8 @@ class RotaryMultiHeadAttention(MultiHeadAttention):
 
 
 class RotaryEncoderLayer(EncoderLayer):
-    def __init__(self, d_model, self_attn, feed_forward=None, use_residual=False, dropout=0.1):
-        super(RotaryEncoderLayer, self).__init__(d_model, self_attn, feed_forward, use_residual, dropout)
+    # def __init__(self, d_model, self_attn, feed_forward=None, use_residual=False, dropout=0.1):
+    #     super(RotaryEncoderLayer, self).__init__(d_model, self_attn, feed_forward, use_residual, dropout)
 
     def forward(self, x, mask, cos=None, sin=None):
         if self.use_residual:
@@ -200,8 +178,7 @@ class RoTHP(THP):
             model_config (EasyTPP.ModelConfig): config of model specs.
         """
         # Initialize TorchBaseModel directly to set up basic attributes
-        TorchBaseModel.__init__(self, model_config)
-        
+        TorchBaseModel.__init__(self, model_config)        
         self.d_model = model_config.hidden_size
         self.d_time = model_config.time_emb_size 
         self.use_norm = model_config.use_ln
@@ -210,7 +187,6 @@ class RoTHP(THP):
         self.n_head = model_config.num_heads
         self.dropout = model_config.dropout_rate
 
-        # RoPE Embedding
         self.rotary_emb = RotaryEmbedding(self.d_model // self.n_head)
 
         self.factor_intensity_base = nn.Parameter(torch.empty([1, self.num_event_types], device=self.device))
@@ -223,7 +199,7 @@ class RoTHP(THP):
         self.softplus = ScaledSoftplus(self.num_event_types)   # learnable mark-specific beta
 
         # Add MLP layer
-        # Equation (5) of THP paper
+        # Equation (5) (THP)
         self.feed_forward = nn.Sequential(
             nn.Linear(self.d_model, self.d_model * 2),
             nn.ReLU(),
@@ -251,17 +227,13 @@ class RoTHP(THP):
         Returns:
             tensor: hidden states at event times.
         """
-        # Calculate RoPE embeddings
         # [batch_size, seq_len, dim]
         cos, sin = self.rotary_emb(time_seqs)
-
-        # [batch_size, seq_len, hidden_size]
         enc_output = self.layer_type_emb(type_seqs)
 
         # [batch_size, seq_len, hidden_size]
+        # nao passo temporal encoding aqui... e passo cos e sin
         for enc_layer in self.stack_layers:
-            # We do NOT add tem_enc here as in THP
-            # Instead, we pass cos and sin to the attention mechanism
             enc_output = enc_layer(
                 enc_output,
                 mask=attention_mask,

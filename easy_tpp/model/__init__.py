@@ -10,6 +10,7 @@ from easy_tpp.model.torch_model.torch_s2p2 import S2P2 as TorchS2P2
 from easy_tpp.model.torch_model.torch_sahp import SAHP as TorchSAHP
 from easy_tpp.model.torch_model.torch_thp import THP as TorchTHP
 from easy_tpp.model.torch_model.torch_rothp import RoTHP as TorchRoTHP
+from easy_tpp.model.torch_model.torch_rothp_simple import RoTHPSimple as TorchRoTHPSimple
 
 __all__ = ['TorchBaseModel',
            'TorchNHP',
@@ -23,4 +24,5 @@ __all__ = ['TorchBaseModel',
            'TorchANHN',
            'TorchS2P2',
            'TorchHawkes',
-           'TorchRoTHP']
+           'TorchRoTHP',
+           'TorchRoTHPSimple']
