@@ -19,8 +19,8 @@ class RotaryEmbedding(nn.Module):
             theta_j = max_freq ** (-2 * (j - 1) / dim)
             thetas.append(theta_j)
 
-        self.thetas = torch.tensor(thetas)
-        # self.register_buffer('thetas', torch.tensor(thetas))
+        # self.thetas = torch.tensor(thetas)
+        self.register_buffer('thetas', torch.tensor(thetas))
 
     def forward(self, t):
         # t original: [batch, seq_len]
