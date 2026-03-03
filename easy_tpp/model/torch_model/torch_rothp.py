@@ -19,21 +19,21 @@ class RotaryEmbedding(nn.Module):
             theta_j = max_freq ** (-2 * (j - 1) / dim)
             thetas.append(theta_j)
 
-        self.thetas = torch.tensor(thetas)
-        # self.register_buffer('thetas', torch.tensor(thetas))
+        # self.thetas = torch.tensor(thetas) (erro no colab.. Unexpected key(s) in state_dict: "rotary_emb.thetas")
+        self.register_buffer('thetas', torch.tensor(thetas))
 
-    def forward(self, t):
-        # t original: [batch, seq_len]
-        # t_expanded: [batch, seq_len, 1]
-        t_expanded = t.unsqueeze(-1)
+    def forward(self, time_seqs):
+        # time_seqs original: [batch, seq_len]
+        # time_seqs_expanded: [batch, seq_len, 1]
+        time_seqs_expanded = time_seqs.unsqueeze(-1)
         
         # self.thetas: [dim/2] (vetor com as frequencias)
         # thetas_expanded: [1, 1, dim/2]
         thetas_expanded = self.thetas.view(1, 1, -1)
         
-        # args = t * theta (tempo * frequência)
+        # args = time_seqs * theta (tempo * frequência)
         # args: [batch, seq_len, dim/2]
-        args = t_expanded * thetas_expanded
+        args = time_seqs_expanded * thetas_expanded
         
         cos_args = torch.cos(args)
         sin_args = torch.sin(args)
@@ -42,76 +42,37 @@ class RotaryEmbedding(nn.Module):
 
 
 def apply_rotary_pos_emb(q, k, cos, sin):
-    """Applies Rotary Position Embedding to the query and key tensors.
-    
-    Aplica a rotação definida no paper (matriz de rotação R).
-    R é uma matriz bloco-diagonal com blocos:
-    [ cos, -sin ]
-    [ sin,  cos ]
-    
-    Isso significa que para cada par de coordenadas (x1, x2), temos:
-    x1_new = x1 * cos - x2 * sin
-    x2_new = x1 * sin + x2 * cos
-    
-    Args:
-        q: [batch, n_head, seq_len, dim]
-        k: [batch, n_head, seq_len, dim]
-        cos: [batch, seq_len, dim]
-        sin: [batch, seq_len, dim]
-    """
-    # Ajustamos dimensões de cos e sin para broadcasting com q e k
-    # [batch, seq_len, dim/2] -> [batch, 1, seq_len, dim/2]
+    # [batch, seq_len, dim/2] -> [batch, 1, seq_len, dim/2] pois q e k são [batch, n_head, seq_len, d_k]
     cos = cos.unsqueeze(1)
     sin = sin.unsqueeze(1)
     
-    # Vamos separar os pares x1 e x2 explicitamente
-    # q tem dimensão 'dim' na última coordenada.
-    # Assumimos que 'dim' é par.
-    # Pegamos os elementos nos índices pares (0, 2, 4...) como x1
-    # e nos ímpares (1, 3, 5...) como x2
-    
-    # Shapes resultantes: [..., dim/2]
-    q1 = q[..., 0::2]
-    q2 = q[..., 1::2]
+    # shapes resultantes: [..., dim/2]
+    q1 = q[..., 0::2] # pra pegar os pares (x1)
+    q2 = q[..., 1::2] # pra pegar os impares (x2)
     
     k1 = k[..., 0::2]
     k2 = k[..., 1::2]
     
-    # [OTIMIZAÇÃO] Não precisamos mais fazer slicing no cos/sin.
-    # Eles já vêm com o tamanho correto [dim/2] do RotaryEmbedding.forward otimizado.
-    c = cos
-    s = sin
+    # matriz de rotação R:
+    # [cos, -sin]
+    # [sin,  cos]
+    q1_rot = q1 * cos - q2 * sin
+    q2_rot = q1 * sin + q2 * cos
     
-    # Aplicamos a fórmula da rotação explicitamente:
-    # x1_rot = x1 * cos - x2 * sin
-    # x2_rot = x1 * sin + x2 * cos
-    
-    q1_rot = q1 * c - q2 * s
-    q2_rot = q1 * s + q2 * c
-    
-    k1_rot = k1 * c - k2 * s
-    k2_rot = k1 * s + k2 * c
-    
-    # Agora reconstruímos os tensores q e k intercalando os valores rotacionados
-    # Criamos um tensor vazio com o shape original
+    k1_rot = k1 * cos - k2 * sin
+    k2_rot = k1 * sin + k2 * cos
+
     q_new = torch.zeros_like(q)
     k_new = torch.zeros_like(k)
     
-    # Preenchemos os índices pares e ímpares
+    # preenchendo os índices pares e ímpares
     q_new[..., 0::2] = q1_rot
     q_new[..., 1::2] = q2_rot
     
     k_new[..., 0::2] = k1_rot
     k_new[..., 1::2] = k2_rot
-
-    # separamos o vetor inteiro em duas metades lógicas, 
-    # onde cada índice $i$ em $X_1$ e $X_2$ corresponde a um par completo que precisa ser rotacionado junto. 
-    #
-    # Isso permite aplicar a fórmula de rotação em todos os 32 pares (se dim=64) simultaneamente 
-    # com uma única operação matemática vetorizadamente.
     
     return q_new, k_new
-
 
 class RotaryMultiHeadAttention(MultiHeadAttention):
     def forward(self, query, key, value, mask, cos=None, sin=None, output_weight=False):
@@ -119,17 +80,15 @@ class RotaryMultiHeadAttention(MultiHeadAttention):
             mask = mask.unsqueeze(1)
         nbatches = query.size(0)
 
-        # 1) Do all the linear projections in batch from d_model => h x d_k
         query, key, value = [
             lin_layer(x).view(nbatches, -1, self.n_head, self.d_k).transpose(1, 2)
             for lin_layer, x in zip(self.linears, (query, key, value))
         ]
         
-        # 2) Apply RoPE if provided
+        # rotação dos embeddings
         if cos is not None and sin is not None:
              query, key = apply_rotary_pos_emb(query, key, cos, sin)
 
-        # 3) Attention
         x, attn_weight = attention(query, key, value, mask=mask, dropout=self.dropout)
 
         x = x.transpose(1, 2).contiguous() \
@@ -148,12 +107,8 @@ class RotaryMultiHeadAttention(MultiHeadAttention):
 
 
 class RotaryEncoderLayer(EncoderLayer):
-    # def __init__(self, d_model, self_attn, feed_forward=None, use_residual=False, dropout=0.1):
-    #     super(RotaryEncoderLayer, self).__init__(d_model, self_attn, feed_forward, use_residual, dropout)
-
     def forward(self, x, mask, cos=None, sin=None):
         if self.use_residual:
-            # We pass cos, sin to self_attn via lambda
             x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, mask, cos=cos, sin=sin))
             if self.feed_forward is not None:
                 return self.sublayer[1](x, self.feed_forward)
@@ -187,6 +142,7 @@ class RoTHP(THP):
         self.n_head = model_config.num_heads
         self.dropout = model_config.dropout_rate
 
+        # mudei do THP para o RoTHP
         self.rotary_emb = RotaryEmbedding(self.d_model // self.n_head)
 
         self.factor_intensity_base = nn.Parameter(torch.empty([1, self.num_event_types], device=self.device))
