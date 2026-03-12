@@ -1,0 +1,7 @@
+{
+  "scenario": "power_law_long_memory",
+  "seed": 43,
+  "num_sequences": 500,
+  "num_types": 4,
+  "expectation": "caso favoravel: memoria longa e cauda pesada"
+}

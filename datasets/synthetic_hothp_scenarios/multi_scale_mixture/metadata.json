@@ -1,0 +1,7 @@
+{
+  "scenario": "multi_scale_mixture",
+  "seed": 44,
+  "num_sequences": 500,
+  "num_types": 4,
+  "expectation": "caso favoravel: mistura de curto e longo alcance"
+}

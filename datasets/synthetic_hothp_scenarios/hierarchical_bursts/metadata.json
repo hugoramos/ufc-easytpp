@@ -1,0 +1,7 @@
+{
+  "scenario": "hierarchical_bursts",
+  "seed": 45,
+  "num_sequences": 500,
+  "num_types": 4,
+  "expectation": "caso favoravel: clusters locais com gaps longos"
+}

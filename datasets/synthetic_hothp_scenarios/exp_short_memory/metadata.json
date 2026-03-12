@@ -1,0 +1,7 @@
+{
+  "scenario": "exp_short_memory",
+  "seed": 42,
+  "num_sequences": 500,
+  "num_types": 4,
+  "expectation": "controle negativo: memoria curta e efeitos locais"
+}
