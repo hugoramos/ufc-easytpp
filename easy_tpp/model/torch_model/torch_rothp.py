@@ -150,9 +150,8 @@ class RoTHP(THP):
         nn.init.xavier_normal_(self.factor_intensity_base)
         nn.init.xavier_normal_(self.factor_intensity_decay)
 
-        # convert hidden vectors into event-type-sized vector
         self.layer_intensity_hidden = nn.Linear(self.d_model, self.num_event_types)
-        self.softplus = ScaledSoftplus(self.num_event_types)   # learnable mark-specific beta
+        self.softplus = ScaledSoftplus(self.num_event_types)  
 
         # Add MLP layer
         # Equation (5) (THP)
@@ -183,7 +182,7 @@ class RoTHP(THP):
         Returns:
             tensor: hidden states at event times.
         """
-        # [batch_size, seq_len, dim]
+        # [batch_size, seq_len, dim/2]
         cos, sin = self.rotary_emb(time_seqs)
         enc_output = self.layer_type_emb(type_seqs)
 
