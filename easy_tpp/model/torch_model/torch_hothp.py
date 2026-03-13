@@ -48,67 +48,52 @@ def hyperbolic_attention(query, key, value, time_seqs, thetas, theta_prime,
                          mask=None, dropout=None):
     """Scaled dot-product attention with HoPE kernel (Eq. 9 of Dai et al., 2025).
 
-    Computes  score(m,n) = exp(-delta*theta') * (q_m^T B(delta*theta) k_n) / sqrt(d)
-    where delta = t_m - t_n, directly in the relative space.
+    Computes  score(m,n) = exp(-|d|*theta') * q^T B(d*theta) k / sqrt(dk)
+    where d = t_m - t_n, directly in the relative space.
 
-    B(delta*theta) is the Lorentz boost applied per 2D dimension pair:
-        B(a) = [[cosh(a), sinh(a)],
-                [sinh(a), cosh(a)]]
-
-    This avoids the numerical instability of computing B(m)*B'(n) from
-    large absolute positions, since delta is bounded by the sequence span.
+    To avoid overflow in float16 (AMP), we fuse the exponential decay
+    into cosh/sinh using the identities:
+        exp(-|d|*θ') * cosh(d*θ_j) = (exp(-|d|*(θ'-θ_j)) + exp(-|d|*(θ'+θ_j))) / 2
+        exp(-|d|*θ') * sinh(d*θ_j) = sign(d) * (exp(-|d|*(θ'-θ_j)) - exp(-|d|*(θ'+θ_j))) / 2
+    Since θ' > θ_j for all j (Eq. 12), both exponents are negative and
+    all intermediate values stay bounded.
     """
     B, H, L, d_k = query.shape
     half_d = d_k // 2
 
-    # Pairwise temporal distances: delta(m,n) = t_m - t_n
     t_m = time_seqs.unsqueeze(-1)      # [B, L, 1]
     t_n = time_seqs.unsqueeze(-2)      # [B, 1, L]
     delta = (t_m - t_n)                # [B, L, L]
 
-    # thetas: [half_d] -> [1, 1, 1, half_d]
-    th = thetas.view(1, 1, 1, -1)
+    abs_delta = delta.abs().unsqueeze(-1)              # [B, L, L, 1]
+    sign_delta = delta.sign().unsqueeze(-1)            # [B, L, L, 1]
+    th = thetas.view(1, 1, 1, -1)                     # [1, 1, 1, half_d]
 
-    # args: [B, L, L, half_d]  -- one value per (query, key, dimension-pair)
-    args = delta.unsqueeze(-1) * th
-    cosh_d = torch.cosh(args)          # [B, L, L, half_d]
-    sinh_d = torch.sinh(args)          # [B, L, L, half_d]
+    # Fused damped-cosh and damped-sinh (never overflows)
+    exp_slow = torch.exp(-abs_delta * (theta_prime - th))   # exp(-|d|*(θ'-θ_j))
+    exp_fast = torch.exp(-abs_delta * (theta_prime + th))   # exp(-|d|*(θ'+θ_j))
 
-    # Split Q, K into even/odd pairs
+    dcosh = (exp_slow + exp_fast) * 0.5                     # [B, L, L, half_d]
+    dsinh = sign_delta * (exp_slow - exp_fast) * 0.5        # [B, L, L, half_d]
+
     q1 = query[:, :, :, 0::2]         # [B, H, L, half_d]
     q2 = query[:, :, :, 1::2]
     k1 = key[:, :, :, 0::2]
     k2 = key[:, :, :, 1::2]
-
-    # For each query position m and key position n, compute:
-    #   q_m^T B(delta*theta) k_n
-    # = sum_j [ (q1_m*k1_n + q2_m*k2_n)*cosh(delta*theta_j)
-    #         + (q1_m*k2_n + q2_m*k1_n)*sinh(delta*theta_j) ]
-    #
-    # q1_m: [B, H, L_q, half_d]  x  k1_n: [B, H, L_k, half_d]
-    # We need the outer product over the L dimensions.
-    # q1_m[..., i, :] * k1_n[..., j, :] -> [B, H, L, L, half_d]
 
     q1_exp = q1.unsqueeze(3)           # [B, H, L, 1, half_d]
     q2_exp = q2.unsqueeze(3)
     k1_exp = k1.unsqueeze(2)           # [B, H, 1, L, half_d]
     k2_exp = k2.unsqueeze(2)
 
-    # Symmetric and anti-symmetric products
     sym  = q1_exp * k1_exp + q2_exp * k2_exp   # [B, H, L, L, half_d]
-    asym = q1_exp * k2_exp + q2_exp * k1_exp   # [B, H, L, L, half_d]
+    asym = q1_exp * k2_exp + q2_exp * k1_exp
 
-    # cosh_d, sinh_d: [B, L, L, half_d] -> [B, 1, L, L, half_d]
-    cosh_d = cosh_d.unsqueeze(1)
-    sinh_d = sinh_d.unsqueeze(1)
+    dcosh = dcosh.unsqueeze(1)         # [B, 1, L, L, half_d]
+    dsinh = dsinh.unsqueeze(1)
 
-    # Full dot product per (m, n) pair, summed over dimension pairs
-    scores = (sym * cosh_d + asym * sinh_d).sum(dim=-1)  # [B, H, L, L]
+    scores = (sym * dcosh + asym * dsinh).sum(dim=-1)  # [B, H, L, L]
     scores = scores / math.sqrt(d_k)
-
-    # Multiplicative decay: exp(-|delta| * theta')  (Eq. 9)
-    decay = torch.exp(-delta.abs().unsqueeze(1) * theta_prime)  # [B, 1, L, L]
-    scores = scores * decay
 
     if mask is not None:
         scores = scores.masked_fill(mask > 0, -1e4)
@@ -217,16 +202,16 @@ class HoTHP(THP):
         ])
 
     def _normalize_timestamps(self, time_seqs):
-        """Map raw timestamps so that the median inter-event gap is ~1.0.
+        """Map raw timestamps so that the mean inter-event gap is ~1.0.
 
-        This keeps cosh/sinh arguments bounded while preserving relative
-        temporal structure, analogous to the paper's integer positions.
+        This keeps the arguments to cosh/sinh bounded while preserving
+        relative temporal structure, analogous to integer positions.
         """
         t_min = time_seqs.min(dim=-1, keepdim=True).values
         t_shifted = time_seqs - t_min
         diffs = t_shifted[:, 1:] - t_shifted[:, :-1]
-        median_gap = diffs.median(dim=-1, keepdim=True).values.clamp(min=1e-6)
-        return t_shifted / median_gap
+        mean_gap = diffs.mean(dim=-1, keepdim=True).clamp(min=1e-6)
+        return t_shifted / mean_gap
 
     def forward(self, time_seqs, type_seqs, attention_mask):
         norm_times = self._normalize_timestamps(time_seqs)
