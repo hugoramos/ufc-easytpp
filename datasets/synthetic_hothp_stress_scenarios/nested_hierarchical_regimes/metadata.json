@@ -1,0 +1,7 @@
+{
+  "scenario": "nested_hierarchical_regimes",
+  "seed": 43,
+  "num_sequences": 800,
+  "num_types": 6,
+  "expectation": "caso matador: tres niveis aninhados de dependencia temporal"
+}

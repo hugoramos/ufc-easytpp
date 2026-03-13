@@ -1,0 +1,7 @@
+{
+  "scenario": "delayed_hierarchical_retrieval",
+  "seed": 42,
+  "num_sequences": 800,
+  "num_types": 6,
+  "expectation": "caso matador: alvo tardio depende de um evento ancora antigo e ha muitos distratores locais"
+}

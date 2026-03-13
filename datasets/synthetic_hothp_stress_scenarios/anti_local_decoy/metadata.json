@@ -1,0 +1,7 @@
+{
+  "scenario": "anti_local_decoy",
+  "seed": 44,
+  "num_sequences": 800,
+  "num_types": 6,
+  "expectation": "caso matador: eventos recentes sao enganosos e o sinal util vem do passado distante"
+}

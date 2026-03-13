@@ -1,0 +1,7 @@
+{
+  "scenario": "long_range_delayed_triggers",
+  "seed": 45,
+  "num_sequences": 800,
+  "num_types": 6,
+  "expectation": "caso matador: triggers produzem efeitos relevantes apenas apos longos atrasos"
+}
