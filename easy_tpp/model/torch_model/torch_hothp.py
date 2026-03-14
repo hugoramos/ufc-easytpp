@@ -204,14 +204,31 @@ class HoTHP(THP):
     def _normalize_timestamps(self, time_seqs):
         """Map raw timestamps so that the mean inter-event gap is ~1.0.
 
-        This keeps the arguments to cosh/sinh bounded while preserving
-        relative temporal structure, analogous to integer positions.
+        Uses prefix-only normalization: event i is divided by the mean gap
+        of events 0..i-1, so no future information leaks into position i.
+
+        For position 0: t_shifted[0] == 0 always, divisor = 1 (irrelevant).
+        For position i >= 1: divisor = mean(diffs[0..i-1])
+                           = cumsum(diffs)[i-1] / i
         """
-        t_min = time_seqs.min(dim=-1, keepdim=True).values
-        t_shifted = time_seqs - t_min
-        diffs = t_shifted[:, 1:] - t_shifted[:, :-1]
-        mean_gap = diffs.mean(dim=-1, keepdim=True).clamp(min=1e-6)
-        return t_shifted / mean_gap
+        B, T = time_seqs.shape
+        # Use first event as reference — causally valid and equal to min for sorted seqs.
+        t_shifted = time_seqs - time_seqs[:, :1]
+
+        if T <= 1:
+            return t_shifted
+
+        diffs = t_shifted[:, 1:] - t_shifted[:, :-1]          # [B, T-1]
+        cumsum = torch.cumsum(diffs, dim=-1)                    # [B, T-1]
+        counts = torch.arange(1, T, device=time_seqs.device,
+                               dtype=time_seqs.dtype).unsqueeze(0)  # [1, T-1]
+        prefix_mean = cumsum / counts                           # [B, T-1]
+
+        # divisor[0] = 1.0 (t_shifted[:,0] is always 0); divisor[i] = prefix_mean[i-1]
+        ones = torch.ones(B, 1, device=time_seqs.device, dtype=time_seqs.dtype)
+        divisor = torch.cat([ones, prefix_mean], dim=-1).clamp(min=1e-6)  # [B, T]
+
+        return t_shifted / divisor
 
     def forward(self, time_seqs, type_seqs, attention_mask):
         norm_times = self._normalize_timestamps(time_seqs)
