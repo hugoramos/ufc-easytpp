@@ -1,3 +1,4 @@
+from notebooks.Extrapolation_and_Attention_Analysis import attention_fixed
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,103 +10,119 @@ from easy_tpp.model.torch_model.torch_thp import THP
 
 
 class HyperbolicRotaryEmbedding(nn.Module):
-    """Adapts HoPE (Dai et al., 2025) from discrete token positions to continuous
-    event timestamps in Temporal Point Processes.
-
-    The original HoPE applies B(m*theta) to Q and B'(n*theta) to K at absolute
-    positions m, n, relying on B(m)*B'(n) = B(m-n).  This identity breaks
-    numerically for float32/64 when |m*theta| > ~15 because cosh and sinh grow
-    exponentially and cosh^2 - sinh^2 = 1 no longer holds in finite precision.
-
-    Instead, we compute B(delta*theta) directly from relative temporal
-    distances delta = t_m - t_n inside the attention function.  This is
-    algebraically equivalent to the paper's Eq. 9 but avoids catastrophic
-    cancellation from absolute positions.
-
-    theta_prime is constrained to satisfy theta' > max(theta_i) (Eq. 12),
-    ensuring monotonic decay of attention scores with temporal distance.
-    """
-
     def __init__(self, dim, max_freq=10000):
         super().__init__()
         self.dim = dim
         self.max_freq = max_freq
 
+        # frequências θⱼ = 10000^(-2(j-1)/d) — mesma fórmula do RoPE (Eqacao 17 do RoTHP)
+        # cada par de dimensões (2j, 2j+1) recebe uma frequência diferente
         thetas = torch.tensor([
             max_freq ** (-2.0 * (j - 1) / dim) for j in range(1, dim // 2 + 1)
         ])
         self.register_buffer('thetas', thetas)
 
-        # theta' > max(theta_i) = 1.0  (Eq. 12)
+        # θ' é o coeficiente de decaimento global (Eqacoes 9, 10, 11 e 12 do HoPE)
+        # tenho que garantir que θ' > max(θⱼ).. entan treinar outra variavel (theta_prime_raw)
         self.theta_prime_raw = nn.Parameter(torch.tensor(0.5))
 
     @property
     def theta_prime(self):
+        # adicionadno uma mixaria pra garantir a condição da equacao 12 do HoPE
+        # + max(θⱼ) + 1e-4 garante θ' > max(θⱼ)
         return F.softplus(self.theta_prime_raw) + self.thetas.max().item() + 1e-4
 
 
-def hyperbolic_attention(query, key, value, time_seqs, thetas, theta_prime,
-                         mask=None, dropout=None):
-    """Scaled dot-product attention with HoPE kernel (Eq. 9 of Dai et al., 2025).
+def hyperbolic_attention(q, k, v, time_seqs, thetas, theta_prime, mask=None, dropout=None):
+    # q, k, v tem shape [B, H, L, d_k]:
+    # B = batch size
+    # H = heads
+    # L = numero de eventos 
+    # d_k = dimensão de cada head
+    d_k = q.shape[-1]
 
-    Computes  score(m,n) = exp(-|d|*theta') * q^T B(d*theta) k / sqrt(dk)
-    where d = t_m - t_n, directly in the relative space.
+    # calcular delta dos eventos em relação aos outros eventos (equacao 9 do HoPE)
+    # unsqueeze(-1) transforma [B, L] em [B, L, 1] (coluna)
+    # unsqueeze(-2) transforma [B, L] em [B, 1, L] (linha)
+    # subtrair os dois pra gerar matriz diferenças [B, L, L]
+    delta = time_seqs.unsqueeze(-1) - time_seqs.unsqueeze(-2)  # [B, L, L]  delta[i,j] = t_i - t_j
 
-    To avoid overflow in float16 (AMP), we fuse the exponential decay
-    into cosh/sinh using the identities:
-        exp(-|d|*θ') * cosh(d*θ_j) = (exp(-|d|*(θ'-θ_j)) + exp(-|d|*(θ'+θ_j))) / 2
-        exp(-|d|*θ') * sinh(d*θ_j) = sign(d) * (exp(-|d|*(θ'-θ_j)) - exp(-|d|*(θ'+θ_j))) / 2
-    Since θ' > θ_j for all j (Eq. 12), both exponents are negative and
-    all intermediate values stay bounded.
-    """
-    B, H, L, d_k = query.shape
-    half_d = d_k // 2
+    # separamos magnitude e sinal porque vamos usar abs_delta nas exponenciais
+    # (para garantir estabilidade numérica — ver passo 2)
+    # o sinal precisa ser reintroduzido no sinh porque sinh(-x) = -sinh(x)
+    abs_delta       = delta.abs().unsqueeze(-1)    # [B, L, L, 1]
+    sign_delta      = delta.sign().unsqueeze(-1)   # [B, L, L, 1]
+    thetas_expanded = thetas.view(1, 1, 1, -1)     # [1, 1, 1, d_k//2] — para broadcast com abs_delta
 
-    t_m = time_seqs.unsqueeze(-1)      # [B, L, 1]
-    t_n = time_seqs.unsqueeze(-2)      # [B, 1, L]
-    delta = (t_m - t_n)                # [B, L, L]
+    # a Eq. 9 multiplica o kernel da Eq. 5 por um fator de decaimento global e^(-|δ|θ'):                                                                      
+    #   kernel(i,j) = e^(-|δ|θ') * cosh(δθⱼ)   e   e^(-|δ|θ') * sinh(δθⱼ)   
+    # 
+    #   cosh(x) = (e^x + e^-x) / 2                                                                                                                            
+    #   sinh(x) = (e^x - e^-x) / 2                                                                                    
+    #                                                                                                                                                         
+    # PROBLEMA: cosh(x) cresce como e^x — para δ grande (eventos muito espaçados), cosh(δθⱼ)                                                                  
+    # explode antes mesmo de ser multiplicado pelo decaimento e^(-|δ|θ').                                                                                     
+    #                                                                                                                                                         
+    # SOLUÇÃO: substituir a definição  cosh(x) = (e^x + e^-x)/2  e distribuir o e^(-|δ|θ') para dentro:                                                       
+    #                                                                                                                                                         
+    #   e^(-|δ|θ') * cosh(|δ|θⱼ)                                                                                                                              
+    #     = e^(-|δ|θ') * (e^(|δ|θⱼ) + e^(-|δ|θⱼ)) / 2      ← definição de cosh                                                                                
+    #     = (e^(-|δ|θ')*e^(|δ|θⱼ)  +  e^(-|δ|θ')*e^(-|δ|θⱼ)) / 2   ← distribui                                                                                
+    #     = (e^(-|δ|(θ'-θⱼ))  +  e^(-|δ|(θ'+θⱼ)))       / 2   ← junta expoentes                                                                         
+    #                                                                                                                                                         
+    #   e^(-|δ|θ') * sinh(δθⱼ)  →  mesma conta, sinal vira sign(δ)*(e^(-|δ|(θ'-θⱼ)) - e^(-|δ|(θ'+θⱼ)))/2                                                      
+    #                                                                                                                                                         
+    # Agora ambos os expoentes são negativos (θ' > θⱼ garante θ'-θⱼ > 0) → sem overflow.     
+    exp_minus = torch.exp(-abs_delta * (theta_prime - thetas_expanded))  # e^(-|δ|(θ'-θⱼ))
+    exp_plus = torch.exp(-abs_delta * (theta_prime + thetas_expanded))  # e^(-|δ|(θ'+θⱼ)) 
+    decay_cosh = (exp_minus + exp_plus) / 2                   # = e^(-|δ|θ') * cosh(δθⱼ)
+    decay_sinh = sign_delta * (exp_minus - exp_plus) / 2      # = e^(-|δ|θ') * sinh(δθⱼ)
 
-    abs_delta = delta.abs().unsqueeze(-1)              # [B, L, L, 1]
-    sign_delta = delta.sign().unsqueeze(-1)            # [B, L, L, 1]
-    th = thetas.view(1, 1, 1, -1)                     # [1, 1, 1, half_d]
+    # separar q e k em pares de dimensões (igual ao RoPE) 
+    # a Eq. 5 define B como uma matriz 2x2 que atua sobre pares (x1, x2)
+    # então separamos as dimensões pares (índices 0,2,4,...) e ímpares (1,3,5,...)
+    q1 = q[..., 0::2]  # dimensões pares   [B, H, L, d_k//2]
+    q2 = q[..., 1::2]  # dimensões ímpares [B, H, L, d_k//2]
+    k1 = k[..., 0::2]
+    k2 = k[..., 1::2]
 
-    # Fused damped-cosh and damped-sinh (never overflows)
-    exp_slow = torch.exp(-abs_delta * (theta_prime - th))   # exp(-|d|*(θ'-θ_j))
-    exp_fast = torch.exp(-abs_delta * (theta_prime + th))   # exp(-|d|*(θ'+θ_j))
+    # expande q e k para calcular todas as combinações (i, j) via broadcasting
+    # q fica com dimensão 1 no lugar das keys, k fica com dimensão 1 no lugar das queries
+    q1_exp, q2_exp = q1.unsqueeze(3), q2.unsqueeze(3)  # [B, H, L, 1, d_k//2]
+    k1_exp, k2_exp = k1.unsqueeze(2), k2.unsqueeze(2)  # [B, H, 1, L, d_k//2]
 
-    dcosh = (exp_slow + exp_fast) * 0.5                     # [B, L, L, half_d]
-    dsinh = sign_delta * (exp_slow - exp_fast) * 0.5        # [B, L, L, half_d]
+    # expandir q^T B k manualmente (Eq. 5 e 9 do paper) ---
+    # B(θ,δ) = [[cosh(δθ), sinh(δθ)],   (Eq. 5)
+    #           [sinh(δθ), cosh(δθ)]]
+    #
+    # multiplicando [q1, q2] · B:
+    #   primeira componente:  q1*cosh(δθ) + q2*sinh(δθ)
+    #   segunda componente:   q1*sinh(δθ) + q2*cosh(δθ)
+    #
+    # multiplicando o resultado por [k1, k2]^T:
+    #   = (q1*cosh + q2*sinh)*k1 + (q1*sinh + q2*cosh)*k2
+    #   = (q1*k1 + q2*k2)*cosh  +  (q1*k2 + q2*k1)*sinh
+    #          cosh                      sinh
+    parte_cosh = q1_exp * k1_exp + q2_exp * k2_exp  # coeficiente que multiplica cosh [B, H, L, L, d_k//2]
+    parte_sinh = q1_exp * k2_exp + q2_exp * k1_exp  # coeficiente que multiplica sinh
 
-    q1 = query[:, :, :, 0::2]         # [B, H, L, half_d]
-    q2 = query[:, :, :, 1::2]
-    k1 = key[:, :, :, 0::2]
-    k2 = key[:, :, :, 1::2]
+    # score final
+    # junta as partes com seus respectivos kernels e soma sobre os d_k//2 pares de dimensões (Eq. 14)
+    # depois divide por sqrt(d_k) — normalização padrão do scaled dot-product attention
+    att_scores = (parte_cosh * decay_cosh.unsqueeze(1) + parte_sinh * decay_sinh.unsqueeze(1)).sum(dim=-1)  # [B, H, L, L]
+    att_scores = att_scores / math.sqrt(d_k)
 
-    q1_exp = q1.unsqueeze(3)           # [B, H, L, 1, half_d]
-    q2_exp = q2.unsqueeze(3)
-    k1_exp = k1.unsqueeze(2)           # [B, H, 1, L, half_d]
-    k2_exp = k2.unsqueeze(2)
-
-    sym  = q1_exp * k1_exp + q2_exp * k2_exp   # [B, H, L, L, half_d]
-    asym = q1_exp * k2_exp + q2_exp * k1_exp
-
-    dcosh = dcosh.unsqueeze(1)         # [B, 1, L, L, half_d]
-    dsinh = dsinh.unsqueeze(1)
-
-    scores = (sym * dcosh + asym * dsinh).sum(dim=-1)  # [B, H, L, L]
-    scores = scores / math.sqrt(d_k)
-
+    # zera atenção para eventos futuros (máscara causal) e aplica softmax para virar pesos
     if mask is not None:
-        scores = scores.masked_fill(mask > 0, -1e4)
-    p_attn = torch.softmax(scores, dim=-1)
+        att_scores = att_scores.masked_fill(mask > 0, -1e4)
+    att_weights = torch.softmax(att_scores, dim=-1)
     if dropout is not None:
-        p_attn = dropout(p_attn)
-    return torch.matmul(p_attn, value), p_attn
+        att_weights = dropout(att_weights)
+    return torch.matmul(att_weights, v), att_weights
 
 
 class HyperbolicMultiHeadAttention(MultiHeadAttention):
-    def forward(self, query, key, value, mask, time_seqs=None, thetas=None,
-                theta_prime=None, output_weight=False):
+    def forward(self, query, key, value, mask, time_seqs=None, thetas=None,theta_prime=None, output_weight=False):
         if mask is not None:
             mask = mask.unsqueeze(1)
         nbatches = query.size(0)
@@ -115,12 +132,11 @@ class HyperbolicMultiHeadAttention(MultiHeadAttention):
             for lin_layer, x in zip(self.linears, (query, key, value))
         ]
 
-        if time_seqs is not None and thetas is not None and theta_prime is not None:
-            x, attn_weight = hyperbolic_attention(
-                query, key, value, time_seqs, thetas, theta_prime,
-                mask=mask, dropout=self.dropout)
-        else:
-            x, attn_weight = attention(query, key, value, mask=mask, dropout=self.dropout)
+        #
+        # diferente do rothp, nao transformo q e k
+        #
+
+        x, attn_weight = hyperbolic_attention(query, key, value, time_seqs, thetas, theta_prime,mask=mask, dropout=self.dropout)
 
         x = x.transpose(1, 2).contiguous() \
             .view(nbatches, -1, self.n_head * self.d_k)
@@ -134,31 +150,21 @@ class HyperbolicMultiHeadAttention(MultiHeadAttention):
 class HyperbolicEncoderLayer(EncoderLayer):
     def forward(self, x, mask, time_seqs=None, thetas=None, theta_prime=None):
         if self.use_residual:
-            x = self.sublayer[0](x, lambda x: self.self_attn(
-                x, x, x, mask, time_seqs=time_seqs, thetas=thetas, theta_prime=theta_prime))
+            x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, mask, time_seqs=time_seqs, thetas=thetas, theta_prime=theta_prime))
             if self.feed_forward is not None:
                 return self.sublayer[1](x, self.feed_forward)
-            return x
+            else:
+                return x
         else:
             x = self.self_attn(x, x, x, mask, time_seqs=time_seqs, thetas=thetas, theta_prime=theta_prime)
             if self.feed_forward is not None:
                 return self.feed_forward(x)
-            return x
+            else:
+                return x
 
 
 class HoTHP(THP):
-    """Hyperbolic Position Embedding-based Transformer Hawkes Process.
-
-    Applies HoPE (Dai et al., 2025) to the TPP/Hawkes Process domain.
-    Like RoTHP, temporal information is injected through the attention kernel
-    rather than through additive temporal encoding.  HoPE uses hyperbolic
-    (Lorentz) boosts instead of trigonometric rotations, producing
-    monotonically decaying attention scores with temporal distance.
-
-    Implementation note: we compute the HoPE kernel directly in relative
-    time-space (delta = t_m - t_n) to avoid the catastrophic floating-point
-    cancellation that occurs when applying absolute Lorentz boosts B(m), B'(n)
-    with large timestamps and then relying on B(m)*B'(n) = B(m-n).
+    """Torch implementation of Hyperbolic Rotary Position Embedding-based Transformer Hawkes Process (HoTHP).
     """
 
     def __init__(self, model_config):
@@ -171,18 +177,19 @@ class HoTHP(THP):
         self.n_head = model_config.num_heads
         self.dropout = model_config.dropout_rate
 
+        # mudei do RoTHP para o HoTHP
         self.hope_emb = HyperbolicRotaryEmbedding(self.d_model // self.n_head)
 
-        self.factor_intensity_base = nn.Parameter(
-            torch.empty([1, self.num_event_types], device=self.device))
-        self.factor_intensity_decay = nn.Parameter(
-            torch.empty([1, self.num_event_types], device=self.device))
+        self.factor_intensity_base = nn.Parameter(torch.empty([1, self.num_event_types], device=self.device))
+        self.factor_intensity_decay = nn.Parameter(torch.empty([1, self.num_event_types], device=self.device))
         nn.init.xavier_normal_(self.factor_intensity_base)
         nn.init.xavier_normal_(self.factor_intensity_decay)
 
         self.layer_intensity_hidden = nn.Linear(self.d_model, self.num_event_types)
         self.softplus = ScaledSoftplus(self.num_event_types)
 
+        # Add MLP layer
+        # Equation (5) (THP)
         self.feed_forward = nn.Sequential(
             nn.Linear(self.d_model, self.d_model * 2),
             nn.ReLU(),
@@ -192,8 +199,7 @@ class HoTHP(THP):
         self.stack_layers = nn.ModuleList([
             HyperbolicEncoderLayer(
                 self.d_model,
-                HyperbolicMultiHeadAttention(
-                    self.n_head, self.d_model, self.d_model, self.dropout,
+                HyperbolicMultiHeadAttention(self.n_head, self.d_model, self.d_model, self.dropout,
                     output_linear=False),
                 use_residual=False,
                 feed_forward=self.feed_forward,

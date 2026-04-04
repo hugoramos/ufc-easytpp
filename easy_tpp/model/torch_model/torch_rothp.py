@@ -14,13 +14,10 @@ class RotaryEmbedding(nn.Module):
         self.max_freq = max_freq
         
         # equação 17 do RoTHP: theta_j = 10000^(-2(j-1)/d)
-        thetas = []
-        for j in range(1, dim // 2 + 1):
-            theta_j = max_freq ** (-2 * (j - 1) / dim)
-            thetas.append(theta_j)
-
-        # self.thetas = torch.tensor(thetas) (erro no colab.. Unexpected key(s) in state_dict: "rotary_emb.thetas")
-        self.register_buffer('thetas', torch.tensor(thetas))
+        thetas = torch.tensor([
+            max_freq ** (-2.0 * (j - 1) / dim) for j in range(1, dim // 2 + 1)
+        ])
+        self.register_buffer('thetas', thetas)
 
     def forward(self, time_seqs):
         # time_seqs original: [batch, seq_len]
@@ -95,16 +92,9 @@ class RotaryMultiHeadAttention(MultiHeadAttention):
             .view(nbatches, -1, self.n_head * self.d_k)
 
         if self.output_linear:
-            if output_weight:
-                return self.linears[-1](x), attn_weight
-            else:
-                return self.linears[-1](x)
+            return (self.linears[-1](x), attn_weight) if output_weight else self.linears[-1](x)
         else:
-            if output_weight:
-                return x, attn_weight
-            else:
-                return x
-
+            return (x, attn_weight) if output_weight else x
 
 class RotaryEncoderLayer(EncoderLayer):
     def forward(self, x, mask, cos=None, sin=None):
