@@ -1,4 +1,3 @@
-from notebooks.Extrapolation_and_Attention_Analysis import attention_fixed
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
