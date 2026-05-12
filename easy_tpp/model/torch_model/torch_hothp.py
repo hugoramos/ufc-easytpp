@@ -207,14 +207,6 @@ class HoTHP(THP):
         ])
 
     def _normalize_timestamps(self, time_seqs):
-        """Pass through timestamps already normalized by to_tensors (mean gap = 1.0).
-
-        The upstream pipeline (to_tensors) already divides all inter-event gaps
-        by their sequence-level mean, so time_seqs arrives with mean gap ~1.0.
-        The previous prefix-mean divisor algebraically cancelled to [0,1,2,...,T-1],
-        destroying temporal information. This version preserves the structure.
-        """
-        # time_seqs already starts at 0 after to_tensors; just ensure it.
         return time_seqs - time_seqs[:, :1]
 
     def forward(self, time_seqs, type_seqs, attention_mask):
