@@ -1,0 +1,455 @@
+\chapter{Fundamentação teórica}
+\label{cap:fundamentacao-teorica}
+
+Entender o comportamento de sequencias de eventos ao longo de tempo e como eventos influenciam uns aos outros requer o uso de ferramentas matemáticas complexas. Este capitulo irá apresentar a fundamentação teórica necessária para suportar o modelo proposto. Vamos começar com modelagem de processos pontuais, necessários para entender como eventos acontecem em tempo continuo de forma irregular. Em seguida, veremos Processo de Hawkes, que mostra como eventos podem afetar a probabilidade de eventos futuros. Então veremos processos de Hawkes utilizando modelos neurais, seguidos por modelos utilizando transformers. Por fim, passaremos pelas técnicas recentes que motivaram este trabalho, como rotatory positional embeddings, modelagem residual e score-matching. 
+
+\section{Processos de Poisson}\label{sec:processos-de-poisson}
+
+    O Processo de Poisson é um objeto matemático que consiste de pontos aleatórios em um espaço matemático com a importante característica de não dependência entre os pontos. Esse modelo é amplamente utilizado em áreas como teoria das filas, astronomia, biologia e análise de sobrevivência. O nome deriva do fato de que os pontos, ou eventos, ocorrem seguindo uma distribuição de Poisson.
+    
+    Processo de Poisson é a forma mais comum de Processos Pontuais. \citeonline{daley_introduction_2003} definem um Processo de Poisson estacionário pela equação a seguir, onde usamos $N(a_i, b_i]$ para representar o número de eventos do processo. 
+    \begin{equation}
+        \Pr\{N((a_i, b_i]) = n_i,\; i = 1, \ldots, k\}
+        = 
+        \prod_{i=1}^{k}
+        \frac{[\lambda (b_i - a_i)]^{n_i}}{n_i!}\,
+        e^{-\lambda (b_i - a_i)}.
+        \label{eq:start-poisson}
+    \end{equation}
+
+    Esta definição engloba três aspectos importantes: $(\mathrm{i})$ o número de pontos em cada intervalo finito $(a_i,b_i]$ possui uma distribuição de Poisson; $(\mathrm{ii})$ o número de pontos em intervalos disjuntos são variáveis aleatórias independentes; e $(\mathrm{iii})$ as distribuições são estacionárias, ou seja, dependem apenas dos comprimentos $b_i-a_i$ dos intervalos. A constante $\lambda$ é a taxa média ou a densidade média dos eventos do processo. Nas subseções a seguir veremos que $\lambda$ é também a intensidade com a qual os eventos ocorrem.
+
+    Considerando o caso especial de apenas um intervalo $k=1$, temos  $(a_i, b_i] = (0,T]$. Então, o tamanho do intervalo é $b_i-a_i=T$. Substituindo na Equação \ref{eq:start-poisson}, temos: 
+
+    \begin{equation}
+        \Pr\{N((0,T]) = n_1\}
+        = \frac{[\lambda T]^{n_1}}{n_1!}\,
+        e^{-\lambda T}.
+        \label{eq:poisson-lambda}
+    \end{equation}
+        
+    Na Equação \ref{eq:poisson-lambda}, substituindo $(0,T]$ por $N$ e $\lambda T$ por $\Lambda$, temos a forma clássica da distribuição de Poisson associada ao Processo de Poisson:
+    \begin{equation}
+        \Pr(N = n)
+        =
+        \frac{\Lambda^{n}}{n!}\, e^{-\Lambda}.
+        \label{eq:poisson}
+    \end{equation}
+
+    A Equação \ref{eq:3} explicita a relação entre a distribuição de Poisson e o Processo de Poisson: o numero de eventos observados em qualquer intervalo de tamanho T é Poisson com a média $\Lambda = \lambda T$. Em outras palavras, o Processo de Poisson é uma forma de gerar tempos de eventos cuja contagem satisfaz a distribuição de Poisson e que sejam independentes e estacionários. Processos de Poisson são a forma mais fundamental de Processos Pontuais Temporais, que iremos falar na próxima seção. 
+
+    A Figura \ref{fig:poisson} ilustra um Processo de Poisson homogêneo no intervalo $[0,T]$. O eixo horizontal representa o tempo e cada traço vertical representa a ocorrência de um evento gerado pelo processo. Embora os eventos pareçam irregulares, eles foram gerados de modo que o tempo de espera entre um evento e outro seja exponencial $1/\lambda$ e independente, onde $\lambda$ é constante e portanto o número de eventos esperado em um determinado intervalo $T$ é definido por $\lambda T$. Isso ilustra a intuição por trás do processo de Poisson que é a ocorrência aleatória de eventos, independentes e seguidos por uma taxa constante $\lambda$.
+    
+    \begin{figure}[h!]
+		\centering
+		\captionsetup{width=14cm}%Da mesma largura que a figura
+		\Caption{\label{fig:poisson}Processo de Poisson.}        
+		\UFCfig{}{
+			\includegraphics[width=14cm]{figuras/figura-poisson.png}
+		}{
+			}	
+	\end{figure}
+
+\section{Processos Pontuais Temporais}\label{sec:processos-pontuais-temporais}
+
+    Processos Pontuais Temporais (TPP) são modelos probabilísticos desenhados para descrever sequências de eventos discretos que acontecem em tempo contínuo \cite{zuo_transformer_2021}. Diferentemente de modelos discretos, que assumem que os eventos acontecem em intervalos de tempo conhecidos, TPPs permitem lidar com eventos que acontecem em tempos irregulares, arbitrários. Isso os tornam particularmente uteis em domínios onde o momento da ocorrência do evento é tão importante quanto o evento em si. 
+
+    Muitas cenários geram tais sequências de eventos, desde de picos de neurônios em neurociência, compra e venda de ações no mercado financeiro, tuítes em redes sociais, etc \cite{zhou_advances_2025}. Essas sequências de eventos, composta por eventos assíncronos, geralmente influenciam uns aos outros, tornando o estudo desses fenômenos não apenas complexo como também necessário. 
+
+    Os TPPs são formalmente definidos por uma função de intensidade condicional $\lambda(t \mid \mathcal{H}_t)$, onde $\mathcal{H}_t$ é o histórico de eventos até o tempo $t$. A intensidade é a taxa instantânea pela qual espera-se que um evento ocorra em um tempo $t$, dado os eventos passados.
+
+    Uma variação dos TPPs é a existência de \textit{marcas}, ou seja, tipos de eventos, onde a sequência passa a ser descrita como $X = \{(t_1, m_1), \ldots, (t_N, m_N)\}$, onde $N$ representa o número de eventos e cada $m_i$ é a marca (tipo) associado ao evento $i$. 
+
+    A distribuição de um TPP com marcas $K$ pode ser caracterizado por $K$ funções de intensidade condicionais $\lambda_k(t \mid \mathcal{H}_t)$ (uma para cada marca $k$) e é definida como 
+    \begin{equation}
+        \lambda_k(t \mid \mathcal{H}_t)
+        = \lim_{\Delta t \to 0}
+        \frac{
+        \Pr(\text{evento do tipo } k \text{ em } [t, t + \Delta t) \mid \mathcal{H}_t)
+        }{
+        \Delta t
+        }.
+    \end{equation}
+    Perceba que a definição acima também pode ser aplicada para TPPs sem marcas, apenas definindo $K = 1$ \cite{shchur_neural_2021}.
+
+    \subsection{Função custo}\label{sec:funcao-custo}
+
+    Para processos pontuais, dada a observação de todos os eventos no intervalo $[0,T]$, utilizamos o logaritmo da verissimilhança conforme equação abaixo: 
+    \begin{equation}
+        \mathcal{L} = \sum_{i:t_i \leq T} \log \lambda_{k_i}(t_i) - \underbrace{\int_{t=0}^{T} \lambda(t)dt}_{\text{Chamemos de $\Lambda$}}. \label{eq:log_likelihood_final}
+    \end{equation}
+
+    Vamos derivar esta função de acordo com \citeonline{mei_neural_2017}. Primeiro, define-se $N(t) = |\{h : t_h \leq t\}|$ como a contagem de eventos (de qualquer tipo) anteriores ao tempo $t$. Dado o histórico passado $\mathcal{H}_i$, o número de eventos em $(t_{i-1}, t]$ é $\Delta N (t_{i-1}, t) \overset{\text{def}}{=} N(t) - N(t_{i-1})$.
+    
+    Seja $T_i > t_{i-1}$ a variável aleatória do tempo do próximo evento e $K_{i+1}$ a variável aleatória do tipo do próximo evento. A função de distribuição cumulativa e a função densidade de probabilidade de $T_i$ (condicionada a $\mathcal{H}_i$) são dadas por:
+    \begin{align}
+        F(t) &= P(T_i \leq t) = 1 - P(T_i > t) \\
+        &= 1 - P(\Delta N (t_{i-1}, t) = 0) \\
+        &= 1 - \exp \left( - \int_{t_{i-1}}^{t} \lambda(s)ds \right) \\
+        &= 1 - \exp (\Lambda(t_{i-1}) - \Lambda(t)) \label{eq:cdf_4} \\
+        f(t) &= exp(\Lambda(t_{t-1})-\Lambda(t))\lambda(t),
+    \end{align}
+    onde $\Lambda(t) = \int_{0}^{t} \lambda(s)ds$ e $\lambda(t) = \sum_{k=1}^K \lambda_k(t)$.
+        
+    Além disso, dado o histórico passado $\mathcal{H}_i$ e o tempo do próximo evento $t_i$, a distribuição do tipo de evento $k_i$ (probabilidade de ser do tipo $k_i$) é dada por:
+    \begin{equation}
+        P (K_i = k_i \mid t_i = \frac{\lambda_{k_i}(t_i)}{\lambda(t_i)} \label{eq:cond_type_prob}
+    \end{equation}
+    
+    Portanto, podemos derivar a função de verossimilhança $L$ assim:
+    \begin{align}
+        L &= \prod_{i:t_i \leq T} L_i \\ 
+        &= \prod_{i:t_i \leq T} \{ f(t_i) P(K_i = k_i \mid t_i) \} \label{eq:likelihood_prod_1} \\
+        &= \prod_{i:t_i \leq T} \left\{ \exp (\Lambda(t_{i-1}) - \Lambda(t_i)) \lambda_{k_i}(t_i) \right\} \label{eq:likelihood_prod_3}
+    \end{align}
+    
+    Finalmente, ao aplicar o logaritmo na verossimilhança transformamos o produto em soma:    
+    \begin{align}
+        \mathcal{L} &\overset{\text{def}}{=} \log L \\
+        &= \sum_{i:t_i \leq T} \log\lambda_{k_i}(t_i)-\sum_{i:t_i \leq T}(\Lambda (t_i)-\Lambda(t_{i-1})) \\
+        &= \sum_{i:t_i \leq T} \log \lambda_{k_i}(t_i) - \Lambda(T) \label{eq:log_likelihood_final_2} \\
+        &= \sum_{i:t_i \leq T} \log \lambda_{k_i}(t_i) - \int_{t=0}^{T} \lambda(t)dt \label{eq:log_likelihood_final_3}
+    \end{align}
+
+    \subsection{Derivação heurística do logaritmo da verissimilhança}
+    
+    Outra forma de entender a intuição do uso da função de verossimilhança em processos pontuais é derivá-la discretizando o intervalo observado $[0,T]$. Essa abordagem heurística facilita o entendimento de como a intensidade se transforma em uma função otimizável.    
+
+    Considere o intervalo particionado em $M$ intervalos $\Delta t = T/M$. Assumamos $\Delta t$ pequeno o suficiente para que a probabilidade de ocorrer mais de um evento em um mesmo intervalo seja desprezível.
+
+    Sendo assim, temos apenas dois cenários possíveis para um determinado subintervalo $j$ associado ao tempo $t_j$:
+    \begin{enumerate}
+        \item \textbf{Ocorrência de evento:} Se um evento $i$ ocorre no intervalo $[t_j, t_j + \Delta t)$, a probabilidade é dada por $\lambda(t_j) \Delta t$.
+        \item \textbf{Não ocorrência:} Se nenhum evento ocorre, a probabilidade é o complemento, ou seja, $1 - \lambda(t_j) \Delta t$.
+    \end{enumerate}
+
+    A verossimilhança $\mathcal{L}$, então, é o produto das probabilidades de todos os intervalos onde ocorreram eventos e de todos os intervalos onde não ocorreram eventos:
+    \begin{equation}
+        \mathcal{L} = \prod_{i=1}^N \lambda(t_i) \Delta t \times \prod (1 - \lambda(t_j) \Delta t).
+        \label{eq:lnn-prod}
+    \end{equation}
+
+    Para tratar o segundo termo (a não ocorrência de eventos), utilizamos a aproximação de Taylor para a função exponencial, onde $1 - x = e^{-x}$. Assim, $1 - \lambda(t_j)\Delta t = \exp(-\lambda(t_j)\Delta t)$ \cite{stewart_calculus_2013}. Substituindo na equação:
+    \begin{equation}
+        \prod (1 - \lambda(t_j) \Delta t) = \prod \exp(-\lambda(t_j) \Delta t) = \exp\left( - \sum \lambda(t_j) \Delta t \right).
+    \end{equation}
+
+    Ao tomarmos o limite quando $\Delta t \to 0$, a soma de Riemann converge para a integral da intensidade ao longo do tempo $T$ \cite{stewart_calculo_2021}. A verossimilhança resultante é:
+    \begin{equation}
+        \mathcal{L}(\theta) = \left( \prod_{i=1}^N \lambda(t_i) \right) \cdot \exp\left( - \int_0^T \lambda(\tau) \, d\tau \right).
+        \label{eq:derivacao-nll}
+    \end{equation}
+
+    O primeiro termo representa a densidade de probabilidade dos eventos observados, enquanto o segundo termo representa a probabilidade de não haver eventos nos espaços entre as observações.
+
+    Finalmente, aplicando o logaritmo na função de verissimilhança, a multiplicação torna-se soma e a exponencial pode ser removida:
+    \begin{equation}
+        \mathcal{L}(\theta) = \sum_{i=1}^N \log \lambda(t_i) - \int_0^T \lambda(\tau) \, d\tau.
+        \label{eq:nll}
+    \end{equation}
+    
+    O primeiro termo da Equação \ref{eq:nll} encoraja o modelo a aumentar a intensidade nos momentos em que os eventos realmente ocorreram, enquanto o segundo termo (a integral) penaliza o modelo por alocar alta intensidade em regiões onde nenhum evento aconteceu \cite{shchur_neural_2021}.
+
+    \begin{figure}[h!]
+        \centering
+        \captionsetup{width=14cm}%Da mesma largura que a figura
+        \Caption{Negative Log-Likelihood (NLL) de um Processo Pontual}
+        {O \textit{Negative Log-Likelihood} (NLL) de um Processo Pontual é composto pelo somatório das intensidades nos tempos de evento e pela integral do risco acumulado, que penaliza a alta intensidade em momentos de não ocorrência.}
+        \label{fig:nll}
+        \UFCfig{}{
+            \includegraphics[width=14cm]{figuras/figura-nll.png}
+        }{
+            }	
+    \end{figure}
+
+\section{Processos de Hawkes}\label{sec:processos-de-hawkes}
+
+    Processos de Poisson são uma forma básica de trabalhar com sequências de eventos discretos, porém, parte-se do principio de que tais eventos são independentes uns dos outros. Mesmo em um processo de Poisson multivariado e não homogêneo, onde a variação da probabilidade da ocorrência de um evento em $t$ varia em função de $t$, ainda assim os eventos são independentes entre si. Ele assume que um evento do tipo $k$ acontece no intervalo infinitesimal $[t,t+\mathrm{d}t]$, com probabilidade $\lambda_k(t)\mathrm{d}t$. A intensidade total de todos os eventos é data por $\lambda(t)=\sum_{k=1}^{K}\lambda_k(t)$.
+    
+    Já o Processo de Hawkes parte do princípio de que eventos passados influenciam a probabilidade de eventos futuros. Em um Processo de Hawkes tradicional, supomos que essa probabilidade é sempre aumentada, somada à probabilidade de eventos passados e decai exponencialmente \cite{mei_neural_2017}.
+
+    O Processo de Hawkes é considerado duplamente estocástico \cite{zuo_transformer_2021}, pois  $\lambda(t)$ é uma variável aleatória, como em um processo de Cox, mas também é um processo de Poisson. A intensidade de um Processo de Hawkes tradicional univariado é dada por:
+    \begin{equation}        
+        \lambda(t \mid \mathcal{H}_t)= \mu+        \sum_{t_i < t}\alpha\, e^{-\beta (t - t_i)}, 
+        \label{eq:hawkes}
+    \end{equation}
+
+    onde $\alpha$ representa o aumento na intensidade de probabilidade instantâneo causado por pelo evento $e$ e $\beta$ representa a velocidade com que essa intensidade decai ao londo do tempo.
+
+    A Figura \ref{fig:hawkes} ilustra a intensidade de probabilidade $\lambda$ de um evento onde do $t = 0$ até $t = 2$ essa intensidade está estacionada em uma basaline $\mu$. No momento $t = 2$, acontece o evento $e$, elevando a intensidade de probabilidade instantaneamente. Em seguida, $\lambda$ decai exponencialmente, voltando para o estado  estacionário $\mu$, que representa a não influência de nenhum evento no momento $t$.
+    
+	\begin{figure}[h!]
+		\centering
+		\captionsetup{width=14cm}%Da mesma largura que a figura
+		\Caption{\label{fig:hawkes}Função de intensidade de probabilidade}{Função de intensidade de probabilidade representando auto excitação instantânea e decaimento exponencial.}	
+		\UFCfig{}{
+			\includegraphics[width=14cm]{figuras/figura-hawkes.png}
+		}{
+			}	
+	\end{figure}
+
+    Ao longo deste trabalho iremos considerar o Processo de Hawkes multivariado, que é capaz de capturar a influencia de eventos de diferentes tipos $k$ entre si, como uma postagem em uma rede social influenciar positivamente a ocorrência de um outro tipo de interação, ou evento neurológico ser gatilho para um determinado acidente cerebral.
+
+
+\section{Processos Pontuais Temporais Neurais}\label{sec:processos-pontuais-temporais-neurais}
+
+    Vimos que Processos de Hawkes descrevem muitos eventos, porém, a sua forma clássica não contempla as complexidades do dia a dia, intrínsecas à muitos eventos. Eventos podem possuir uma influência inibitória, ao invés de excitatória, sobre outros eventos, como, por exemplo, uma manutenção preventiva diminui a probabilidade de ocorrência de uma falha em um equipamento. Outra premissa dos processos de Hawkes tradicionais é considerar que eventos do mesmo tipo possuem influência constante sobre outros eventos, porém, sabemos que, por exemplo, ao assistir um fenômeno pela vigésima vez nosso cérebro é menos excitado do que quando presenciamos o evento pela primeira vez. Por fim, podemos também lembrar de fenômenos onde a influência sobre outros eventos não decai de forma exponencial \cite{mei_neural_2017}.
+
+    Além das limitações descritas acima, o processo de Hawkes tradicional não lida bem com dados faltantes. Até mesmo em domínios onde Hawkes seria apropriado, a própria natureza dos dados podem apresentar desafios, tais como sequências parcialmente observadas ou dados omitidos de forma sistemática. Existem também dados omitidos de forma estocástica, quem podem ser bastante complexos para a versão tradicional de Hawkes.
+
+    Para resolver tais limitações do processo de Hawkes, abordagens utilizando redes neurais foram propostas, sendo \cite{mei_neural_2017} um dos trabalhos mais difundidos e aceitos pela comunidade, onde propuseram o \gls{NHP}.
+
+    O primeiro passo foi relaxar a regra de manter $\alpha$ e $\mu$ estritamente positivos, e isso fez com que os valores orbitassem no , abordando inibição $(\alpha < 0)$ e inércia $(\mu < 0)$. Porém, agora o resultado pode ser negativo, o que não faria sentido para uma intensidade de probabilidade, então é necessário fazer uma transformação $f = \mathrm{R} \to \mathrm{R_+}$, fazendo $\lambda_k(t) = f_k(\tilde \lambda_k(t))$, onde $k$ é o tipo do evento. A função ReLU $f(x) = \mathrm{max}(x, 0)$ seria uma escolha natural para fazer essa conversão, porém, ela assume valor 0 para números negativos e a nossa intensidade precisa assumir valores sempre positivos quando houver possibilidade de um evento ocorrer. 
+    
+    A função escolhida, então, pelos autores foi a softplus $f(x) = s\mathrm{log}(1 + exp(x/s))$, onde $s$ é um parâmetro de escala aprendido introduzido pelo modelo para trazer estabilidade numérica, pois quando a unidade de $x$ varia, por exemplo, de segundos para milissegundos, a intensidade base $f(\mu_k)$ se torna mil vezes menor, forçando $\mu_k$ a assumir valore negativos e dessa forma criando um forte efeito de inércia. 
+
+    O segundo passo foi remover a restrição de que eventos passados possuem independência e influência aditiva em $\lambda(t)$. Ao invés de prever $\lambda(t)$ utilizando o somatório do modelo paramétrico tradicional de Hawkes (Equação \ref{eq:hawkes}), \citeonline{mei_neural_2017} utilizaram uma rede neural recorrente, que permitiu capturarem padrões complexos, antes dificilmente percebidos em versões paramétricas do modelo.
+    
+    Como nos modelos tradicionais, cada tipo de evento $k$ possui uma densidade dependente do tempo $\lambda_k(t)$, que salta a cada novo evento e decai exponencialmente até um valor estacionário, análogo ao $\mu$ da Equação \ref{eq:hawkes}. Entretanto, no modelo proposto por \citeonline{mei_neural_2017} essa dinâmica é controlada por uma vetor de estados oculto $\mathbf{h}(t) \in (-1,1)^D$, que depende do vetor $\mathbf{c}(t) \in \mathrm{R}^D$, que é o vetor de memória de uma rede neural recorrente com uma camada e $D$ neurônios. 
+    
+    \citeonline{mei_neural_2017} propuseram uma variação da Long-Short Term Memory (LSTM) para tempo continuo, a Continuous-Time LSTM (CT-LSTM) onde após cada evento cada célula de memória $c$ decai exponencialmente a uma determinada taxa $\sigma$ até um estado estável (estacionário) $\mathbf{\bar{c}}$. A cada momento em $t>0$, é possível obter a intensidade de cada tipo de evento com $\lambda_k(t)=f_k(\mathbf{w}_k^T\mathbf{h}(t))$, onde $\mathbf{h}$ pode ser calculado com $\mathbf{h}(t)=\mathbf{o}_i \odot (2\mathbf{\sigma}(2\mathbf{c}(t))-1$ para $t \in (t_{i-1},t_i]$, onde $\mathbf{o}$ é o vetor de saída (output) da LSTM e $\mathbf{w}$ um vetor de pesos. 
+    \begin{align}
+        \mathbf{i}_{i+1} &\leftarrow \sigma(\mathbf{W}_i \mathbf{k}_i+\mathbf{U}_i \mathbf{h}(t_i)+\mathbf{d}_i) \label{eq:neural-i} \\
+        \mathbf{f}_{i+1} &\leftarrow \sigma(\mathbf{W}_f \mathbf{k}_i+\mathbf{U}_f \mathbf{h}(t_i)+\mathbf{d}_f) \label{eq:neural-f} \\
+        \mathbf{z}_{i+1} &\leftarrow 2\sigma(\mathbf{W}_z \mathbf{k}_i+\mathbf{U}_z \mathbf{h}(t_i)+\mathbf{d}_z) - 1 \label{eq:neural-z} \\
+        \mathbf{o}_{i+1} &\leftarrow \sigma(\mathbf{W}_o \mathbf{k}_i+\mathbf{U}_o \mathbf{h}(t_i)+\mathbf{d}_o) \label{eq:neural-o}
+    \end{align}
+    \begin{align}
+        \mathbf{c}_{i+1} &\leftarrow \mathbf{f}_{i+1} \odot \mathbf{c}(t_i)+\mathbf{i}_{i+1} \odot \mathbf{z}_{i+1} \label{eq:neural-c} \\
+        \mathbf{\bar{c}}_{i+1} &\leftarrow \mathbf{\bar{f}}_{i+1} \odot \mathbf{\bar{c}}_i+\mathbf{\bar{i}}_{i+1} \odot \mathbf{z}_{i+1} \label{eq:neural-cbar} \\
+        \mathbf{\delta}_{i+1} &\leftarrow f(\mathbf{W}_d \mathbf{k}_i+\mathbf{U}_d \mathbf{h}(t_i)+\mathbf{d}_d) \label{eq:neural-delta}
+    \end{align}
+
+    As Equações \ref{eq:neural-i}, \ref{eq:neural-f} e \ref{eq:neural-o} referem-se respectivamente aos \textit{Gates} de \textit{input}, \textit{forget} e \textit{output}, comuns a uma rede LSTM convencional. A Equação \ref{eq:neural-z} refere-se ao valor candidato (\textit{Candidate Memory}). As Equações \ref{eq:neural-c} e \ref{eq:neural-cbar} representam a Célula de Memória (\textit{Memory Cell}) e estado final da Célula de Memória. Finalmente, o vetor \textbf{$\sigma$} é a taxa de decaimento, análogo ao $\beta$ da Equação \ref{eq:hawkes}. 
+
+    As equações acima se assemelham bastante a uma LSTM convencional (discreta), mas com dias diferenças fundamentais: As atualizações não dependem do valor anterior $t_{t-1}$ e sim do valor de $\mathbf{h}(t_i)$, após ele ter sofrido decaimento no período $t_i-t_{i-1}$. Além disso, as Equações \ref{eq:neural-cbar} e \ref{eq:neural-sigma} são novas, adicionadas por \citeonline{mei_neural_2017}, e elas definem como, ao longo do tempo, a medida em que $t>t_i$ aumenta os elementos de $\mathbf{c}(t)$ irão continuamente decair, de forma deterministica, de $\mathbf{c}_{i+1}$ até $\mathbf{\bar{c}}_{i+1}$. $\mathbf{c}(t)$ é calculado de acordo com a equação a seguir: 
+    \begin{equation}
+        \mathbf{c}(t) \overset{\text{def}}{=} \mathbf{\bar{c}}_{i+1} + (\mathbf{c}_{i+1}-\mathbf{\bar{c}}_{i+1}) \exp(-\boldsymbol{\delta}_{i+1}(t-t_i)) \quad \text{para } t \in (t_i,t_{i+1}]
+        \label{eq:neural-ct}
+    \end{equation}
+
+    Importante lembrar que $\mathbf{c}(t)$ é utilizado na função $\mathbf{h}(t)$, que é análoga ao vetor do estado oculto $\mathbf{h}_i$ da LSTM, que, por sua vez, é utilizada no cálculo do $\lambda_k(t)$, para um determinado tipo de evento $k$. 
+    
+    A abordagem de \citeonline{mei_neural_2017} foi simples, mas bastante engenhosa, obtendo excelentes resultados tanto em datasets sintéticos como reais, sendo muitas vezes ainda o melhor benchmark, apesar de ser um algoritmo de 2017.
+
+\section{Processos de Hawkes utilizando Transformers}\label{sec:processos-de-hawkes-utilizando-transformers}
+
+    Abordagens baseadas em redes neurais recorrentes (RNN), como a Continuous Time LSTM (CT-LSTM) proposta por \citeonline{mei_neural_2017} trouxe grandes avanços na modelagem de padrões complexos, porém, continuaram com o ponto fraco das RNNs que é o fato de seu processamento ser sequencial. RNNs processam um evento após o outro, ou seja, o calculo do evento próximo evento ($t_{i+1}$) depende do evento atual ($t_i$), fazendo com que o treino da rede seja lento. Em alguns cenários, de sequências muito longas, se torna inviável utilizar RNN. Trabalhos mais recente adaptaram a arquitetura Transformer proposta por \citeonline{vaswani_attention_2017}, adaptando o mecanismo de Atenção para TPP, especialemnte voltadas para o Processo de Hawkes, que é o foco deste trabalho. As subseções seguintes vão nos ajudar a relembrar como é a arquitetura proposta em 2017.
+
+\subsection{Encoders e Decoders}\label{subsec:encoders-decoders}
+
+    O Encoder é o componente responsável por processar a sequência de entrada e transformar em uma representação mais rica de informação. Ele é composto por 6 camadas idênticas, todas produzindo de dimensão $d_{model} = 512$. Cada camada possui duas subcamadas: a primeira é a Multi-Head Self Attention que calcula a relevância de cada input com relação aos demais inputs da sequência. A segunda parte é uma rede feed-forward completamente conectada que aplica não linearidade para casa posição. 
+
+    De forma semelhante, o Decoder também é constituido com 6 camadas. Porém, para gerar o output o Decoder utiliza uma terceira subcamada, que faz um Multi-Head Attention no output do Encoder, conectando o contexto processado pelo Encoder com a sequência gerada pelo Decoder. Até disso, o Decoder utiliza máscara para previnir que o modelo compute posições futuras na sequência, fazendo com que cada predição considere apenas eventos conhecidos \cite{vaswani_attention_2017}. 
+
+\subsection{Mecanismo de Atenção}\label{subsec:mecanismo-de-atencao}
+
+    A inovação principal introduzida pelo modelo é o mecanismo de atenção, também chamada de Scaled Dot-Product Attention, sem a necessidade de redes neurais recorrentes, que faz com que todas as entradas (eventos) sejam processados simultaneamente. Dessa forma o modelo consegue calcular a influência (atenção) de cada evento em relação aos demais eventos.
+
+    Diferentemente das RNNs, que mantém apenas um vetor com o estado oculto ($\mathbf{h}$, redes baseadas em Transformers calculam a influência de cada evento e calcula $\mathbf{h}$ através de uma soma ponderada, que, por sua vez, foi calculada com base na influência de cada evento, dentro do contexto da lista de eventos. 
+
+    A entrada consiste de vetores de queries $Q$ e chaves $K$ de dimensão $d_k$ e valores $V$ de dimensão $d_v$. É calculado então o produto da query com todas as chaves, dividido cada um por $\sqrt{d_k}$ e então uma função softmax é aplicada para obter os pesos dos valores (dos vetores chave-valor). A matrix de outputs é calculada assim:
+    \begin{equation}
+        \text{Attention}(Q,K,V) = \text{softmax}(\frac{QK^T}{\sqrt{d_k}})V
+        \label{eq:attention}
+    \end{equation}
+
+\subsection{Multi-Head Attention}\label{subsec:multi-head-attention}
+
+    Ao invés de performar apenas uma função de Atenção com Queries, Keys e Values de dimensão $d_{model}$, \citeonline{vaswani_attention_2017} decidiram projetar linearmente os vetores Q, K e V um número $h$ de vezes com projeções lineares diferentes e aprendidas para $d_k$, $d_k$ e $d_v$ dimensões, respectivamente. Para cada uma das versões projetadas de Q, K e V é executada a função de Atenção em paralelo, gerando outputs de $d_v$ dimensões. Os outputs são então concatenados e projetados novamente, gerando os valores finais, como mostra a equação abaixo:
+    \begin{equation}
+    \begin{split}
+        \text{MultiHead}(Q,K,V) &= \text{Concat}(\text{head}_1, \dots, \text{head}_h)W^O \\
+        &\quad \text{onde } \text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V)
+    \end{split}
+    \label{eq:multi-head-attention}
+    \end{equation}
+
+    A Figura \ref{fig:attention} ilustra a diferença entre o mecanismo simples de atenção e o mecanismo de multi-head attention \cite{vaswani_attention_2017}.
+
+    \begin{figure}[h!]
+		\centering
+		\captionsetup{width=14cm}%Da mesma largura que a figura
+		\Caption{\label{fig:attention}Attention x Multi-Head Attention.}        
+		\UFCfig{}{
+			\includegraphics[width=14cm]{figuras/figura-attention.png}
+		}{
+			}	
+	\end{figure}
+    
+\subsection{Transformer Hawkes Process (THP)}\label{subsec:transformer-hawkes-process}
+
+    A arquitetura de Transformers \cite{vaswani_attention_2017} mostrou que utilizar Atenção pode oferecer bons avanços em relação ao uso de redes neurais recorrentes, porém, como RNNs tradicionais, os Transformers também foram projetados para eventos discretos, como as palavras de uma frase. \citeonline{zuo_transformer_2021} tiveram que modificar a arquitetura transformando-a em continua, assim como \citeonline{mei_neural_2017} tiveram que fazer, ao transformar a LSTM tradicional em Continuous Time-LSTM.
+
+    Em problemas de tradução, que foram originalmente a primeira aplicação dos Transformers, a ordem das palavras basta, sem necessidade de nenhuma precisão além disso. Porém, em análises de processos pontuais precisamos saber o momento em que cada evento ocorre. Para resolver esse problema, \citeonline{zuo_transformer_2021} propuseram um encoding temporal representado por, onde o argumento não é a posição (discreta), como propos   to por \citeonline{vaswani_attention_2017}, e sim o timestamp $t_j$: 
+    \begin{equation}
+        [z(t_j)]_i = 
+        \begin{cases}
+            \cos \left( \frac{t_j}{10000^{\frac{i-1}{M}}} \right), & \text{se } i \text{ é ímpar,} \\
+            \sin \left( \frac{t_j}{10000^{\frac{i}{M}}} \right), & \text{se } i \text{ é par.}
+        \end{cases}
+        \label{eq:temporal-encoding-thp}
+    \end{equation}
+    
+    A Equação \ref{eq:temporal-encoding-thp} utiliza funções trigonométricas para determinar um encoding temporal para cada timestamp, ou seja, para cada $t_j$ é computado de forma determinística $\mathbf{z}(t_j) \in \mathrm{R}^M$, onde $M$ é o tamanho da dimensão do encoding. Além do enconding temporal, é utilizado também uma camada de embedding, matriz $\mathbf{U}$, para os diferentes tipos de eventos. Os embeddings são então representador por $\mathbf{X=(UY+Z)}^T$, onde $\mathbf{Y}$ é a coleção one-hot encoding de tipos de eventos e $\mathbf{Z}$ a matriz com os vetores $\mathbf{z}$ concatenados. Após as camadas de embeddings, $\mathbf{X}$ é passado por um mecanismo de auto atenção como mostrado a seguir:
+    \begin{equation}
+        \mathbf{S} = \text{Softmax} \left( \frac{\mathbf{Q} \mathbf{K}^{\top}}{\sqrt{d_k}} \right) \mathbf{V}, \quad \text{onde } \mathbf{Q} = \mathbf{X} \mathbf{W}^Q, \mathbf{K} = \mathbf{X} \mathbf{W}^K, \mathbf{V} = \mathbf{X} \mathbf{W}^V.
+        \label{eq:scaled-dot-product-attention-full}
+    \end{equation}
+
+    $\mathbf{Q}$, $\mathbf{K}$ e $\mathbf{V}$ são as matrizes Query, Key e Value obtidas através de transformações em $\mathbf{X}$ e $\mathbf{W}^Q$, $\mathbf{W}^K$ e $\mathbf{W}^V$ são pesos de transformações lineares. Então, $\mathbf{S}$ passa por uma rede feed forward gerando $\mathbf{h}(t)$:
+    \begin{equation}
+        \mathbf{H} = \text{ReLU}(\mathbf{SW}_1^{FC} + \mathbf{b}_1)\mathbf{W}_2^{FC}+\mathbf{b}_2, \quad \mathbf{h}(t_j)=\mathbf{H}(j,:).
+        \label{eq:scaled-dot-product-attention-full}
+    \end{equation}
+
+    \begin{figure}[h!]
+        \centering
+        \captionsetup{width=10cm}%Da mesma largura que a figura
+        \Caption{\label{fig:thp}Arquitetura do Transformer Hawkes Process} \UFCfig{}{
+        \includegraphics[width=10cm]{figuras/figura-thp.png}
+        }{
+            }	
+    \end{figure}
+
+    \citeonline{zhang_self-attentive_2020} (Self-Attentive Hawkes Process, SAHP) propuseram um calculo diferente para o temporal encoding. Ao contrário do THP de utiliza apenas o timestamp $t_i$, o SAHP desloca (shift) o evento para uma nova posição $i'$, utilizando tanto a posição $i$ quanto o timestamp $t_i$, que é calculada com $\mathrm{sin}(\omega_k \times i + w_k \times t_i)$, onde $\omega$ é a frequência angular e $w$ é um parâmetro de escala, ajustado pelo modelo, que converte o timestemp $t_i$ para um deslocamento de fase, dentro da função senoidal (como em outros modelos, o Self-Attentive Hawkes Process usa seno para eventos pares e coseno para eventos ímpares).
+     
+    A Figura \ref{fig:thp} mostra a arquitura do Transformer Hawkes Process. Cada sequência de eventos passa por duas camadas de embeddings e multiplas vezes por módulos de multi-head self attention. 
+
+    \begin{equation}
+        \lambda(t \mid \mathcal{H}_t) = \sum_{k=1}^K \lambda_k (t \mid \mathcal{H}_t)
+        \label{eq:thp-lambda}
+    \end{equation}
+    
+    Como vimos anteriormente, após todo o processo de embedding, atenção e rede feed-forward, é gerado, finalmente, $\mathbf{H}$, que faz com que possamos calcular o $\lambda_k$, necessário na Equação \ref{eq:thp-lambda}. O cálculo da intensidade para cada tipo de evento é dado por: 
+    \begin{equation}
+        \lambda_k(t \mid \mathcal{H}_t) = f_k \left(
+        \underbrace{\alpha_k \frac{t - t_j}{t_j}}_{\text{corrente}}
+        + \underbrace{\mathbf{w}_k^\top \mathbf{h}(t_j)}_{\text{histórico}}
+        + \underbrace{b_k}_{\text{inércia}}
+        \right)
+        \label{eq:htp-thp-lambdak}
+    \end{equation}
+
+    Na Equação \ref{eq:htp-thp-lambdak}, a primeira parte "corrente" é uma interpolação entre $t_j$ e $t_{j+1}$ onde $\alpha$, que é um elemento aprendido, modula a importância dessa interpolação. A segunda parte utiliza o histórico $\mathbf{h}(t)$ dos eventos e o último elemento $\beta_k$ representa o estado estacionário, onde a probabilidade do próximo evento não é influenciada pelo histórico de eventos.
+    
+        
+\subsection{Rotary Position Embeddings (RoPE)}\label{subsec:rotary-position-embeddings}
+
+    Vimos que o uso de RNNs possuem limitações tanto para memória de eventos distantes como no próprio treinamento da rede, pois cada evento precisa ser processando antes do próximo evento, já que leva o estado do evento anterior. Através do mecanismo de atenção, modelagens usando Transformers resolvem esses dois problemas, porém, a maioria das implementações não são resilientes à ruídos nos dados (timestamps). Em datasets reais, a presença de tais ruídos é muito comum, principalmente em função de atrasos físicos na gravação do timestamp. Por exemplo, em redes wireless, os rispositivos registram eventos mesmo sem estarem com seus relógios perfeitamente sincronizados entre si, fazendo com que haja discrepância no dataset final. O THP e suas variantes mais comuns adotam encoding temporal senoidal, ignorando tais características dos dados.  
+    
+    \citeonline{su_roformer_2023} demonstraram que o calculo da verossimilhança utiliza apenas a diferença dos tempos dos eventos e, dessa forma, propuseram utilizar as distâncias relativas entre os tokens em modelos de linguagem, substituindo o temporal encoding, da arquitetura tradicional de Transformers, pelo tempo relativo, dentro do mecanismo de atenção. Para isso, utilizamos o vetor de input (embedding) por pares ($d_i$, $d_{j+1}$). Cada par passa por uma matriz de rotação 2D gerando uma matriz de rotação $\mathbf{R}$, onde $\Theta = \{ \theta_j = 10000^{-2(i-1)/d}, i \in [1,2,..., d/2]\}$ fazendo $f_{\{q,k\}}(\mathbf{x}_m, m)=\mathbf{R}_{\theta, m}^d\mathbf{W}_{\{q,k\}}\mathbf{x}_m$, onde $q$ e $k$ são os componetes Query e Key do mecanismo de atenção:
+    \[
+        R_{\Theta,m}^d =
+        \begin{pmatrix}
+        \cos(t_i \theta_1) & \sin(t_i \theta_1) & 0 & 0 & \cdots & 0 & 0 \\
+        -\sin(t_i \theta_1) & \cos(t_i \theta_1) & 0 & 0 & \cdots & 0 & 0 \\
+        0 & 0 & \cos(t_i \theta_2) & \sin(t_i \theta_2) & \cdots & 0 & 0 \\
+        0 & 0 & -\sin(t_i \theta_2) & \cos(t_i \theta_2) & \cdots & 0 & 0 \\
+        \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+        0 & 0 & 0 & 0 & \cdots & \cos(t_i \theta_{d/2}) & \sin(t_i \theta_{d/2}) \\
+        0 & 0 & 0 & 0 & \cdots & -\sin(t_i \theta_{d/2}) & \cos(t_i \theta_{d/2})
+        \end{pmatrix}.
+    \]
+
+    A Figura \ref{fig:rope} ilustra os tokens de um modelo de linguagem, o vetor de posicionamento e como o RoPE utiliza pares do embedding para aplicação rotação. O resultado da matriz R (rotação) é então aplicado às matrizes $\mathbf{Q}$ e $\mathbf{K}$ do mecanismo de atenção.
+
+    \begin{figure}[h!]
+		\centering
+		\captionsetup{width=14cm}%Da mesma largura que a figura
+		\Caption{\label{fig:rope}Rotary Position Embedddings (RoPE).}        
+		\UFCfig{}{
+			\includegraphics[width=14cm]{figuras/figura-rope.png}
+		}{
+			}	
+	\end{figure}
+
+    \citeonline{gao_rothp_2024} adaptaram o RoPE para processo de pontos. Isso consistiu em não utilizar mais a posição do indice do token de um modelo de linguagem e sim o timestamp. Um grande benefício dessa abordagem foi tornar a verossimilhança invariante no tempo, pois lida apenas com os tempos relativos (deltas). Isso sugere que se tivermos uma série temporal $\{t_1 + \sigma, t_2+\sigma, \dots, t_n+\sigma\}$ ela vai gerar o mesmo resultado de $\{t_1, t_2, \dots, t_n\}$ e isso resolve um problema de consistência inerente aos modelos que usam tempos absolutos, permitindo time shift.
+
+    As métricas apresentadas nas Tabelas \ref{tab:rothp_nll}, \ref{tab:rothp_accuracy} e \ref{tab:rothp_rmse} demonstram uma clara superioridade do RoTHP em relação à vários modelos tradicionais em vários datasets. Apesar da acurácia estar competitiva com o THP, o avanço foi significativo no calculo da log verossimilhança (NLL) e no RMSE. No RMSE a melhora foi substancial, sobretudo nos datasets do Stack Overflow (SO), onde o RoTHP ultrapassou o THP, que era até então o melhor modelo, em uma margem significativa. Isso sugere que o modelo proposto de rotação de embeddings captura padrões com mais precisão que o encoding senoidal tradicional.
+    
+    Além disso, parte da robustez do RoTHP advém da sua habilidade de permanecer invariante no tempo. Ao substituir timestamps absolutos para intervalos de tempo através de rotação no plano 2D, o modelo efetivamente conseguiu mitigar o impacto de ruído, muitas vezes causados por problemas de sincronização presentes em datasets reais. Isso mostra que adaptar o RoPE para processos pontuais aumentou a capacidade de generalização dos modelos atuais que utilizam Transformers. Consequentemente, o RoTHP estabelece um novo estado da arte para benchmarks de processos pontuais, até onde nós conhecemos. 
+
+    \begin{table}[h]
+        \centering
+        \caption{Resultados dos Modelos por Dataset}
+        \label{tab:rothp_nll}
+        \begin{tabular}{lcccccc}
+            \toprule
+            \textbf{Models} & \textbf{Financial} & \textbf{SO} & \textbf{Synthetic} & \textbf{Retweet} & \textbf{MemeTrick} & \textbf{Mimic-II} \\ 
+            \midrule
+            RMTPP   & -3.89  & -2.6   & -1.33 & -5.99 & -6.04 & -1.35 \\
+            NHP     & -3.6   & -2.55  & --    & -5.6  & -6.23 & -1.38 \\
+            SAHP    & --     & -1.86  & 0.59  & -4.56 & --    & -0.52 \\
+            THP     & -1.11  & -0.039 & 0.791 & -2.04 & 0.68  & 0.48  \\
+            RoTHP   & 1.076  & 0.389  & 1.01  & 2.01  & 1.71  & 0.64  \\
+            \bottomrule
+        \end{tabular}
+    \end{table} 
+
+    \begin{table}[h]
+        \centering
+        \caption{Accuracy Comparison}
+        \label{tab:rothp_accuracy}
+        \begin{tabular}{lccc}
+            \toprule
+            \textbf{Models} & \textbf{Financial} & \textbf{Mimic-II} & \textbf{SO} \\ 
+            \midrule
+            RMTPP & 61.95 & 81.2 & 45.9  \\
+            NHP   & 62.20 & 83.2 & 46.3  \\
+            THP   & 62.23 & 84.9 & 46.4  \\
+            RoTHP & 62.26 & 85.5 & 46.33 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \begin{table}[h]
+        \centering
+        \caption{RMSE Comparison}
+        \label{tab:rothp_rmse}
+        \begin{tabular}{lccc}
+            \toprule
+            \textbf{Models} & \textbf{Financial} & \textbf{Mimic-II} & \textbf{SO} \\ 
+            \midrule
+            RMTPP & 1.56 & 6.12 & 9.78 \\
+            NHP   & 1.56 & 6.13 & 9.83 \\
+            SAHP  & --   & 3.89 & 5.57 \\
+            THP   & 0.93 & 0.82 & 4.99 \\
+            RoTHP & 0.60 & 0.57 & 1.33 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+\section{Length Extrapolation e viés indutivo}\label{sec:length-extrapolation}
+
+Uma limitação comum compartilhada por muitos modelos de sequência baseados em Transformer é sua inabilidade para generalizar sequências mais longas do que aquelas que foram utilizadas durante o treinamento. Esse problema é formalmente conhecido como $\textit{length extrapolation}$: dado um modelo treinado em sequências de tamanho $L_{treino}$, nós verificamos se ele se mantém estável quando testado com sequências de tamanho $L_{teste} > L_{treino}$ \cite{press_train_2021}. A relevância prática dessa limitação é significativa. Em vários cenários do mundo real coletar longas sequências é caro ou mesmo impraticável e, portanto, é desejável treinar em sequências menores e rodar o modelo para ser utilizado em sequências arbitrariamente mais longas. 
+
+A principal causa dessa falha tem sido atribuida à estratégia de  \textit{positional encoding} aplicada nos modelos tradicionais de transformers. Embedding sinusoidal padrão, como introduzido por \citeonline{vaswani_attention_2017} produz representações absoluta dos posicionamentos. Quando o modelo encontra um índice de posição que nunca foi apresentado durante o treinamento, essas representações são efetivamente consideradas \textit{out of distribution}, causando uma rápida degradação de performance. 
+
+\citeonline{press_train_2021} demonstraram empiricamente que modelos sinusoidais são incapazes de extrapolar para sequências maiores que as sequências utilizadas em treinamento, com a métrica de perplexidade aumentando dramaticamente a medida em que $L_{teste}$ cresce. Embeddings rotacionais, como o RoPE \cite{su_roformer_2023}, apresentam melhoras sobre o encoding sinusoidal utilizando encoding relativo, ao invés de posições absolutas. No entanto, \citeonline{press_train_2021} mostraram que mesmo RoPE falha ao extrapolar para sequências substancialmente maiores.
+
+\subsection{Attention with Linear Biases (ALiBi)}\label{subsec:alibi}
+
+\citeonline{press_train_2021} propuseram uma abordagem fundamentalmente diferente do positional encoding. Ao invés de adicionar ou rotacionar embeddings, eles introduziram uma penalidade estática, não aprendível, diretamente no escore de atenção. Esse método, chamado \textit{Attention with Linear Biases (ALiBi)}, substitui o passo do positional embedding completamente. A motivação principal do modelo é que ele deve dar menos importância para tokens a medida em que eles vão se distanciando do índice atual, os autores chamam de \textit{inductive bias towards recency}. Ao invés de aprender essa propriedade a partir dos dados, o ALiBi computa esse decaimento de "importância" em sua própria arquitetura. 
+
+Em modelos tradicionais de transformers, position embeddings são adicionados nos embeddings das palavras (tokens). O produto escalar dos vetores Q e K é computado da seguinte forma:
+\begin{equation}
+    \text{softmax}\!\left(q_i K^\top\right),
+\end{equation}
+onde o resultado é então multiplicado pelos valores de $V$. O ALiBi apenas modifica o passo após o produto escalas, deixando todo o resto intacto: 
+\begin{equation}
+    \text{softmax}\!\left(q_i K^\top + m \cdot \left[-(i-1), \ldots, -2,-1,\; 0\right]\right),
+    \label{eq:alibi}
+\end{equation}
+onde o vetor $[-(i-1), \ldots, -2, -1, 0]$ representa as distâncias de cada posição K para a posição Q corrente $i$ e o escalar $m$ é um coeficiente de inclinação específico por cabeça de atenção, fixado antes do treinamento e nunca é atualizado. O sinal negativo garante que a penalidade diminui o attention score a medida em que a distância entre Q e K aumentam, efetivamente suprimindo a atenção para tokens distantes. Para um modelo com $n$ cabeças de atenção, a inclinação $m$ forma uma progressão geométrica com razão e primeiro termo ${2^{\frac{-8}{n}}}$ \cite{press_train_2021}.
+
+\subsection{Viés indutivo e sua relevância no Processo de Hawkes}
+\label{subsec:inductive-bias-hawkes}
+
+Um viés indutivo é uma afirmação que guia o modelo, independente dos dados treinados. No contexto posicional do ALiBi, podemos afirmar que o viés indutivo dita que palavras/tokens distantes são menos relevantes, linearmente, que quando mais próximas. A penalidade é aplicada diretamente no código, e não apenas nos dados aprendidos. 
+
+O viés indutivo não é arbitrário. Na verdade, ela está presente no Processo de Hawkes desde sua proposição, em 1971. Olhando para a equação do Processo Hawkes, a influência de um evento passado $t_i$ decai a medida em que o intervalo $t - t_i$ aumenta, na proporção de $\beta$: Quanto maior a distância, menor a contribuição do evento para o processo. Isso mostra que o Processo de Hawkes possui em sua essência um viés indutivo representado pelo parâmetro exponencial de decaimento. 
+
+O THP e o RoTHP substituem o kernel paramétrico de Hawkes por um mecanismo de atenção. Isso trouxe enormes vantagens para esses modelos, como a possibilidade de capturar relações mais complexas, e inclusive invariância temporal, no caso do RoTHP.
+
+O mecanismo de atenção não impõe nenhuma amarra sobre como ela deve considerar a distâncias entre os tokens, no caso de um TPP, dos eventos. Qualquer decaimento que emerge do modelo é resultado do aprendizado realizado com os dados e não uma garantia estrutural. Inclusive, pela natureza oscilatória do calculo sinusoidal, por ocasião eventos distantes podem receber mais relevância que eventos próximos.
