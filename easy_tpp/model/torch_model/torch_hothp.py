@@ -32,86 +32,65 @@ class HyperbolicRotaryEmbedding(nn.Module):
         return F.softplus(self.theta_prime_raw) + self.thetas.max().item() + 1e-4
 
 
-def hyperbolic_attention(q, k, v, time_seqs, thetas, theta_prime, mask=None, dropout=None):
-    # q, k, v tem shape [B, H, L, d_k]:
-    # B = batch size
-    # H = heads
-    # L = numero de eventos 
-    # d_k = dimensão de cada head
+def hyperbolic_attention(q, k, v, time_seqs, thetas, theta_prime, mask=None, dropout=None, chunk_size=16):
+    # q, k, v: [B, H, L, d_k]
+    # time_seqs: [B, L]
+    # thetas: [d_k//2]
+    # theta_prime: scalar
+    #
+    # Computação em chunks ao longo da dimensão de query (i) para evitar
+    # alocar tensores [B, L, L, D] completos, que com L≈250 chegam a ~1GB cada.
+    # Peak por iteração ≈ O(B * H * chunk * L * D) em vez de O(B * H * L² * D).
     d_k = q.shape[-1]
+    B, H, L, _ = q.shape
 
-    # calcular delta dos eventos em relação aos outros eventos (equacao 9 do HoPE)
-    # unsqueeze(-1) transforma [B, L] em [B, L, 1] (coluna)
-    # unsqueeze(-2) transforma [B, L] em [B, 1, L] (linha)
-    # subtrair os dois pra gerar matriz diferenças [B, L, L]
-    delta = time_seqs.unsqueeze(-1) - time_seqs.unsqueeze(-2)  # [B, L, L]  delta[i,j] = t_i - t_j
-
-    # separamos magnitude e sinal porque vamos usar abs_delta nas exponenciais
-    # (para garantir estabilidade numérica — ver passo 2)
-    # o sinal precisa ser reintroduzido no sinh porque sinh(-x) = -sinh(x)
-    abs_delta       = delta.abs().unsqueeze(-1)    # [B, L, L, 1]
-    sign_delta      = delta.sign().unsqueeze(-1)   # [B, L, L, 1]
-    thetas_expanded = thetas.view(1, 1, 1, -1)     # [1, 1, 1, d_k//2] — para broadcast com abs_delta
-
-    # a Eq. 9 multiplica o kernel da Eq. 5 por um fator de decaimento global e^(-|δ|θ'):                                                                      
-    #   kernel(i,j) = e^(-|δ|θ') * cosh(δθⱼ)   e   e^(-|δ|θ') * sinh(δθⱼ)   
-    # 
-    #   cosh(x) = (e^x + e^-x) / 2                                                                                                                            
-    #   sinh(x) = (e^x - e^-x) / 2                                                                                    
-    #                                                                                                                                                         
-    # PROBLEMA: cosh(x) cresce como e^x — para δ grande (eventos muito espaçados), cosh(δθⱼ)                                                                  
-    # explode antes mesmo de ser multiplicado pelo decaimento e^(-|δ|θ').                                                                                     
-    #                                                                                                                                                         
-    # SOLUÇÃO: substituir a definição  cosh(x) = (e^x + e^-x)/2  e distribuir o e^(-|δ|θ') para dentro:                                                       
-    #                                                                                                                                                         
-    #   e^(-|δ|θ') * cosh(|δ|θⱼ)                                                                                                                              
-    #     = e^(-|δ|θ') * (e^(|δ|θⱼ) + e^(-|δ|θⱼ)) / 2      ← definição de cosh                                                                                
-    #     = (e^(-|δ|θ')*e^(|δ|θⱼ)  +  e^(-|δ|θ')*e^(-|δ|θⱼ)) / 2   ← distribui                                                                                
-    #     = (e^(-|δ|(θ'-θⱼ))  +  e^(-|δ|(θ'+θⱼ)))       / 2   ← junta expoentes                                                                         
-    #                                                                                                                                                         
-    #   e^(-|δ|θ') * sinh(δθⱼ)  →  mesma conta, sinal vira sign(δ)*(e^(-|δ|(θ'-θⱼ)) - e^(-|δ|(θ'+θⱼ)))/2                                                      
-    #                                                                                                                                                         
-    # Agora ambos os expoentes são negativos (θ' > θⱼ garante θ'-θⱼ > 0) → sem overflow.     
-    exp_minus = torch.exp(-abs_delta * (theta_prime - thetas_expanded))  # e^(-|δ|(θ'-θⱼ))
-    exp_plus = torch.exp(-abs_delta * (theta_prime + thetas_expanded))  # e^(-|δ|(θ'+θⱼ)) 
-    decay_cosh = (exp_minus + exp_plus) / 2                   # = e^(-|δ|θ') * cosh(δθⱼ)
-    decay_sinh = sign_delta * (exp_minus - exp_plus) / 2      # = e^(-|δ|θ') * sinh(δθⱼ)
-
-    # separar q e k em pares de dimensões (igual ao RoPE) 
-    # a Eq. 5 define B como uma matriz 2x2 que atua sobre pares (x1, x2)
-    # então separamos as dimensões pares (índices 0,2,4,...) e ímpares (1,3,5,...)
-    q1 = q[..., 0::2]  # dimensões pares   [B, H, L, d_k//2]
-    q2 = q[..., 1::2]  # dimensões ímpares [B, H, L, d_k//2]
+    # separar q e k em pares de dimensões (Eq. 5)
+    q1 = q[..., 0::2]  # [B, H, L, d_k//2]
+    q2 = q[..., 1::2]
     k1 = k[..., 0::2]
     k2 = k[..., 1::2]
 
-    # expande q e k para calcular todas as combinações (i, j) via broadcasting
-    # q fica com dimensão 1 no lugar das keys, k fica com dimensão 1 no lugar das queries
-    q1_exp, q2_exp = q1.unsqueeze(3), q2.unsqueeze(3)  # [B, H, L, 1, d_k//2]
-    k1_exp, k2_exp = k1.unsqueeze(2), k2.unsqueeze(2)  # [B, H, 1, L, d_k//2]
+    # k expandido ao longo da dimensão de query — reutilizado em todos os chunks
+    k1_j = k1.unsqueeze(2)  # [B, H, 1, L, d_k//2]
+    k2_j = k2.unsqueeze(2)
 
-    # expandir q^T B k manualmente (Eq. 5 e 9 do paper) ---
-    # B(θ,δ) = [[cosh(δθ), sinh(δθ)],   (Eq. 5)
-    #           [sinh(δθ), cosh(δθ)]]
-    #
-    # multiplicando [q1, q2] · B:
-    #   primeira componente:  q1*cosh(δθ) + q2*sinh(δθ)
-    #   segunda componente:   q1*sinh(δθ) + q2*cosh(δθ)
-    #
-    # multiplicando o resultado por [k1, k2]^T:
-    #   = (q1*cosh + q2*sinh)*k1 + (q1*sinh + q2*cosh)*k2
-    #   = (q1*k1 + q2*k2)*cosh  +  (q1*k2 + q2*k1)*sinh
-    #          cosh                      sinh
-    parte_cosh = q1_exp * k1_exp + q2_exp * k2_exp  # coeficiente que multiplica cosh [B, H, L, L, d_k//2]
-    parte_sinh = q1_exp * k2_exp + q2_exp * k1_exp  # coeficiente que multiplica sinh
+    # tempos das key positions — fixos para todos os chunks
+    t_j = time_seqs.unsqueeze(1)        # [B, 1, L]
+    thetas_v = thetas.view(1, 1, -1)    # [1, 1, d_k//2]
 
-    # score final
-    # junta as partes com seus respectivos kernels e soma sobre os d_k//2 pares de dimensões (Eq. 14)
-    # depois divide por sqrt(d_k) — normalização padrão do scaled dot-product attention
-    att_scores = (parte_cosh * decay_cosh.unsqueeze(1) + parte_sinh * decay_sinh.unsqueeze(1)).sum(dim=-1)  # [B, H, L, L]
+    att_scores = torch.zeros(B, H, L, L, device=q.device, dtype=q.dtype)
+
+    for i_start in range(0, L, chunk_size):
+        i_end = min(i_start + chunk_size, L)
+
+        # delta entre posições de query e key para este chunk
+        # t_i: [B, chunk, 1]   t_j: [B, 1, L]  →  delta: [B, chunk, L]
+        t_i = time_seqs[:, i_start:i_end].unsqueeze(-1)  # [B, chunk, 1]
+        delta = t_i - t_j                                  # [B, chunk, L]
+
+        abs_d  = delta.abs().unsqueeze(-1)   # [B, chunk, L, 1]
+        sign_d = delta.sign().unsqueeze(-1)  # [B, chunk, L, 1]
+
+        # kernels de decaimento hiperbólico para este chunk (Eq. 9 do HoPE)
+        # ver comentário da versão anterior sobre a reformulação numérica estável
+        exp_m = torch.exp(-abs_d * (theta_prime - thetas_v))  # [B, chunk, L, d_k//2]
+        exp_p = torch.exp(-abs_d * (theta_prime + thetas_v))
+        dc = ((exp_m + exp_p) / 2).unsqueeze(1)              # [B, 1, chunk, L, d_k//2]
+        ds = (sign_d * (exp_m - exp_p) / 2).unsqueeze(1)
+
+        # q para este chunk
+        q1_i = q1[:, :, i_start:i_end, :].unsqueeze(3)  # [B, H, chunk, 1, d_k//2]
+        q2_i = q2[:, :, i_start:i_end, :].unsqueeze(3)
+
+        # (q1*k1 + q2*k2)*cosh + (q1*k2 + q2*k1)*sinh  →  soma sobre d_k//2
+        # broadcast: [B, H, chunk, L, d_k//2] → sum(-1) → [B, H, chunk, L]
+        att_scores[:, :, i_start:i_end, :] = (
+            (q1_i * k1_j + q2_i * k2_j) * dc +
+            (q1_i * k2_j + q2_i * k1_j) * ds
+        ).sum(-1)
+
     att_scores = att_scores / math.sqrt(d_k)
 
-    # zera atenção para eventos futuros (máscara causal) e aplica softmax para virar pesos
     if mask is not None:
         att_scores = att_scores.masked_fill(mask > 0, -1e4)
     att_weights = torch.softmax(att_scores, dim=-1)
