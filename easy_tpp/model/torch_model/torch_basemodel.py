@@ -52,7 +52,12 @@ class TorchBaseModel(nn.Module):
         """
         model_id = model_config.model_id
 
-        for subclass in TorchBaseModel.__subclasses__():
+        def all_subclasses(cls):
+            for sub in cls.__subclasses__():
+                yield sub
+                yield from all_subclasses(sub)
+
+        for subclass in all_subclasses(TorchBaseModel):
             if subclass.__name__ == model_id:
                 return subclass(model_config)
 

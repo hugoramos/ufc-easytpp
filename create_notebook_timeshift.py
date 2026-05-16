@@ -34,7 +34,6 @@ if project_root not in sys.path:
 
 # Import Models
 from easy_tpp.model.torch_model.torch_rothp import RoTHP
-from easy_tpp.model.torch_model.torch_rothp_hybrid import RoTHPHybrid
 from easy_tpp.model.torch_model.torch_thp import THP
 
 print("Bibliotecas carregadas.")
@@ -225,10 +224,7 @@ config = ModelConfig(hidden_size=64, num_heads=4, num_layers=2)
 # 1. RoTHP Original
 hist_rothp = train_eval_loop(RoTHP, "RoTHP Original", config, train_data, test_data, epochs=30, patience=5)
 
-# 2. RoTHP Híbrido
-hist_hybrid = train_eval_loop(RoTHPHybrid, "RoTHP Hybrid", config, train_data, test_data, epochs=30, patience=5)
-
-# 3. THP Tradicional
+# 2. THP Tradicional
 hist_thp = train_eval_loop(THP, "THP Tradicional", config, train_data, test_data, epochs=30, patience=5)
 """)
 
@@ -246,7 +242,6 @@ def plot_robust(hist, label, style, threshold=10):
 
 # Plotar se as variáveis existirem
 if 'hist_rothp' in locals(): plot_robust(hist_rothp, 'RoTHP Original', 'r-o')
-if 'hist_hybrid' in locals(): plot_robust(hist_hybrid, 'RoTHP Hybrid', 'b-s')
 if 'hist_thp' in locals(): plot_robust(hist_thp, 'THP Tradicional', 'g-^')
 
 plt.xlabel('Época')

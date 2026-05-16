@@ -1,5 +1,6 @@
 from collections import OrderedDict
 
+import easy_tpp.model  # noqa: F401 — ensures all model subclasses are registered before generate_model_from_config runs
 from easy_tpp.runner.base_runner import Runner
 from easy_tpp.utils import RunnerPhase, logger, MetricsHelper, MetricsTracker, concat_element, save_pickle
 from easy_tpp.utils.const import Backend

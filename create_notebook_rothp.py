@@ -32,7 +32,6 @@ if project_root not in sys.path:
 
 # Import Models
 from easy_tpp.model.torch_model.torch_rothp import RoTHP
-from easy_tpp.model.torch_model.torch_rothp_hybrid import RoTHPHybrid
 from easy_tpp.model.torch_model.torch_thp import THP
 
 print("Bibliotecas carregadas.")
@@ -203,10 +202,7 @@ config = ModelConfig(hidden_size=64, num_heads=4, num_layers=2)
 # 1. RoTHP Original
 hist_rothp = train_eval_loop(RoTHP, "RoTHP Original", config, train_data, test_data, epochs=5)
 
-# 2. RoTHP Híbrido
-hist_hybrid = train_eval_loop(RoTHPHybrid, "RoTHP Hybrid", config, train_data, test_data, epochs=5)
-
-# 3. THP Tradicional
+# 2. THP Tradicional
 hist_thp = train_eval_loop(THP, "THP Tradicional", config, train_data, test_data, epochs=5)
 """)
 
@@ -216,7 +212,6 @@ plt.figure(figsize=(10, 6))
 epochs = range(1, 6)
 
 plt.plot(epochs, hist_rothp, 'r-o', label='RoTHP Original')
-plt.plot(epochs, hist_hybrid, 'b-s', label='RoTHP Hybrid')
 plt.plot(epochs, hist_thp, 'g-^', label='THP Tradicional')
 
 plt.xlabel('Época')

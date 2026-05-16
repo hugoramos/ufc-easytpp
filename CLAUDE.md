@@ -88,7 +88,7 @@ easy_tpp/
 
 Local additions in `easy_tpp/model/torch_model/`:
 - `torch_rothp.py` — RoTHP: THP with rotary time embeddings applied to Q/K in attention
-- `torch_rothp_simple.py`, `torch_rothp_decay.py`, `torch_rothp_hybrid.py` — RoTHP variants
+- `torch_rothp_simple.py`, `torch_rothp_decay.py` — RoTHP variants (legacy)
 - `torch_hothp.py` — HoTHP: HoPE-style hyperbolic attention kernel, computes relative temporal distances directly to avoid float overflow; `theta_prime` is a learnable parameter constrained > max(theta_i)
 - `torch_imrothp.py` — IMRoTHP variant
 - `torch_smurf.py` — SmurfTHP

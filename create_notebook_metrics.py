@@ -37,7 +37,6 @@ if project_root not in sys.path:
 
 # Import Models
 from easy_tpp.model.torch_model.torch_rothp import RoTHP
-from easy_tpp.model.torch_model.torch_rothp_hybrid import RoTHPHybrid
 from easy_tpp.model.torch_model.torch_thp import THP
 from easy_tpp.model.torch_model.torch_nhp import NHP
 from easy_tpp.model.torch_model.torch_thp_expdecay import THPExpDecay
@@ -411,10 +410,6 @@ results["THP-ExpDecay (Proposto)"] = {'hist': hist, 'acc': acc, 'rmse': rmse, 't
 # --- RoTHP ---
 #hist, acc, rmse, t_train, t_eval, n_params, trained_model = train_eval_loop(RoTHP, "RoTHP (Transformer)", config, train_data, test_data)
 #results["RoTHP (Transformer)"] = {'hist': hist, 'acc': acc, 'rmse': rmse, 'train_time': t_train, 'eval_time': t_eval, 'total_time': t_train + t_eval, 'num_params': n_params, 'model': trained_model}
-
-# --- RoTHP Híbrido ---
-#hist, acc, rmse, t_train, t_eval, n_params, trained_model = train_eval_loop(RoTHPHybrid, "RoTHP Híbrido", config, train_data, test_data)
-#results["RoTHP Híbrido"] = {'hist': hist, 'acc': acc, 'rmse': rmse, 'train_time': t_train, 'eval_time': t_eval, 'total_time': t_train + t_eval, 'num_params': n_params, 'model': trained_model}
 """)
 
 # Cell 8: Plotting
