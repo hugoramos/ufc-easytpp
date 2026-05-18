@@ -14,10 +14,13 @@ class RotaryEmbedding(nn.Module):
         self.max_freq = max_freq
         
         # equação 17 do RoTHP: theta_j = 10000^(-2(j-1)/d)
-        thetas = torch.tensor([
-            max_freq ** (-2.0 * (j - 1) / dim) for j in range(1, dim // 2 + 1)
-        ])
-        self.register_buffer('thetas', thetas)
+        thetas = []
+        for j in range(1, dim // 2 + 1):
+            theta_j = max_freq ** (-2 * (j - 1) / dim)
+            thetas.append(theta_j)
+
+        # self.thetas = torch.tensor(thetas) (erro no colab.. Unexpected key(s) in state_dict: "rotary_emb.thetas")
+        self.register_buffer('thetas', torch.tensor(thetas))
 
     def forward(self, time_seqs):
         # time_seqs original: [batch, seq_len]
@@ -92,9 +95,16 @@ class RotaryMultiHeadAttention(MultiHeadAttention):
             .view(nbatches, -1, self.n_head * self.d_k)
 
         if self.output_linear:
-            return (self.linears[-1](x), attn_weight) if output_weight else self.linears[-1](x)
+            if output_weight:
+                return self.linears[-1](x), attn_weight
+            else:
+                return self.linears[-1](x)
         else:
-            return (x, attn_weight) if output_weight else x
+            if output_weight:
+                return x, attn_weight
+            else:
+                return x
+
 
 class RotaryEncoderLayer(EncoderLayer):
     def forward(self, x, mask, cos=None, sin=None):
@@ -140,8 +150,9 @@ class RoTHP(THP):
         nn.init.xavier_normal_(self.factor_intensity_base)
         nn.init.xavier_normal_(self.factor_intensity_decay)
 
+        # convert hidden vectors into event-type-sized vector
         self.layer_intensity_hidden = nn.Linear(self.d_model, self.num_event_types)
-        self.softplus = ScaledSoftplus(self.num_event_types)  
+        self.softplus = ScaledSoftplus(self.num_event_types)   # learnable mark-specific beta
 
         # Add MLP layer
         # Equation (5) (THP)
@@ -172,7 +183,7 @@ class RoTHP(THP):
         Returns:
             tensor: hidden states at event times.
         """
-        # [batch_size, seq_len, dim/2]
+        # [batch_size, seq_len, dim]
         cos, sin = self.rotary_emb(time_seqs)
         enc_output = self.layer_type_emb(type_seqs)
 
