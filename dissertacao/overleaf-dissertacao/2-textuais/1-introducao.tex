@@ -1,5 +1,22 @@
 \chapter{Introdução}
 \label{cap:introducao}
-	
 
-	
+Muitos fenômenos do mundo real podem ser modelados como sequências de eventos que ocorrem em instantes irregulares ao longo do tempo: transações financeiras, terremotos, interações em redes sociais, disparos neuronais. Processos pontuais temporais (\textit{temporal point processes}, TPPs) são o arcabouço matemático para modelar essas sequências. O objetivo central é estimar a função de intensidade condicional $\lambda^*(t)$, que descreve a taxa instantânea de ocorrência de eventos dado o histórico.
+
+Entre os modelos clássicos, o processo de Hawkes \cite{hawkes_spectra_1971} se destaca por capturar auto-excitação: a ocorrência de um evento aumenta temporariamente a probabilidade de eventos futuros, com a influência decaindo exponencialmente no tempo. Modelos neurais recentes, como o Transformer Hawkes Process (THP) \cite{zuo_transformer_2021}, substituem o kernel paramétrico por um mecanismo de atenção que aprende a relação entre eventos diretamente dos dados. O RoTHP \cite{gao_rothp_2024} avança nessa direção ao usar rotary positional embeddings (RoPE) para codificar distâncias temporais relativas no mecanismo de atenção.
+
+Um problema em aberto nesses modelos é a extrapolação de comprimento: quando treinados em sequências curtas e testados em sequências mais longas, o desempenho tende a degradar. No THP, isso ocorre porque o encoding temporal absoluto produz representações fora da distribuição de treino para posições novas. No RoTHP, o kernel trigonométrico (baseado em seno e cosseno) é oscilatório, e para distâncias temporais não vistas no treino, o score de atenção pode assumir valores arbitrários, sem garantia de decaimento.
+
+Este trabalho propõe o HoTHP (\textit{Hyperbolic Rotary Position Embedding-based Transformer Hawkes Process}), que substitui o kernel trigonométrico do RoTHP por um kernel hiperbólico com decaimento exponencial, inspirado no HoPE \cite{dai_hope_2025}. A ideia é embutir no mecanismo de atenção um viés de recência: eventos recentes recebem pesos maiores, e eventos distantes recebem pesos que tendem a zero monotonicamente. Esse viés é estrutural (não depende dos dados de treino) e se mantém para distâncias temporais arbitrariamente grandes, o que habilita a extrapolação.
+
+\section{Objetivos}
+
+O objetivo geral deste trabalho é investigar se a substituição do kernel oscilatório por um kernel com decaimento exponencial no mecanismo de atenção melhora a capacidade de extrapolação de comprimento em modelos neurais para processos pontuais temporais. Para isso, propomos e implementamos o HoTHP, adaptando o HoPE \cite{dai_hope_2025} de posições discretas para instantes contínuos. Avaliamos o modelo no protocolo \textit{train short, test long} em dados sintéticos, onde o processo gerador é conhecido, e em dados reais de domínios variados. Por fim, analisamos em quais condições o viés de recência é benéfico e em quais é neutro ou prejudicial, por meio da visualização das intensidades aprendidas e de ablações sobre a escala temporal dos dados.
+
+\section{Contribuições}
+
+Este trabalho contribui com a proposta do HoTHP, que introduz um viés exponencial de recência diretamente no kernel de atenção temporal, com um parâmetro de decaimento $\theta'$ aprendível e estruturalmente restrito a garantir o decaimento monotônico. A análise experimental revela que esse viés atua na construção do estado oculto (via atenção) e não na função de intensidade, o que permite ao modelo aprender tanto processos auto-excitantes quanto auto-inibitórios, desde que eventos recentes sejam mais informativos que distantes. A avaliação em dados sintéticos e quatro datasets reais identifica as condições que determinam quando o viés é benéfico (memória temporal de curto alcance e escala calibrável) e quando não é (processos sem memória ou com escala temporal extrema).
+
+\section{Organização do texto}
+
+O restante desta dissertação está organizado da seguinte forma. O Capítulo~\ref{cap:fundamentacao-teorica} apresenta a fundamentação teórica sobre processos pontuais, processos de Hawkes e modelos neurais baseados em Transformers. O Capítulo~\ref{cap:trabalhos-relacionados} revisa os trabalhos relacionados. O Capítulo~\ref{chap:metodologia} descreve a arquitetura do HoTHP, a formulação do kernel hiperbólico e a configuração experimental. O Capítulo~\ref{chap:resultados} apresenta os resultados em dados sintéticos e reais, as intensidades aprendidas e a ablação de normalização temporal. O Capítulo~\ref{chap:conclusoes-e-trabalhos-futuros} conclui o trabalho e propõe direções futuras.

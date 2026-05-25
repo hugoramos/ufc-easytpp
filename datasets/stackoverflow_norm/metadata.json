@@ -1,0 +1,6 @@
+{
+  "source": "easytpp/stackoverflow",
+  "normalization": "per-sequence mean gap",
+  "description": "Timestamps divididos pela m\u00e9dia dos gaps de cada sequ\u00eancia",
+  "dim_process": null
+}

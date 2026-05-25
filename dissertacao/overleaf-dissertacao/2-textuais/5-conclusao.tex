@@ -1,10 +1,50 @@
 \chapter{Conclusões e Trabalhos Futuros}
 \label{chap:conclusoes-e-trabalhos-futuros}
 
+Este trabalho propôs o HoTHP, uma variante do Transformer Hawkes Process que substitui o kernel trigonométrico do RoTHP por um kernel hiperbólico com decaimento exponencial. A motivação era melhorar a extrapolação de comprimento em processos pontuais temporais: treinar em sequências curtas e manter o desempenho em sequências mais longas.
 
+\section{Contribuições}
 
+A principal contribuição é a introdução do viés exponencial de recência no mecanismo de atenção temporal. Diferentemente do kernel oscilatório do RoTHP, cujo score de atenção pode crescer para distâncias temporais não vistas no treino, o kernel hiperbólico do HoTHP garante um decaimento monotônico. Para qualquer distância temporal, incluindo valores maiores que os observados durante o treinamento, o score de atenção é limitado e tende a zero. Isso permite que o modelo generalize para sequências mais longas sem degradação.
 
+Além da proposta arquitetural, a análise experimental revelou duas observações que consideramos relevantes para a área:
 
+\begin{enumerate}
+    \item O viés exponencial atua exclusivamente no mecanismo de atenção, que constrói o estado oculto a partir dos eventos passados. A função de intensidade é uma camada separada com parâmetros aprendíveis livres. Isso significa que o HoTHP pode modelar tanto processos auto-excitantes quanto auto-inibitórios. O que o viés impõe não é a forma da intensidade, mas a forma da relevância: eventos recentes recebem mais peso na construção da representação interna.
 
+    \item A visualização das intensidades aprendidas mostrou que o dataset Amazon exibe um padrão auto-inibitório (a intensidade cresce entre eventos e cai quando um evento ocorre), enquanto o Stackoverflow exibe uma intensidade quase constante (sem memória temporal). O HoTHP vence no primeiro e empata no segundo, confirmando que o fator relevante é a presença de memória temporal de curto alcance, independentemente da direção (excitação ou inibição).
+\end{enumerate}
 
+\section{Resultados principais}
 
+Nos dados sintéticos gerados por processos de Hawkes com kernel exponencial, o HoTHP supera consistentemente o RoTHP em todos os fatores de extrapolação testados. Esse resultado era esperado, pois o viés do modelo está perfeitamente alinhado com o processo gerador.
+
+Nos dados reais, os resultados variam conforme o dataset. O HoTHP obtém o melhor desempenho no Amazon ($\Delta\text{NLL} = -0{,}074$ na extrapolação $5\times$, contra $-0{,}020$ do RoTHP), empata no Stackoverflow e no Taxi, e falha no Retweet com dados brutos devido à escala temporal extrema do dataset. A ablação com normalização temporal revelou que o problema do Retweet era primariamente de escala numérica: com timestamps normalizados, o HoTHP obtém NLL $5\times$ de $-0{,}542 \pm 0{,}004$, o melhor resultado entre todos os modelos e condições testados, com variância quase zero entre sementes. A análise desses resultados aponta duas condições necessárias para o viés ser benéfico: o processo precisa ter memória temporal de curto alcance, e a escala dos intervalos entre eventos precisa estar numa faixa que permita a calibração do parâmetro $\theta'$.
+
+Do ponto de vista computacional, o HoTHP é entre $1{,}05\times$ e $2{,}24\times$ mais lento no treinamento, dependendo do comprimento das sequências. Esse custo adicional é pago uma única vez e se justifica pelo benefício na extrapolação: o modelo treinado produz resultados estáveis em sequências até $5\times$ mais longas, enquanto o RoTHP pode colapsar numericamente nesse mesmo cenário.
+
+\section{Limitações}
+
+O trabalho apresenta algumas limitações que devem ser consideradas:
+
+\begin{enumerate}
+    \item A avaliação em dados reais é limitada a quatro datasets. Uma avaliação mais ampla, incluindo datasets de domínios como sismologia, finanças e redes de computadores, fortaleceria as conclusões sobre quando o viés é benéfico.
+
+    \item O HoTHP não possui um mecanismo interno de normalização temporal. A escala dos timestamps é tratada apenas pelo deslocamento para zero ($\tilde{t}_i = t_i - t_1$), que preserva as diferenças mas não controla a magnitude absoluta. Datasets com intervalos muito grandes (como o Retweet) causam saturação numérica no kernel.
+
+    \item O parâmetro $\theta'$ controla uma única taxa de decaimento global. Processos com múltiplas escalas temporais (por exemplo, atividade diurna e semanal sobrepostas) podem requerer decaimentos distintos por cabeça de atenção ou por camada.
+\end{enumerate}
+
+\section{Trabalhos futuros}
+
+Com base nas limitações e nos resultados obtidos, propomos as seguintes direções:
+
+\begin{enumerate}
+    \item \textbf{Normalização temporal aprendível.} Incorporar ao HoTHP uma camada de normalização que ajuste automaticamente a escala dos timestamps antes do kernel hiperbólico. Uma possibilidade é aprender um fator de escala por sequência ou por batch, similar à normalização feita manualmente na ablação do Retweet (Seção~\ref{sec:ablacao-retweet}).
+
+    \item \textbf{Kernels adaptativos por cabeça de atenção.} Permitir que cada cabeça de atenção use um tipo diferente de kernel (hiperbólico, trigonométrico, ou constante). Isso daria ao modelo a flexibilidade de usar decaimento exponencial nas cabeças onde é útil e atenção uniforme nas demais, adaptando-se a processos com estruturas temporais mistas.
+
+    \item \textbf{Avaliação em processos com kernel power-law.} Gerar dados sintéticos com kernels de excitação do tipo lei de potência ($g(\Delta t) \propto (1+\Delta t)^{-p}$) e avaliar o HoTHP nesse cenário. Os resultados do Retweet sugerem que o decaimento exponencial é inadequado para processos com memória longa, e uma avaliação controlada confirmaria essa hipótese.
+
+    \item \textbf{Análise do $\theta'$ aprendido por dataset.} Extrair o valor de $\theta'$ após o treinamento em cada dataset e correlacionar com as propriedades temporais do processo. Isso pode revelar como o modelo adapta a taxa de decaimento a diferentes regimes e ajudar a diagnosticar quando o viés está alinhado ou não com os dados.
+\end{enumerate}
