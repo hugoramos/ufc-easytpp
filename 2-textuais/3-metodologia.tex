@@ -34,6 +34,18 @@ O HoPE \cite{dai_hope_2025} propõe trocar essa rotação por uma rotação hipe
 %
 Diferentemente de $\cos$ e $\sin$, as funções $\cosh$ e $\sinh$ são monótonas para $\Delta t > 0$, eliminando as oscilações. Entretanto, não podemos usar $\boldsymbol{B}_j$ diretamente porque a rotação hiperbólica não é ortogonal, e o produto interno $\boldsymbol{q}^\top \boldsymbol{B}(\Delta t) \boldsymbol{k}$ \textit{cresce} com $|\Delta t|$ em vez de decair \cite{dai_hope_2025}. Eventos distantes receberiam scores maiores do que eventos próximos, exatamente o oposto do que queremos.
 
+A Figura~\ref{fig:trig-vs-hyp} ilustra essa diferença. No painel esquerdo, $\cos$ e $\sin$ oscilam entre $-1$ e $1$ indefinidamente, sem qualquer tendência de decaimento. No painel direito, $\cosh$ e $\sinh$ eliminam as oscilações mas crescem exponencialmente em ambas as direções. Note que $\cosh$ é uma função par (simétrica, com valor mínimo $\cosh(0) = 1$) enquanto $\sinh$ é ímpar (antissimétrica, com $\sinh(0) = 0$). Para $\Delta t$ grande, ambas se aproximam de $\frac{e^{\theta|\Delta t|}}{2}$.
+
+\begin{figure}[h!]
+    \centering
+    \captionsetup{width=14cm}
+    \Caption{\label{fig:trig-vs-hyp} Funções base dos kernels de atenção ($\theta = 1{,}0$). Esquerda: funções trigonométricas do RoTHP, que oscilam entre $-1$ e $1$ sem decair. Direita: funções hiperbólicas do HoPE, que são monótonas mas crescem exponencialmente. O crescimento das funções hiperbólicas precisa ser compensado por um fator de decaimento para que o kernel de atenção funcione corretamente.}
+    \UFCfig{}{
+        \includegraphics[width=14cm]{figuras/fig_trig_vs_hyp.pdf}
+    }{
+    }
+\end{figure}
+
 % ---------------------------------------------------------------
 \section{Decaimento exponencial e o parâmetro \texorpdfstring{$\theta'$}{theta'}}
 \label{sec:decaimento-theta-prime}
@@ -54,6 +66,18 @@ No HoTHP, as posições discretas $m, n$ são substituídas pelos instantes cont
 \end{equation}
 %
 Para que o decaimento domine o crescimento hiperbólico, é necessário que $\theta' > \max_j \theta_j$. Sob essa condição, o score decresce monotonicamente com $|\Delta t|$, o que introduz um viés exponencial de recência no mecanismo de atenção. Esse viés reflete a mesma estrutura do kernel de Hawkes ($\alpha e^{-\beta \Delta t}$) e, por ser estrutural e não aprendido dos dados, vale inclusive para valores de $\Delta t$ que o modelo nunca viu durante o treinamento. É esse viés que dá ao HoTHP a capacidade de extrapolar para sequências mais longas sem degradação.
+
+A Figura~\ref{fig:decay-hiperbolico} ilustra esse mecanismo. O painel esquerdo mostra os componentes separados: $\cosh$ e $\sinh$ crescem exponencialmente enquanto o fator de decaimento $e^{-\theta'\Delta t}$ cai rapidamente para zero. O painel central mostra o produto: quando $\theta' > \theta$, o decaimento domina o crescimento, e tanto $e^{-\theta'\Delta t}\cosh(\theta\Delta t)$ quanto $e^{-\theta'\Delta t}\sinh(\theta\Delta t)$ decaem monotonicamente. O painel direito mostra a decomposição em exponenciais puras usada na implementação (Seção~\ref{sec:estabilidade-numerica}): como ambos os expoentes $(\theta' - \theta)$ e $(\theta' + \theta)$ são positivos, todas as exponenciais têm argumento negativo e nenhum overflow ocorre.
+
+\begin{figure}[h!]
+    \centering
+    \captionsetup{width=14cm}
+    \Caption{\label{fig:decay-hiperbolico} Efeito do decaimento exponencial sobre as funções hiperbólicas ($\theta = 1{,}0$, $\theta' = 1{,}5$). Esquerda: componentes separados, mostrando que $\cosh$ e $\sinh$ crescem mas o decay cai. Centro: o produto resulta em funções que decaem monotonamente. Direita: decomposição em exponenciais puras, ambas com expoente negativo, garantindo estabilidade numérica.}
+    \UFCfig{}{
+        \includegraphics[width=14cm]{figuras/fig_decay_hiperbolico.pdf}
+    }{
+    }
+\end{figure}
 
 \subsection{Parametrização do \texorpdfstring{$\theta'$}{theta'} aprendível}
 \label{subsec:parametrizacao-theta-prime}
@@ -182,6 +206,35 @@ A saída do encoder $\boldsymbol{h}(t_j) \in \mathbb{R}^d$ para o evento $j$ é 
 \end{equation}
 %
 onde $\alpha_k$, $\boldsymbol{w}_k$ e $b_k$ são parâmetros aprendíveis e $\mathrm{softplus}$ garante que a intensidade seja positiva. O termo $\alpha_k (t - t_j) / t_j$ captura a variação com o tempo desde o último evento, e $\boldsymbol{w}_k^\top \boldsymbol{h}(t_j)$ traz o contexto histórico do encoder. Essa forma segue o THP \cite{zuo_transformer_2021}.
+
+% ---------------------------------------------------------------
+\section{Onde atua o viés exponencial}
+\label{sec:onde-atua-vies}
+% ---------------------------------------------------------------
+
+Uma distinção importante precisa ser feita sobre o papel do decaimento exponencial no HoTHP. O fator $e^{-|\Delta t|\theta'}$ não atua diretamente na função de intensidade $\lambda_k(t)$, e sim no mecanismo de atenção que produz o estado oculto $\boldsymbol{h}(t_j)$. Essas são duas etapas distintas do modelo, com papéis diferentes:
+
+\begin{enumerate}
+    \item \textbf{Atenção hiperbólica} (Equação~\ref{eq:score-hothp-completo}): determina os pesos com que cada evento passado contribui para o estado oculto. O decaimento exponencial faz com que eventos recentes recebam pesos maiores e eventos distantes recebam pesos próximos de zero. O resultado é o vetor $\boldsymbol{h}(t_j)$, que codifica o contexto histórico da sequência.
+
+    \item \textbf{Função de intensidade} (Equação~\ref{eq:intensidade-hothp}): usa o estado oculto $\boldsymbol{h}(t_j)$ e o tempo decorrido desde o último evento para calcular $\lambda_k(t)$. O parâmetro $\alpha_k$ nessa equação é aprendível e pode assumir valores positivos ou negativos. Se $\alpha_k > 0$, a intensidade cresce com o tempo desde o último evento, caracterizando um processo auto-inibitório. Se $\alpha_k < 0$, a intensidade diminui, como em um processo de Hawkes auto-excitante clássico.
+\end{enumerate}
+
+Essa separação tem uma consequência importante: o viés exponencial do HoTHP não impõe que o processo modelado seja auto-excitante. O kernel hiperbólico impõe apenas que a \textit{relevância} dos eventos passados para a construção do estado oculto decaia exponencialmente com a distância temporal. A dinâmica da intensidade em si (se ela sobe ou desce após um evento) é determinada pelos parâmetros aprendíveis da camada de intensidade, que são livres para se adaptar aos dados.
+
+Portanto, o HoTHP é adequado para qualquer processo pontual em que o evento mais recente carregue mais informação do que eventos distantes para prever o próximo. Isso inclui tanto processos auto-excitantes (onde eventos geram mais eventos próximos) quanto auto-inibitórios (onde a ocorrência de um evento reduz temporariamente a probabilidade de novos eventos). O viés é prejudicial quando eventos distantes são tão ou mais relevantes que os recentes, como em processos sem memória temporal ou com dependências de longo alcance.
+
+A Figura~\ref{fig:kernel-rothp-vs-hothp} sintetiza visualmente a diferença entre os kernels de atenção do RoTHP e do HoTHP. Na zona de treino (fundo verde), ambos os modelos observam as mesmas distâncias temporais e podem aprender pesos de atenção adequados. Na zona de extrapolação (fundo vermelho), o kernel trigonométrico do RoTHP continua oscilando em fases que o modelo nunca viu durante o treino, atribuindo scores potencialmente altos a eventos muito distantes. O kernel hiperbólico do HoTHP, por outro lado, decai monotonicamente para zero independentemente da distância, graças ao viés estrutural. Para referência, a curva tracejada mostra o kernel de Hawkes clássico ($e^{-\beta \Delta t}$), cuja forma o HoTHP reproduz qualitativamente.
+
+\begin{figure}[h!]
+    \centering
+    \captionsetup{width=14cm}
+    \Caption{\label{fig:kernel-rothp-vs-hothp} Comparação dos kernels de atenção em função da distância temporal $\Delta t$. Na zona de treino, ambos os modelos podem se ajustar aos dados. Na zona de extrapolação, o kernel trigonométrico do RoTHP oscila em fases não aprendidas, enquanto o kernel hiperbólico do HoTHP decai monotonicamente, como o kernel de Hawkes clássico.}
+    \UFCfig{}{
+        \includegraphics[width=14cm]{figuras/fig_kernel_rothp_vs_hothp.pdf}
+    }{
+    }
+\end{figure}
 
 % ---------------------------------------------------------------
 \section{Configuração experimental}
