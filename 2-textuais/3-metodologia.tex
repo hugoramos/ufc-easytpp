@@ -243,3 +243,8 @@ Ambos os modelos são implementados no framework EasyTPP \cite{xue_easytpp_2024}
 A métrica de avaliação é a \gls{NLL}, calculada sobre a sequência completa de teste, incluindo os eventos além do comprimento de treinamento. Se o viés de recência do HoTHP de fato habilita a extrapolação, a NLL deve se manter estável mesmo quando a sequência de teste é muito mais longa do que a de treino. Utilizamos também RMSE para avaliar a predição do próximo evento e Acurácia para avaliar predição do tipo do próximo evento.
 
 Repetimos todos os experimentos com $N = 5$ seeds e reportamos média $\pm$ desvio padrão. Para verificar significância estatística, usamos o teste de Wilcoxon de postos sinalizados (\textit{Wilcoxon signed-rank test}), um teste não paramétrico pareado que não assume normalidade e é adequado para $N = 5$.
+
+\subsection{Ambiente computacional}
+\label{subsec:ambiente-computacional}
+
+Todos os experimentos foram executados em uma máquina com GPU NVIDIA A100-SXM4-80GB (80~GB de VRAM), 6 núcleos físicos (12 threads), 167~GB de RAM e CUDA 12.8. O código utiliza PyTorch 2.10.0 e Python 3.12.

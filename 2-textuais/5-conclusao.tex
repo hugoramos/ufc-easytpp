@@ -36,15 +36,3 @@ O trabalho apresenta algumas limitações que devem ser consideradas:
 \end{enumerate}
 
 \section{Trabalhos futuros}
-
-Com base nas limitações e nos resultados obtidos, propomos as seguintes direções:
-
-\begin{enumerate}
-    \item \textbf{Normalização temporal aprendível.} Incorporar ao HoTHP uma camada de normalização que ajuste automaticamente a escala dos timestamps antes do kernel hiperbólico. Uma possibilidade é aprender um fator de escala por sequência ou por batch, similar à normalização feita manualmente na ablação do Retweet (Seção~\ref{sec:ablacao-retweet}).
-
-    \item \textbf{Kernels adaptativos por cabeça de atenção.} Permitir que cada cabeça de atenção use um tipo diferente de kernel (hiperbólico, trigonométrico, ou constante). Isso daria ao modelo a flexibilidade de usar decaimento exponencial nas cabeças onde é útil e atenção uniforme nas demais, adaptando-se a processos com estruturas temporais mistas.
-
-    \item \textbf{Avaliação em processos com kernel power-law.} Gerar dados sintéticos com kernels de excitação do tipo lei de potência ($g(\Delta t) \propto (1+\Delta t)^{-p}$) e avaliar o HoTHP nesse cenário. Os resultados do Retweet sugerem que o decaimento exponencial é inadequado para processos com memória longa, e uma avaliação controlada confirmaria essa hipótese.
-
-    \item \textbf{Análise do $\theta'$ aprendido por dataset.} Extrair o valor de $\theta'$ após o treinamento em cada dataset e correlacionar com as propriedades temporais do processo. Isso pode revelar como o modelo adapta a taxa de decaimento a diferentes regimes e ajudar a diagnosticar quando o viés está alinhado ou não com os dados.
-\end{enumerate}
