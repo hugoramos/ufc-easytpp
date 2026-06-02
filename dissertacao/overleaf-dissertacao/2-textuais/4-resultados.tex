@@ -176,7 +176,17 @@ Versão & Modelo & NLL $1\times$ & NLL $5\times$ & Acc $1\times$ & Acc $5\times$
 
 A normalização resolve o colapso numérico de forma inequívoca. Com timestamps brutos, a NLL em $1\times$ é de aproximadamente $12{,}5$ para ambos os modelos e a NLL em $5\times$ explode para a ordem de $10^5$. Com timestamps normalizados, a NLL em $1\times$ cai para valores negativos e o treino converge em todas as sementes.
 
-A diferença entre os modelos aparece na extrapolação. O HoTHP normalizado obtém NLL $5\times = -0{,}542 \pm 0{,}004$, praticamente invariante entre sementes. O RoTHP normalizado, embora muito melhor que a versão com dados brutos, ainda é instável. Uma das sementes atinge NLL $5\times = 255{,}9$, resultando numa média de $88{,}9 \pm 144{,}8$. A acurácia de tipos segue o mesmo padrão: o HoTHP normalizado mantém Acc $5\times = 0{,}588$ com desvio de $0{,}004$, enquanto o RoTHP cai para $0{,}562$.
+A diferença entre os modelos aparece na extrapolação, como ilustra a Figura~\ref{fig:ablacao-retweet-norm}. O HoTHP normalizado obtém NLL $5\times = -0{,}542 \pm 0{,}004$, praticamente invariante entre sementes. O RoTHP normalizado, embora muito melhor que a versão com dados brutos, ainda é instável. Uma das sementes atinge NLL $5\times = 255{,}9$, resultando numa média de $88{,}9 \pm 144{,}8$ com uma barra de erro enorme. A acurácia de tipos segue o mesmo padrão: o HoTHP normalizado mantém Acc $5\times = 0{,}588$ com desvio de $0{,}004$, enquanto o RoTHP cai para $0{,}562$.
+
+\begin{figure}[h!]
+    \centering
+    \captionsetup{width=14cm}
+    \Caption{\label{fig:ablacao-retweet-norm} NLL no Retweet normalizado (média $\pm$ desvio padrão, 3 sementes). À esquerda, a condição $1\times$ (comprimento de treino): ambos os modelos obtêm NLL similar. À direita, a condição $5\times$ (extrapolação): o HoTHP mantém NLL estável, enquanto o RoTHP apresenta alta variância devido a uma semente que diverge.}
+    \UFCfig{}{
+        \includegraphics[width=14cm]{figuras/fig_ablacao_retweet_norm.png}
+    }{
+    }
+\end{figure}
 
 Esses resultados permitem separar os dois fatores que prejudicam o desempenho no Retweet. O problema primário era a escala numérica. A normalização beneficia ambos os modelos drasticamente. Mas mesmo com a escala corrigida, o HoTHP supera o RoTHP na extrapolação, confirmando que o viés de recência é vantajoso nesse dataset quando a escala temporal permite sua calibração. A instabilidade residual do RoTHP (com uma semente ainda explodindo em $5\times$) reforça a fragilidade do kernel oscilatório na extrapolação, observada também nos dados sintéticos.
 
