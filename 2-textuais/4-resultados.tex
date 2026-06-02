@@ -49,6 +49,18 @@ O HoTHP é o modelo com melhor extrapolação nos fatores intermediários ($2\ti
 
 No decaimento lento, onde a influência de eventos distantes persiste por mais tempo, a vantagem do HoTHP diminui em fatores extremos ($10\times$), convergindo com o NHP. Isso sugere que, quando a memória do processo é longa, o decaimento exponencial rápido imposto pelo kernel hiperbólico pode descartar prematuramente eventos ainda relevantes.
 
+A Figura~\ref{fig:extrapolacao-rmse} mostra o RMSE da predição do próximo evento. No decaimento lento, todos os modelos degradam de forma similar, com o HoTHP apresentando RMSE ligeiramente inferior nos fatores intermediários. No decaimento rápido, emerge um contraste interessante com a NLL: o NHP, que era competitivo em NLL, diverge em RMSE ($\approx 2{,}2$ em $10\times$), enquanto os modelos baseados em atenção (THP, RoTHP e HoTHP) mantêm RMSE estável ($\approx 1{,}4$). Isso indica que a arquitetura recorrente do NHP, embora capaz de modelar a distribuição temporal global (NLL), é menos precisa na predição pontual do próximo evento quando a sequência é longa.
+
+\begin{figure}[h!]
+    \centering
+    \captionsetup{width=14cm}
+    \Caption{\label{fig:extrapolacao-rmse} RMSE da predição do próximo evento (média $\pm$ desvio padrão, 5 sementes) em função do fator de extrapolação $\alpha$. No decaimento lento, todos os modelos degradam de forma similar. No decaimento rápido, o NHP diverge enquanto os modelos de atenção mantêm RMSE estável.}
+    \UFCfig{}{
+        \includegraphics[width=14cm]{figuras/fig_extrapolation_rmse_sintetico.png}
+    }{
+    }
+\end{figure}
+
 \section{Dados reais}
 \label{sec:resultados-reais}
 
