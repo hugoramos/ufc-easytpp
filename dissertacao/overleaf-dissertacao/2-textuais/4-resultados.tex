@@ -6,36 +6,48 @@ Este capítulo apresenta os resultados experimentais do HoTHP em dois contextos:
 \section{Dados sintéticos}
 \label{sec:resultados-sinteticos}
 
-Os experimentos sintéticos seguem o protocolo descrito na Seção~\ref{sec:configuracao-experimental}, usando processos de Hawkes com kernel exponencial nos cenários de decaimento lento ($\beta$ pequeno) e rápido ($\beta$ grande). A Tabela~\ref{tab:resultados-sinteticos} resume os resultados para o protocolo \textit{train short, test long}, variando o comprimento de treinamento $L$ e o fator de extrapolação. A Figura~\ref{fig:extrapolacao-sintetica} visualiza a evolução da NLL em função de $\alpha$.
+Os experimentos sintéticos seguem o protocolo descrito na Seção~\ref{sec:configuracao-experimental}, usando processos de Hawkes com kernel exponencial nos cenários de decaimento lento ($\beta$ pequeno) e rápido ($\beta$ grande). Comparamos quatro modelos: NHP, THP, RoTHP e HoTHP. A Tabela~\ref{tab:resultados-sinteticos} resume os resultados para o protocolo \textit{train short, test long}, variando o fator de extrapolação $\alpha$ de $1\times$ (comprimento de treino) até $10\times$. A Figura~\ref{fig:extrapolacao-sintetica} visualiza a evolução da NLL em função de $\alpha$.
 
 \begin{table}[h!]
 \centering
 \caption{NLL (média $\pm$ desvio padrão, 5 sementes) nos dados sintéticos. Valores menores indicam melhor desempenho. O melhor resultado para cada configuração está em negrito.}
 \label{tab:resultados-sinteticos}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{llcccc}
 \toprule
 Cenário & Modelo & $1\times$ & $2\times$ & $5\times$ & $10\times$ \\
 \midrule
-\multirow{2}{*}{Decaimento lento} & RoTHP & $1{,}507 \pm 0{,}019$ & $2{,}016 \pm 0{,}236$ & $2{,}783 \pm 0{,}562$ & --- \\
-                                   & HoTHP & $\mathbf{1{,}566 \pm 0{,}045}$ & $\mathbf{1{,}634 \pm 0{,}090}$ & $\mathbf{1{,}963 \pm 0{,}293}$ & --- \\
+\multirow{4}{*}{Decaimento lento}
+    & NHP    & $\mathbf{1{,}472 \pm 0{,}010}$ & $2{,}225 \pm 0{,}073$ & $2{,}754 \pm 0{,}116$ & $\mathbf{2{,}916 \pm 0{,}129}$ \\
+    & THP    & $1{,}477 \pm 0{,}010$ & $3{,}789 \pm 0{,}586$ & $4{,}295 \pm 0{,}827$ & $4{,}309 \pm 1{,}146$ \\
+    & RoTHP  & $1{,}505 \pm 0{,}015$ & $2{,}073 \pm 0{,}199$ & $2{,}686 \pm 0{,}327$ & $3{,}048 \pm 0{,}602$ \\
+    & HoTHP  & $1{,}590 \pm 0{,}060$ & $\mathbf{1{,}713 \pm 0{,}142}$ & $\mathbf{2{,}219 \pm 0{,}392}$ & $2{,}939 \pm 0{,}784$ \\
 \midrule
-\multirow{2}{*}{Decaimento rápido} & RoTHP & $\mathbf{1{,}681 \pm 0{,}005}$ & $1{,}942 \pm 0{,}153$ & $2{,}018 \pm 0{,}296$ & --- \\
-                                    & HoTHP & $1{,}689 \pm 0{,}010$ & $\mathbf{1{,}702 \pm 0{,}015}$ & $\mathbf{1{,}750 \pm 0{,}059}$ & --- \\
+\multirow{4}{*}{Decaimento rápido}
+    & NHP    & $\mathbf{1{,}661 \pm 0{,}007}$ & $1{,}838 \pm 0{,}088$ & $2{,}060 \pm 0{,}183$ & $2{,}122 \pm 0{,}190$ \\
+    & THP    & $1{,}671 \pm 0{,}003$ & $3{,}594 \pm 0{,}355$ & $3{,}642 \pm 0{,}295$ & $3{,}514 \pm 0{,}464$ \\
+    & RoTHP  & $1{,}682 \pm 0{,}010$ & $2{,}028 \pm 0{,}204$ & $2{,}198 \pm 0{,}326$ & $2{,}360 \pm 0{,}387$ \\
+    & HoTHP  & $1{,}708 \pm 0{,}024$ & $\mathbf{1{,}725 \pm 0{,}031}$ & $\mathbf{1{,}756 \pm 0{,}040}$ & $\mathbf{1{,}779 \pm 0{,}057}$ \\
 \bottomrule
 \end{tabular}
+}
 \end{table}
 
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:extrapolacao-sintetica} NLL (média $\pm$ desvio padrão, 5 sementes) em função do fator de extrapolação $\alpha$ nos cenários sintéticos. O HoTHP mantém a NLL estável à medida que $\alpha$ cresce, enquanto o RoTHP degrada progressivamente, especialmente no cenário de decaimento lento.}
+    \Caption{\label{fig:extrapolacao-sintetica} NLL (média $\pm$ desvio padrão, 5 sementes) em função do fator de extrapolação $\alpha$ nos cenários sintéticos. O HoTHP mantém a NLL mais estável à medida que $\alpha$ cresce, enquanto o THP degrada drasticamente e o RoTHP e NHP apresentam degradação intermediária.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_extrapolation_nll_sintetico.png}
     }{
     }
 \end{figure}
 
-Nos dois cenários, o HoTHP mantém a NLL estável à medida que o fator de extrapolação cresce, enquanto o RoTHP apresenta degradação progressiva. Esse resultado é esperado: como o processo gerador possui kernel exponencial, o viés de recência do HoTHP está perfeitamente alinhado com a estrutura real dos dados. Para distâncias temporais não vistas no treino, o kernel hiperbólico continua a decair monotonicamente, enquanto o kernel trigonométrico do RoTHP oscila em fases não aprendidas.
+Com a inclusão do NHP e do THP como baselines, quatro comportamentos distintos emergem na extrapolação. O THP é o modelo que mais degrada: sua NLL salta para $\approx 3{,}8$ já em $2\times$ e permanece em $\approx 4{,}3$ nos fatores maiores, nos dois cenários. Isso confirma que o encoding temporal absoluto do THP produz representações fora da distribuição para posições novas. O NHP, apesar de não usar atenção, é surpreendentemente competitivo na extrapolação: no decaimento lento, empata com o HoTHP em $10\times$ ($2{,}916$ vs.\ $2{,}939$), provavelmente porque sua arquitetura recorrente acumula informação de forma incremental, sem depender de posições absolutas. No decaimento rápido, no entanto, o NHP fica bem atrás do HoTHP ($2{,}122$ vs.\ $1{,}779$ em $10\times$).
+
+O HoTHP é o modelo com melhor extrapolação nos fatores intermediários ($2\times$ e $5\times$) em ambos os cenários, e domina claramente no decaimento rápido em todos os fatores. No decaimento rápido, a NLL do HoTHP cresce apenas $0{,}071$ entre $1\times$ e $10\times$ ($1{,}708 \to 1{,}779$), enquanto o segundo melhor modelo (NHP) cresce $0{,}461$ ($1{,}661 \to 2{,}122$). Essa estabilidade é esperada: como o processo gerador possui kernel exponencial, o viés de recência do HoTHP está perfeitamente alinhado com a estrutura real dos dados. Para distâncias temporais não vistas no treino, o kernel hiperbólico continua a decair monotonicamente, enquanto o kernel trigonométrico do RoTHP oscila em fases não aprendidas e o encoding absoluto do THP diverge.
+
+No decaimento lento, onde a influência de eventos distantes persiste por mais tempo, a vantagem do HoTHP diminui em fatores extremos ($10\times$), convergindo com o NHP. Isso sugere que, quando a memória do processo é longa, o decaimento exponencial rápido imposto pelo kernel hiperbólico pode descartar prematuramente eventos ainda relevantes.
 
 \section{Dados reais}
 \label{sec:resultados-reais}
