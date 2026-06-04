@@ -25,14 +25,23 @@ class HyperbolicRotaryEmbedding(nn.Module):
         # tenho que garantir que θ' > max(θⱼ).. entan treinar outra variavel (theta_prime_raw)
         self.theta_prime_raw = nn.Parameter(torch.tensor(0.5))
 
+        # escala temporal aprendida: o modelo descobre a unidade natural de tempo
+        # para o kernel hiperbólico via backprop, evitando overflow em datasets
+        # com escalas temporais extremas (ex: retweet, mean_dt ~2750)
+        self.log_time_scale = nn.Parameter(torch.tensor(0.0))
+
     @property
     def theta_prime(self):
         # adicionadno uma mixaria pra garantir a condição da equacao 12 do HoPE
         # + max(θⱼ) + 1e-4 garante θ' > max(θⱼ)
         return F.softplus(self.theta_prime_raw) + self.thetas.max().item() + 1e-4
 
+    @property
+    def time_scale(self):
+        return torch.exp(self.log_time_scale)
 
-def hyperbolic_attention(q, k, v, time_seqs, thetas, theta_prime, mask=None, dropout=None, chunk_size=16):
+
+def hyperbolic_attention(q, k, v, time_seqs, thetas, theta_prime, time_scale, mask=None, dropout=None, chunk_size=16):
     # q, k, v: [B, H, L, d_k]
     # time_seqs: [B, L]
     # thetas: [d_k//2]
@@ -66,15 +75,16 @@ def hyperbolic_attention(q, k, v, time_seqs, thetas, theta_prime, mask=None, dro
         # delta entre posições de query e key para este chunk
         # t_i: [B, chunk, 1]   t_j: [B, 1, L]  →  delta: [B, chunk, L]
         t_i = time_seqs[:, i_start:i_end].unsqueeze(-1)  # [B, chunk, 1]
-        delta = t_i - t_j                                  # [B, chunk, L]
+        delta = (t_i - t_j) * time_scale                   # [B, chunk, L]  — escala aprendida
 
         abs_d  = delta.abs().unsqueeze(-1)   # [B, chunk, L, 1]
         sign_d = delta.sign().unsqueeze(-1)  # [B, chunk, L, 1]
 
         # kernels de decaimento hiperbólico para este chunk (Eq. 9 do HoPE)
-        # ver comentário da versão anterior sobre a reformulação numérica estável
-        exp_m = torch.exp(-abs_d * (theta_prime - thetas_v))  # [B, chunk, L, d_k//2]
-        exp_p = torch.exp(-abs_d * (theta_prime + thetas_v))
+        exp_arg_m = -abs_d * (theta_prime - thetas_v)
+        exp_arg_p = -abs_d * (theta_prime + thetas_v)
+        exp_m = torch.exp(exp_arg_m)  # [B, chunk, L, d_k//2]
+        exp_p = torch.exp(exp_arg_p)
         dc = ((exp_m + exp_p) / 2).unsqueeze(1)              # [B, 1, chunk, L, d_k//2]
         ds = (sign_d * (exp_m - exp_p) / 2).unsqueeze(1)
 
@@ -100,7 +110,7 @@ def hyperbolic_attention(q, k, v, time_seqs, thetas, theta_prime, mask=None, dro
 
 
 class HyperbolicMultiHeadAttention(MultiHeadAttention):
-    def forward(self, query, key, value, mask, time_seqs=None, thetas=None,theta_prime=None, output_weight=False):
+    def forward(self, query, key, value, mask, time_seqs=None, thetas=None, theta_prime=None, time_scale=None, output_weight=False):
         if mask is not None:
             mask = mask.unsqueeze(1)
         nbatches = query.size(0)
@@ -114,7 +124,7 @@ class HyperbolicMultiHeadAttention(MultiHeadAttention):
         # diferente do rothp, nao transformo q e k
         #
 
-        x, attn_weight = hyperbolic_attention(query, key, value, time_seqs, thetas, theta_prime,mask=mask, dropout=self.dropout)
+        x, attn_weight = hyperbolic_attention(query, key, value, time_seqs, thetas, theta_prime, time_scale, mask=mask, dropout=self.dropout)
 
         x = x.transpose(1, 2).contiguous() \
             .view(nbatches, -1, self.n_head * self.d_k)
@@ -126,15 +136,15 @@ class HyperbolicMultiHeadAttention(MultiHeadAttention):
 
 
 class HyperbolicEncoderLayer(EncoderLayer):
-    def forward(self, x, mask, time_seqs=None, thetas=None, theta_prime=None):
+    def forward(self, x, mask, time_seqs=None, thetas=None, theta_prime=None, time_scale=None):
         if self.use_residual:
-            x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, mask, time_seqs=time_seqs, thetas=thetas, theta_prime=theta_prime))
+            x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, mask, time_seqs=time_seqs, thetas=thetas, theta_prime=theta_prime, time_scale=time_scale))
             if self.feed_forward is not None:
                 return self.sublayer[1](x, self.feed_forward)
             else:
                 return x
         else:
-            x = self.self_attn(x, x, x, mask, time_seqs=time_seqs, thetas=thetas, theta_prime=theta_prime)
+            x = self.self_attn(x, x, x, mask, time_seqs=time_seqs, thetas=thetas, theta_prime=theta_prime, time_scale=time_scale)
             if self.feed_forward is not None:
                 return self.feed_forward(x)
             else:
@@ -194,6 +204,7 @@ class HoTHP(THP):
 
         thetas = self.hope_emb.thetas
         theta_prime = self.hope_emb.theta_prime
+        time_scale = self.hope_emb.time_scale
 
         for enc_layer in self.stack_layers:
             enc_output = enc_layer(
@@ -201,6 +212,7 @@ class HoTHP(THP):
                 mask=attention_mask,
                 time_seqs=norm_times,
                 thetas=thetas,
-                theta_prime=theta_prime)
+                theta_prime=theta_prime,
+                time_scale=time_scale)
 
         return enc_output
