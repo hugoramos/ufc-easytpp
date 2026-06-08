@@ -142,14 +142,20 @@ Como $\theta' > \max_j \theta_j$, temos $\theta' - \theta_j > 0$ e $\theta' + \t
 
 Datasets diferentes têm escalas temporais muito distintas. Em redes sociais, os intervalos entre eventos podem estar na ordem de milissegundos, enquanto em dados sísmicos ficam na ordem de dias. Se usássemos os instantes brutos no kernel hiperbólico, os valores de $\theta_j \Delta t$ estariam em escalas incompatíveis e o modelo precisaria de hiperparâmetros específicos para cada dataset.
 
-Para evitar isso, deslocamos os instantes de cada sequência de modo que ela comece em zero:
+Para evitar isso, aplicamos duas transformações a cada sequência. Primeiro, deslocamos os instantes de modo que a sequência comece em zero e, em seguida, dividimos todos os instantes pela média dos intervalos inter-evento daquela sequência:
 %
 \begin{equation}
-    \tilde{t}_i = t_i - t_1, \quad i = 1, \ldots, N.
+    \tilde{t}_i = \frac{t_i - t_1}{\bar{g}},
     \label{eq:normalizacao-temporal}
 \end{equation}
 %
-Essa operação é feita independentemente para cada sequência no \textit{batch}. As diferenças $\Delta \tilde{t} = \tilde{t}_i - \tilde{t}_j = t_i - t_j$ são preservadas, de modo que os intervalos inter-evento originais não se alteram.
+onde $\bar{g}$ é a média aritmética dos intervalos entre eventos consecutivos da sequência. Essa operação é feita independentemente para cada sequência. O deslocamento garante que $\tilde{t}_1 = 0$ e a divisão por $\bar{g}$ faz com que o intervalo médio entre eventos passe a ser aproximadamente 1 em todas as sequências, independentemente da escala temporal original do dataset. A ordem e a proporção entre os intervalos são preservadas.
+
+A escolha dessa normalização foi feita após avaliarmos duas alternativas. A primeira, uma normalização MinMax que transforma os instantes para o intervalo $[0, 1]$, dividindo cada timestamp pelo instante máximo da sequência, mostrou-se inadequada para o protocolo \textit{train-short, test-long}. Como o instante máximo corresponde à soma de todos os intervalos da sequência, esse divisor cresce com o número de eventos. Assim, quanto mais longa a sequência de teste, menores ficam os intervalos que o modelo observa. Um mesmo intervalo real entre dois eventos passa a ser representado por um valor menor no teste do que no treino, simplesmente porque a sequência é mais longa. Além disso, como o kernel hiperbólico calcula exponenciais esses intervalos ficam muito pequenos. Na prática, o mecanismo de atenção passa a atribuir peso semelhante a todos os eventos da sequência, eliminando o viés de recência e tornando os modelos indistinguíveis entre si.
+
+A normalização por média não sofre desse problema porque o divisor $\bar{g}$ é a média dos intervalos, não a soma. Ao adicionar mais eventos de um mesmo processo, a soma dos intervalos cresce, mas a média se mantém estável. Um eventual intervalo atípico também é diluído pela média, ao passo que no MinMax ele alteraria a soma e comprimiria todos os demais. Com isso, um mesmo intervalo real é representado por valores semelhantes no treino e no teste e o modelo vê números na mesma faixa que aprendeu.
+
+A segunda alternativa avaliada foi um fator de escala temporal aprendido como parâmetro do modelo durante o treinamento. Essa abordagem introduziu instabilidade na otimização, com alta variância entre sementes nos fatores de extrapolação elevados. A normalização por média dos intervalos, por ser simples e não depender do comprimento da sequência de teste, foi adotada nos experimentos com dados sintéticos e na ablação do Retweet (Seção~\ref{sec:ablacao-retweet}).
 
 \section{Arquitetura completa}
 \label{sec:arquitetura-hothp}
@@ -221,7 +227,7 @@ No \textbf{cenário de decaimento lento}, o parâmetro $\beta$ é pequeno, de mo
 
 No \textbf{cenário de decaimento rápido}, $\beta$ é grande e apenas eventos recentes têm influência relevante.
 
-Para cada cenário, geramos 500 sequências de treinamento, 150 de validação e 200 de teste.
+Para cada cenário, geramos 500 sequências de treinamento, 150 de validação e 200 de teste. Todas as sequências são pré-processadas com a normalização temporal da Equação~\ref{eq:normalizacao-temporal} antes de alimentar os modelos.
 
 \subsection{Protocolo \textit{train short, test long}}
 \label{subsec:train-short-test-long}
