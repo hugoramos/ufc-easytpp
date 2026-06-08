@@ -168,14 +168,9 @@ A observação do Amazon é particularmente relevante à luz da Seção~\ref{sec
 
 O colapso numérico observado no Retweet levanta uma questão: o problema é a escala temporal ou o próprio viés do HoTHP? Para isolar esses fatores, realizamos uma ablação em que normalizamos os timestamps do Retweet antes do treinamento.
 
-A normalização consiste em dividir todos os instantes de cada sequência pela média dos intervalos daquela sequência:
-%
-\begin{equation}
-    \tilde{t}_i = \frac{t_i - t_1}{\bar{\Delta t}}, \quad \text{onde} \quad \bar{\Delta t} = \frac{1}{N-1} \sum_{i=2}^{N} (t_i - t_{i-1}).
-    \label{eq:normalizacao-retweet}
-\end{equation}
-%
-Após essa operação, o intervalo médio entre eventos passa a ser aproximadamente~1 em todas as sequências, com o intervalo máximo reduzido de~582.928 para aproximadamente~227. A estrutura temporal (ordem dos eventos, padrões de clustering, tipos) é preservada; apenas a escala numérica muda.
+A normalização consiste em dividir todos os instantes de cada sequência pela média dos intervalos daquela sequência.
+
+Após essa operação, o intervalo médio entre eventos passa a ser aproximadamente~1 em todas as sequências, com o intervalo máximo reduzido de~582.928 para aproximadamente~227. A estrutura temporal (ordem dos eventos, padrões de clustering, tipos) é preservada. Apenas a escala numérica muda.
 
 Treinamos o RoTHP e o HoTHP no Retweet normalizado com os mesmos hiperparâmetros (3 sementes, 100 épocas, $L_{\text{treino}} = 50$, $L_{5\times} = 250$) e comparamos com os resultados originais.
 
@@ -250,4 +245,4 @@ Retweet (norm) & 43,5 & 97,6 & $2{,}24\times$ \\
 
 O overhead varia de $1{,}05\times$ (Taxi) a $2{,}24\times$ (Retweet normalizado), sendo mais pronunciado em datasets com sequências longas, onde o cálculo do kernel hiperbólico domina o tempo por batch. Para datasets de comprimento moderado (Stackoverflow, Amazon, Taxi), o custo adicional é inferior a $25\%$.
 
-Esse custo, contudo, é pago uma única vez durante o treinamento. Na inferência, o modelo treinado é aplicado a sequências potencialmente muito mais longas do que as vistas no treino --- exatamente o cenário de extrapolação. Nesse contexto, o que importa não é a velocidade do treinamento, mas se o modelo produz resultados válidos. Os resultados da Tabela~\ref{tab:ablacao-retweet} ilustram o ponto de forma clara: no Retweet normalizado com extrapolação $5\times$, o RoTHP obtém NLL $= 88{,}9 \pm 144{,}8$ (com uma semente explodindo para $255{,}9$), enquanto o HoTHP obtém NLL $= -0{,}542 \pm 0{,}004$. Treinar o RoTHP $2{,}2\times$ mais rápido para depois obter resultados inutilizáveis na extrapolação não constitui uma vantagem prática.
+Esse custo, contudo, é pago uma única vez durante o treinamento. Na inferência, o modelo treinado é aplicado a sequências potencialmente muito mais longas do que as vistas no treino, exatamente o cenário de extrapolação. Nesse contexto, o que importa não é a velocidade do treinamento, mas se o modelo produz resultados válidos. Os resultados da Tabela~\ref{tab:ablacao-retweet} ilustram o ponto de forma clara: no Retweet normalizado com extrapolação $5\times$, o RoTHP obtém NLL $= 88{,}9 \pm 144{,}8$ (com uma semente explodindo para $255{,}9$), enquanto o HoTHP obtém NLL $= -0{,}542 \pm 0{,}004$. Treinar o RoTHP $2{,}2\times$ mais rápido para depois obter resultados inutilizáveis na extrapolação não constitui uma vantagem prática.
