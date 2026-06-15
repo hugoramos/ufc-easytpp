@@ -45,7 +45,7 @@ Cenário & Modelo & $1\times$ & $2\times$ & $5\times$ & $10\times$ \\
 
 Com a inclusão do NHP e do THP como baselines, quatro comportamentos distintos emergem na extrapolação. O THP é o modelo que mais degrada: sua NLL salta para $\approx 3{,}8$ já em $2\times$ e permanece em $\approx 4{,}3$ nos fatores maiores, nos dois cenários. Isso confirma que o encoding temporal absoluto do THP produz representações fora da distribuição para posições novas. O NHP, apesar de não usar atenção, é surpreendentemente competitivo na extrapolação: no decaimento lento, empata com o HoTHP em $10\times$ ($2{,}916$ vs.\ $2{,}939$), provavelmente porque sua arquitetura recorrente acumula informação de forma incremental, sem depender de posições absolutas. No decaimento rápido, no entanto, o NHP fica bem atrás do HoTHP ($2{,}122$ vs.\ $1{,}779$ em $10\times$).
 
-O HoTHP é o modelo com melhor extrapolação nos fatores intermediários ($2\times$ e $5\times$) em ambos os cenários, e domina claramente no decaimento rápido em todos os fatores. No decaimento rápido, a NLL do HoTHP cresce apenas $0{,}071$ entre $1\times$ e $10\times$ ($1{,}708 \to 1{,}779$), enquanto o segundo melhor modelo (NHP) cresce $0{,}461$ ($1{,}661 \to 2{,}122$). Essa estabilidade é esperada: como o processo gerador possui kernel exponencial, o viés de recência do HoTHP está perfeitamente alinhado com a estrutura real dos dados. Para distâncias temporais não vistas no treino, o kernel hiperbólico continua a decair monotonicamente, enquanto o kernel trigonométrico do RoTHP oscila em fases não aprendidas e o encoding absoluto do THP diverge.
+O HoTHP é o modelo com melhor extrapolação nos fatores intermediários ($2\times$ e $5\times$) em ambos os cenários, e domina claramente no decaimento rápido em todos os fatores de extrapolação (2x em diante). No decaimento rápido, a NLL do HoTHP cresce apenas $0{,}071$ entre $1\times$ e $10\times$ ($1{,}708 \to 1{,}779$), enquanto o segundo melhor modelo (NHP) cresce $0{,}461$ ($1{,}661 \to 2{,}122$). Essa estabilidade é esperada: como o processo gerador possui kernel exponencial, o viés de recência do HoTHP está perfeitamente alinhado com a estrutura real dos dados. Para distâncias temporais não vistas no treino, o kernel hiperbólico continua a decair monotonicamente, enquanto o kernel trigonométrico do RoTHP oscila em fases não aprendidas e o encoding absoluto do THP diverge.
 
 No decaimento lento, onde a influência de eventos distantes persiste por mais tempo, a vantagem do HoTHP diminui em fatores extremos ($10\times$), convergindo com o NHP. Isso sugere que, quando a memória do processo é longa, o decaimento exponencial rápido imposto pelo kernel hiperbólico pode descartar prematuramente eventos ainda relevantes.
 
@@ -76,7 +76,7 @@ Dataset & Tipos & Sequências (treino) & $L_{\text{treino}}$ & $L_{5\times}$ & D
 \midrule
 Amazon         & 16 & 6.454  & 18 & 90  & Reviews de produtos \\
 Stackoverflow  & 22 & 1.401  & 20 & 100 & Badges de usuários \\
-Taxi           &  ?  & 1.400  &  7 & 38  & Corridas de táxi \\
+Taxi           & 10 & 1.400  &  7 & 38  & Corridas de táxi \\
 Retweet        &  3 & 20.000 & 50 & 250 & Cascatas de retweets \\
 \bottomrule
 \end{tabular}
