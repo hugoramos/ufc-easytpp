@@ -17,7 +17,7 @@ Além da proposta arquitetural, a análise experimental revelou duas observaçõ
 
 \section{Resultados principais}
 
-Nos dados sintéticos gerados por processos de Hawkes com kernel exponencial, o HoTHP supera consistentemente o RoTHP em todos os fatores de extrapolação testados. Esse resultado era esperado, pois o viés do modelo está perfeitamente alinhado com o processo gerador.
+Nos dados sintéticos gerados por processos de Hawkes com kernel exponencial, o HoTHP supera o RoTHP na maioria dos fatores de extrapolação testados, sendo uma vitória inequívoca após normalização dos dados. Esse resultado era esperado, pois o viés do modelo está perfeitamente alinhado com o processo gerador.
 
 Nos dados reais, os resultados variam conforme o dataset. O HoTHP obtém o melhor desempenho no Amazon ($\Delta\text{NLL} = -0{,}074$ na extrapolação $5\times$, contra $-0{,}020$ do RoTHP), empata no Stackoverflow e no Taxi e falha no Retweet com dados brutos devido à escala temporal extrema do dataset. A ablação com normalização temporal revelou que o problema do Retweet era primariamente de escala numérica: com timestamps normalizados, o HoTHP obtém NLL $5\times$ de $-0{,}542 \pm 0{,}004$, o melhor resultado entre todos os modelos e condições testados, com variância quase zero entre sementes. A análise desses resultados aponta duas condições necessárias para o viés ser benéfico: o processo precisa ter memória temporal de curto alcance, e a escala dos intervalos entre eventos precisa estar numa faixa que permita a calibração do parâmetro $\theta'$.
 

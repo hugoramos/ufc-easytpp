@@ -6,7 +6,7 @@ O HoTHP (\textit{Hyperbolic Rotary Position Embedding-based Transformer Hawkes P
 \section{A limitação oscilatória do RoTHP}
 \label{sec:limitacao-rothp}
 
-Como vimos na Seção \ref{sec:processos-de-hawkes-utilizando-transformers}, o RoTHP representa a posição de cada evento por uma rotação trigonométrica aplicada aos vetores de query $\mathbf{q}$ e key $\mathbf{k}$. O score de atenção entre os eventos $i$ e $j$ depende apenas de $\Delta t = t_i - t_j$, o que é garantido pelas propriedades algébricas da matrize de rotação trigonométrica, que é ortogonal.
+Como vimos na Seção \ref{sec:rothp}, o RoTHP representa a posição de cada evento por uma rotação trigonométrica aplicada aos vetores de query $\mathbf{q}$ e key $\mathbf{k}$. O score de atenção entre os eventos $i$ e $j$ depende apenas de $\Delta t = t_i - t_j$, o que é garantido pelas propriedades algébricas da matrize de rotação trigonométrica, que é ortogonal.
 
 O problema é que o kernel resultante é oscilatório. Seno e cosseno não são funções monotônicas. Sendo assim, o score de atenção pode crescer para eventos mais distantes no tempo, dependendo da fase da oscilação, e diminuir para eventos próximos. Isso contradiz diretamente o kernel do processo de Hawkes, $\varphi(\Delta t) = \alpha e^{-\beta \Delta t}$, que é estritamente decrescente.
 
@@ -151,9 +151,10 @@ Para evitar isso, aplicamos duas transformações a cada sequência. Primeiro, d
 %
 onde $\bar{g}$ é a média aritmética dos intervalos entre eventos consecutivos da sequência. Essa operação é feita independentemente para cada sequência. O deslocamento garante que $\tilde{t}_1 = 0$ e a divisão por $\bar{g}$ faz com que o intervalo médio entre eventos passe a ser aproximadamente 1 em todas as sequências, independentemente da escala temporal original do dataset. A ordem e a proporção entre os intervalos são preservadas.
 
-A escolha dessa normalização foi feita após avaliarmos duas alternativas. A primeira, uma normalização MinMax aplicada aos intervalos entre os eventos que transforma cada $\Delta t_i = t_i - t_{i-1}$ para o intervalo $[0, 1]$ dividindo pelo intervalo máximo da sequência, mostrou-se inadequada para o protocolo \textit{train-short, test-long}. Nos experimentos sintéticos com o protocolo de extrapolação, essa normalização favoreceu sistematicamente o NHP, que não depende de embeddings posicionais explícitos, enquanto os modelos com mecanismos de atenção temporal (THP, RoTHP, HoTHP) foram prejudicados ou apresentaram instabilidade, especialmente nos fatores de extrapolação elevados.
+A escolha dessa normalização foi feita após avaliarmos duas alternativas. A primeira foi uma normalização MinMax aplicada aos \emph{intervalos} entre eventos, e não aos instantes absolutos: cada $\Delta t_i = t_i - t_{i-1}$ é mapeado para o intervalo $[0, 1]$ por $\Delta\tilde{t}_i = (\Delta t_i - \Delta t_{\min}) / (\Delta t_{\max} - \Delta t_{\min})$, onde $\Delta t_{\min}$ e $\Delta t_{\max}$ são o menor e o maior intervalo da sequência. Aplicar o MinMax diretamente aos instantes absolutos seria inadequado, pois o último evento é sempre o máximo e, à medida que a sequência cresce, todos os instantes anteriores são empurrados para perto de zero; normalizar os intervalos evita esse problema. Ainda assim, essa alternativa mostrou-se inadequada para o protocolo \textit{train-short, test-long}: nos experimentos sintéticos de extrapolação ela favoreceu sistematicamente o NHP, que não depende de embeddings posicionais explícitos, enquanto os modelos com atenção temporal (THP, RoTHP e HoTHP) foram prejudicados ou apresentaram instabilidade, sobretudo nos fatores de extrapolação elevados.
 
-A normalização por média não sofre desse problema porque o divisor $\bar{g}$ é a média dos intervalos, que se mantém estável ao adicionar mais eventos de um mesmo processo. Um eventual intervalo atípico também é diluído pela média, ao passo que no MinMax ele alteraria o máximo e comprimiria todos os demais.
+A razão é que o divisor do MinMax depende do intervalo \emph{máximo} da sequência, e o máximo é um valor extremo que tende a crescer quanto mais eventos a sequência tem, pois sequências mais longas têm maior chance de conter um intervalo atipicamente grande. A normalização por média não sofre desse problema porque o divisor $\bar{g}$ é a média dos intervalos, uma estatística estável que praticamente não muda ao adicionar mais eventos de um mesmo processo: o intervalo médio normalizado permanece $\approx 1$ em qualquer comprimento. Um intervalo atípico também é diluído pela média, ao passo que no MinMax ele alteraria o máximo e comprimiria todos os demais.
+
 
 A segunda alternativa avaliada foi um fator de escala temporal aprendido como parâmetro do modelo durante o treinamento. Essa abordagem introduziu instabilidade na otimização, com alta variância entre sementes nos fatores de extrapolação elevados. A normalização por média dos intervalos, por ser simples e não depender do comprimento da sequência de teste, foi adotada nos experimentos com dados sintéticos e na ablação do Retweet (Seção~\ref{sec:ablacao-retweet}).
 
@@ -170,7 +171,7 @@ A rede \textit{feed-forward} em cada camada tem duas projeções lineares com Re
     \mathrm{FFN}(\mathbf{x}) = \mathbf{W}_2 \cdot \mathrm{ReLU}(\mathbf{W}_1 \mathbf{x} + \mathbf{b}_1) + \mathbf{b}_2,
 \end{equation}
 %
-com dimensão interna $2d$. Assim como o RoTHP \cite{gao_rothp_2024}, o HoTHP não usa conexões residuais (add \& norm).
+com dimensão interna $2d$. Assim como o RoTHP \cite{dai_rotary_2026}, o HoTHP não usa conexões residuais (add \& norm).
 
 A saída do encoder $\mathbf{h}(t_j) \in \mathbb{R}^d$ para o evento $j$ é usada para calcular a intensidade condicional de cada tipo $k$ no instante $t > t_j$:
 %
@@ -227,21 +228,21 @@ No \textbf{cenário de decaimento lento}, o parâmetro $\beta$ é pequeno, de mo
 
 No \textbf{cenário de decaimento rápido}, $\beta$ é grande e apenas eventos recentes têm influência relevante.
 
-Para cada cenário, geramos 500 sequências de treinamento, 150 de validação e 200 de teste. Todas as sequências são pré-processadas com a normalização temporal da Equação~\ref{eq:normalizacao-temporal} antes de alimentar os modelos.
+Para cada cenário, geramos 400 sequências de treinamento, 100 de validação e 200 de teste. Todas as sequências são pré-processadas com a normalização temporal da Equação~\ref{eq:normalizacao-temporal} antes de alimentar os modelos.
 
 \subsection{Protocolo \textit{train short, test long}}
 \label{subsec:train-short-test-long}
 
 O protocolo \textit{train short, test long}, proposto por \citeonline{press_train_2021} para modelos de linguagem, treina o modelo em sequências curtas e o testa em sequências mais longas. Adaptamos o protocolo para processos pontuais usando o número de eventos como medida de comprimento.
 
-Varremos comprimentos de treinamento $L \in \{10, 20, 50, 100\}$ e fatores de extrapolação $\{1\times, 2\times, 5\times, 10\times\}$, onde o fator indica quantas vezes a sequência de teste é mais longa do que a de treinamento. Com $L = 10$ e fator $10\times$, por exemplo, treinamos com sequências de 10 eventos e testamos com sequências de 100. Ao todo, a varredura produz 16 combinações de $(L, \mathrm{fator})$, avaliadas nos dois cenários de decaimento.
+Fixamos o comprimento de treinamento em $L = 50$ eventos e variamos o fator de extrapolação em $\{1\times, 2\times, 5\times, 10\times\}$, onde o fator indica quantas vezes a sequência de teste é mais longa do que a de treinamento. Com fator $10\times$, por exemplo, treinamos com sequências de 50 eventos e testamos com sequências de 500. Cada fator é avaliado nos dois cenários de decaimento.
 
 \subsection{Modelos comparados e implementação}
 \label{subsec:modelos-comparados}
 
-Comparamos o HoTHP com o RoTHP \cite{gao_rothp_2024}. O RoTHP é o baseline natural porque os dois modelos têm exatamente a mesma estrutura de encoder e a mesma função de intensidade; a única diferença é o kernel posicional. O THP original não entra na comparação porque sua sensibilidade a deslocamentos temporais já foi documentada por \citeonline{gao_rothp_2024}.
+Nos dados sintéticos comparamos quatro modelos: NHP \cite{mei_neural_2017}, THP \cite{zuo_transformer_2021}, RoTHP \cite{dai_rotary_2026} e o HoTHP proposto. O RoTHP é o baseline mais próximo, pois compartilha exatamente a mesma estrutura de encoder e a mesma função de intensidade do HoTHP, diferindo apenas no kernel posicional; o NHP (recorrente) e o THP (encoding temporal absoluto) servem para situar o comportamento na extrapolação em relação a arquiteturas distintas. Nos dados reais comparamos THP, RoTHP e HoTHP no Amazon e no Stackoverflow, e RoTHP e HoTHP no Taxi e no Retweet.
 
-Ambos os modelos são implementados no framework EasyTPP \cite{xue_easytpp_2024}, com os mesmos hiperparâmetros: $d = 64$, $N_{\ell} = 2$ camadas, $H = 4$ cabeças de atenção, \textit{dropout} de $0{,}1$ e Adam com taxa de aprendizado $10^{-3}$.
+Todos os modelos são implementados no framework EasyTPP \cite{xue_easytpp_2024}, e os baselines compartilham os mesmos hiperparâmetros do HoTHP em cada cenário, de modo a isolar o efeito do kernel posicional. Nos experimentos sintéticos usamos dimensão do modelo $d = 32$, dimensão do \textit{embedding} temporal igual a $32$, $N_{\ell} = 2$ camadas, $H = 2$ cabeças de atenção, \textit{dropout} de $0{,}1$ e otimizador AdamW (\textit{weight decay} $10^{-4}$) com taxa de aprendizado $10^{-3}$, exceto o HoTHP, que usa $5 \times 10^{-4}$ para maior estabilidade numérica das funções hiperbólicas. Nos experimentos com dados reais usamos $d = 64$, \textit{embedding} temporal igual a $16$, $N_{\ell} = 2$ camadas, $H = 2$ cabeças e taxa de aprendizado $10^{-3}$ para todos os modelos.
 
 \subsection{Métricas e avaliação estatística}
 \label{subsec:metricas}
