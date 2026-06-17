@@ -1,29 +1,29 @@
-\chapter{Resultados}
+\chapter{Results}
 \label{chap:resultados}
 
-Este capítulo apresenta os resultados experimentais do HoTHP em dois contextos: dados sintéticos, onde o processo gerador é conhecido, e dados reais, onde não é. Em seguida, visualizamos as intensidades aprendidas pelos modelos para entender o comportamento do viés de recência na prática, e realizamos uma ablação para isolar o efeito da escala temporal.
+This chapter presents the experimental results of the HoTHP in two contexts: synthetic data, where the generating process is known, and real data, where it is not. Next, we visualize the intensities learned by the models to understand the behavior of the recency bias in practice, and we run an ablation to isolate the effect of the temporal scale.
 
-\section{Dados sintéticos}
+\section{Synthetic data}
 \label{sec:resultados-sinteticos}
 
-Os experimentos sintéticos seguem o protocolo descrito na Seção~\ref{sec:configuracao-experimental}, usando processos de Hawkes com kernel exponencial nos cenários de decaimento lento ($\beta$ pequeno) e rápido ($\beta$ grande). Comparamos quatro modelos: NHP, THP, RoTHP e HoTHP. A Tabela~\ref{tab:resultados-sinteticos} resume os resultados para o protocolo \textit{train short, test long}, variando o fator de extrapolação $\alpha$ de $1\times$ (comprimento de treino) até $10\times$. A Figura~\ref{fig:extrapolacao-sintetica} visualiza a evolução da NLL em função de $\alpha$.
+The synthetic experiments follow the protocol described in Section~\ref{sec:configuracao-experimental}, using Hawkes processes with an exponential kernel in the slow decay ($\beta$ small) and fast decay ($\beta$ large) scenarios. We compare four models: NHP, THP, RoTHP, and HoTHP. Table~\ref{tab:resultados-sinteticos} summarizes the results for the \textit{train short, test long} protocol, varying the extrapolation factor $\alpha$ from $1\times$ (training length) to $10\times$. Figure~\ref{fig:extrapolacao-sintetica} visualizes the evolution of the NLL as a function of $\alpha$.
 
 \begin{table}[h!]
 \centering
-\caption{NLL (média $\pm$ desvio padrão, 10 sementes) nos dados sintéticos. Valores menores indicam melhor desempenho. O melhor resultado para cada configuração está em negrito.}
+\caption{NLL (mean $\pm$ standard deviation, 10 seeds) on the synthetic data. Lower values indicate better performance. The best result for each configuration is in bold.}
 \label{tab:resultados-sinteticos}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{llcccc}
 \toprule
-Cenário & Modelo & $1\times$ & $2\times$ & $5\times$ & $10\times$ \\
+Scenario & Model & $1\times$ & $2\times$ & $5\times$ & $10\times$ \\
 \midrule
-\multirow{4}{*}{Decaimento lento}
+\multirow{4}{*}{Slow decay}
     & NHP    & $\mathbf{1{,}470 \pm 0{,}007}$ & $2{,}197 \pm 0{,}131$ & $2{,}667 \pm 0{,}236$ & $2{,}817 \pm 0{,}273$ \\
     & THP    & $1{,}475 \pm 0{,}007$ & $3{,}926 \pm 1{,}505$ & $4{,}127 \pm 1{,}803$ & $4{,}199 \pm 2{,}117$ \\
     & RoTHP  & $1{,}499 \pm 0{,}014$ & $2{,}007 \pm 0{,}284$ & $2{,}642 \pm 0{,}509$ & $3{,}001 \pm 0{,}625$ \\
     & HoTHP  & $1{,}545 \pm 0{,}025$ & $\mathbf{1{,}609 \pm 0{,}096}$ & $\mathbf{1{,}943 \pm 0{,}313}$ & $\mathbf{2{,}364 \pm 0{,}625}$ \\
 \midrule
-\multirow{4}{*}{Decaimento rápido}
+\multirow{4}{*}{Fast decay}
     & NHP    & $\mathbf{1{,}663 \pm 0{,}005}$ & $1{,}833 \pm 0{,}134$ & $2{,}057 \pm 0{,}223$ & $2{,}153 \pm 0{,}250$ \\
     & THP    & $1{,}677 \pm 0{,}011$ & $3{,}391 \pm 0{,}781$ & $3{,}761 \pm 1{,}072$ & $3{,}897 \pm 1{,}509$ \\
     & RoTHP  & $1{,}681 \pm 0{,}007$ & $2{,}039 \pm 0{,}279$ & $2{,}146 \pm 0{,}309$ & $2{,}275 \pm 0{,}372$ \\
@@ -36,66 +36,66 @@ Cenário & Modelo & $1\times$ & $2\times$ & $5\times$ & $10\times$ \\
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:extrapolacao-sintetica} NLL (média $\pm$ desvio padrão, 10 sementes) em função do fator de extrapolação $\alpha$ nos cenários sintéticos. O HoTHP mantém a NLL mais estável à medida que $\alpha$ cresce, enquanto o THP degrada drasticamente e o RoTHP e NHP apresentam degradação intermediária.}
+    \Caption{\label{fig:extrapolacao-sintetica} NLL (mean $\pm$ standard deviation, 10 seeds) as a function of the extrapolation factor $\alpha$ in the synthetic scenarios. The HoTHP keeps the NLL more stable as $\alpha$ grows, while the THP degrades drastically and the RoTHP and NHP show intermediate degradation.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_extrapolation_nll_sintetico.png}
     }{
     }
 \end{figure}
 
-Com a inclusão do NHP e do THP como baselines, quatro comportamentos distintos emergem na extrapolação. O THP é o modelo que mais degrada: sua NLL salta para $\approx 3{,}9$ já em $2\times$ e permanece entre $\approx 3{,}9$ e $\approx 4{,}2$ nos fatores maiores, nos dois cenários, com desvio padrão muito alto (até $\pm 2{,}12$) causado por sementes que divergem completamente. Isso confirma que o encoding temporal absoluto do THP produz representações fora da distribuição para posições novas. O NHP, apesar de não usar atenção, é o baseline mais competitivo na extrapolação, provavelmente porque sua arquitetura recorrente acumula informação de forma incremental, sem depender de posições absolutas; ainda assim, fica atrás do HoTHP em todos os fatores de extrapolação nos dois cenários.
+With the inclusion of the NHP and the THP as baselines, four distinct behaviors emerge in the extrapolation. The THP is the model that degrades the most: its NLL jumps to $\approx 3{,}9$ already at $2\times$ and stays between $\approx 3{,}9$ and $\approx 4{,}2$ at the larger factors, in both scenarios, with a very high standard deviation (up to $\pm 2{,}12$) caused by seeds that diverge completely. This confirms that the absolute temporal encoding of the THP produces representations outside the distribution for new positions. The NHP, despite not using attention, is the most competitive baseline in the extrapolation, probably because its recurrent architecture accumulates information incrementally, without depending on absolute positions; even so, it stays behind the HoTHP at all extrapolation factors in both scenarios.
 
-O HoTHP obtém a melhor NLL em todos os fatores de extrapolação ($2\times$, $5\times$ e $10\times$) nos dois cenários. O custo dessa vantagem aparece em distribuição: em $1\times$, o HoTHP é o modelo com pior NLL (por exemplo, $1{,}545$ contra $1{,}470$ do NHP no decaimento lento), uma diferença pequena que se inverte assim que a sequência de teste ultrapassa o comprimento de treino. No decaimento rápido, a NLL do HoTHP cresce apenas $0{,}085$ entre $1\times$ e $10\times$ ($1{,}689 \to 1{,}774$), permanecendo praticamente plana, enquanto o segundo melhor modelo (NHP) cresce $0{,}490$ ($1{,}663 \to 2{,}153$). Essa estabilidade é esperada: como o processo gerador possui kernel exponencial, o viés de recência do HoTHP está perfeitamente alinhado com a estrutura real dos dados. Para distâncias temporais não vistas no treino, o kernel hiperbólico continua a decair monotonicamente, enquanto o kernel trigonométrico do RoTHP oscila em fases não aprendidas e o encoding absoluto do THP diverge.
+The HoTHP obtains the best NLL at all extrapolation factors ($2\times$, $5\times$, and $10\times$) in both scenarios. The cost of this advantage appears in distribution: at $1\times$, the HoTHP is the model with the worst NLL (for example, $1{,}545$ against $1{,}470$ of the NHP in the slow decay), a small difference that reverses as soon as the test sequence goes beyond the training length. In the fast decay, the NLL of the HoTHP grows by only $0{,}085$ between $1\times$ and $10\times$ ($1{,}689 \to 1{,}774$), staying practically flat, while the second best model (NHP) grows by $0{,}490$ ($1{,}663 \to 2{,}153$). This stability is expected: since the generating process has an exponential kernel, the recency bias of the HoTHP is perfectly aligned with the real structure of the data. For temporal distances not seen in training, the hyperbolic kernel keeps decaying monotonically, while the trigonometric kernel of the RoTHP oscillates in phases that were not learned and the absolute encoding of the THP diverges.
 
-A vantagem do HoTHP sobre os três baselines é estatisticamente significativa (teste de Wilcoxon de postos sinalizados, pareado por semente e unilateral, $p < 0{,}05$) em todos os fatores de extrapolação dos dois cenários, sem exceção. O caso menos folgado é o decaimento lento em $10\times$ frente ao NHP ($p = 0{,}042$); em todas as demais comparações o valor-$p$ fica em $0{,}025$ ou abaixo, atingindo o piso de $0{,}001$ (igual a $1/2^{10}$, o menor valor possível para o teste unilateral com 10 sementes) na maioria delas.
+The advantage of the HoTHP over the three baselines is statistically significant (Wilcoxon signed-rank test, paired by seed and one-sided, $p < 0{,}05$) at all extrapolation factors of both scenarios, without exception. The least comfortable case is the slow decay at $10\times$ against the NHP ($p = 0{,}042$); in all the other comparisons the $p$-value is $0{,}025$ or below, reaching the floor of $0{,}001$ (equal to $1/2^{10}$, the smallest possible value for the one-sided test with 10 seeds) in most of them.
 
-No decaimento lento, onde a influência de eventos distantes persiste por mais tempo, o HoTHP ainda obtém a melhor NLL média em todos os fatores, mas sua degradação é muito maior do que no decaimento rápido: a NLL cresce $0{,}819$ entre $1\times$ e $10\times$, contra apenas $0{,}085$ no decaimento rápido. Em $10\times$, a média do HoTHP ($2{,}364$) é inferior à do NHP ($2{,}817$) e a diferença permanece estatisticamente significativa, ainda que pela margem mais estreita de todo o experimento ($p = 0{,}042$), reflexo da alta variância entre sementes nesse regime ($\pm 0{,}625$). Isso sugere que, quando a memória do processo é longa, o decaimento exponencial imposto pelo kernel hiperbólico pode descartar prematuramente eventos ainda relevantes, reduzindo a margem de vantagem.
+In the slow decay, where the influence of distant events persists for longer, the HoTHP still obtains the best mean NLL at all factors, but its degradation is much larger than in the fast decay: the NLL grows by $0{,}819$ between $1\times$ and $10\times$, against only $0{,}085$ in the fast decay. At $10\times$, the mean of the HoTHP ($2{,}364$) is lower than that of the NHP ($2{,}817$) and the difference remains statistically significant, even if by the narrowest margin of the whole experiment ($p = 0{,}042$), reflecting the high variance between seeds in this regime ($\pm 0{,}625$). This suggests that, when the memory of the process is long, the exponential decay imposed by the hyperbolic kernel may discard events that are still relevant too early, reducing the advantage margin.
 
-A Figura~\ref{fig:extrapolacao-rmse} mostra o RMSE da predição do próximo evento. No decaimento lento, todos os modelos degradam de forma similar (RMSE $\approx 2{,}7$--$2{,}8$ em $10\times$), com o HoTHP apresentando o menor RMSE ($2{,}714$). No decaimento rápido, os quatro modelos mantêm RMSE estável e próximo (entre $\approx 1{,}40$ e $1{,}55$ em $10\times$): o RoTHP obtém o menor valor ($1{,}407$) e o NHP o maior ($1{,}549$), este último com variância um pouco mais alta por conta de uma semente atípica. Diferentemente da NLL, o RMSE não separa nitidamente os modelos. Isso indica que a vantagem do HoTHP se manifesta sobretudo na verossimilhança, ou seja, na modelagem da distribuição temporal completa, e não na predição pontual do próximo intervalo, em que os modelos de atenção ficam praticamente empatados.
+Figure~\ref{fig:extrapolacao-rmse} shows the RMSE of the next event prediction. In the slow decay, all the models degrade in a similar way (RMSE $\approx 2{,}7$--$2{,}8$ at $10\times$), with the HoTHP showing the lowest RMSE ($2{,}714$). In the fast decay, the four models keep a stable and close RMSE (between $\approx 1{,}40$ and $1{,}55$ at $10\times$): the RoTHP obtains the lowest value ($1{,}407$) and the NHP the highest ($1{,}549$), the latter with a slightly higher variance due to an atypical seed. Unlike the NLL, the RMSE does not separate the models clearly. This indicates that the advantage of the HoTHP shows up mainly in the likelihood, that is, in modeling the full temporal distribution, and not in the pointwise prediction of the next interval, where the attention models are practically tied.
 
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:extrapolacao-rmse} RMSE da predição do próximo evento (média $\pm$ desvio padrão, 10 sementes) em função do fator de extrapolação $\alpha$. Diferentemente da NLL, o RMSE não separa nitidamente os modelos: no decaimento lento todos degradam de forma similar e no decaimento rápido permanecem próximos entre si.}
+    \Caption{\label{fig:extrapolacao-rmse} RMSE of the next event prediction (mean $\pm$ standard deviation, 10 seeds) as a function of the extrapolation factor $\alpha$. Unlike the NLL, the RMSE does not separate the models clearly: in the slow decay all of them degrade in a similar way and in the fast decay they stay close to each other.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_extrapolation_rmse_sintetico.png}
     }{
     }
 \end{figure}
 
-\section{Dados reais}
+\section{Real data}
 \label{sec:resultados-reais}
 
-Para avaliar o HoTHP em cenários mais realistas, realizamos experimentos em quatro datasets públicos de processos pontuais. A Tabela~\ref{tab:datasets-reais} descreve cada dataset.
+To evaluate the HoTHP in more realistic scenarios, we ran experiments on four public point process datasets. Table~\ref{tab:datasets-reais} describes each dataset.
 
 \begin{table}[h!]
 \centering
-\caption{Datasets reais utilizados nos experimentos. $L_{\text{treino}}$ é o comprimento máximo de treinamento (número de eventos) e $L_{5\times}$ é o comprimento de teste na condição de extrapolação.}
+\caption{Real datasets used in the experiments. $L_{\text{train}}$ is the maximum training length (number of events) and $L_{5\times}$ is the test length in the extrapolation condition.}
 \label{tab:datasets-reais}
 \begin{tabular}{lccccc}
 \toprule
-Dataset & Tipos & Sequências (treino) & $L_{\text{treino}}$ & $L_{5\times}$ & Domínio \\
+Dataset & Types & Sequences (train) & $L_{\text{train}}$ & $L_{5\times}$ & Domain \\
 \midrule
-Amazon         & 16 & 6.454  & 18 & 90  & Reviews de produtos \\
-Stackoverflow  & 22 & 1.401  & 20 & 100 & Badges de usuários \\
-Taxi           & 10 & 1.400  &  7 & 38  & Corridas de táxi \\
-Retweet        &  3 & 20.000 & 50 & 250 & Cascatas de retweets \\
+Amazon         & 16 & 6.454  & 18 & 90  & Product reviews \\
+Stackoverflow  & 22 & 1.401  & 20 & 100 & User badges \\
+Taxi           & 10 & 1.400  &  7 & 38  & Taxi rides \\
+Retweet        &  3 & 20.000 & 50 & 250 & Retweet cascades \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Seguimos o mesmo protocolo \textit{train short, test long}: treinamos cada modelo com sequências truncadas em $L_{\text{treino}}$ eventos e avaliamos tanto no comprimento de treino ($1\times$) quanto na extrapolação ($5\times$). Usamos três sementes (2019, 2020, 2021), 100 épocas e os mesmos hiperparâmetros da Seção~\ref{subsec:modelos-comparados}. Para o Amazon e Stackoverflow, comparamos THP, RoTHP e HoTHP; para o Taxi e Retweet, comparamos apenas RoTHP e HoTHP.
+We follow the same \textit{train short, test long} protocol: we train each model with sequences truncated at $L_{\text{train}}$ events and evaluate both at the training length ($1\times$) and at extrapolation ($5\times$). We use three seeds (2019, 2020, 2021), 100 epochs, and the same hyperparameters as in Section~\ref{subsec:modelos-comparados}. For Amazon and Stackoverflow, we compare THP, RoTHP, and HoTHP; for Taxi and Retweet, we compare only RoTHP and HoTHP.
 
-A Tabela~\ref{tab:resultados-reais} apresenta os resultados.
+Table~\ref{tab:resultados-reais} presents the results.
 
 \begin{table}[h!]
 \centering
-\caption{NLL nos datasets reais (média $\pm$ desvio padrão, 3 sementes). $\Delta$NLL é a diferença $5\times$ menos $1\times$: valores negativos indicam que o modelo melhora com sequências mais longas. Valores menores de NLL são melhores. O melhor resultado para cada dataset e condição está em negrito.}
+\caption{NLL on the real datasets (mean $\pm$ standard deviation, 3 seeds). $\Delta$NLL is the difference $5\times$ minus $1\times$: negative values indicate that the model improves with longer sequences. Lower NLL values are better. The best result for each dataset and condition is in bold.}
 \label{tab:resultados-reais}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{llcccc}
 \toprule
-Dataset & Modelo & NLL $1\times$ & NLL $5\times$ & $\Delta$NLL & Acc $5\times$ \\
+Dataset & Model & NLL $1\times$ & NLL $5\times$ & $\Delta$NLL & Acc $5\times$ \\
 \midrule
 \multirow{3}{*}{Amazon}
     & THP    & $2{,}274 \pm 0{,}002$ & $2{,}244 \pm 0{,}007$ & $-0{,}030$ & $0{,}322 \pm 0{,}004$ \\
@@ -119,123 +119,123 @@ Dataset & Modelo & NLL $1\times$ & NLL $5\times$ & $\Delta$NLL & Acc $5\times$ \
 }
 \end{table}
 
-Três padrões distintos emergem dos resultados:
+Three distinct patterns emerge from the results:
 
-\textbf{Amazon: HoTHP vence.} O HoTHP obtém a melhor NLL em ambas as condições e apresenta o maior ganho na extrapolação ($\Delta\text{NLL} = -0{,}074$, contra $-0{,}020$ do RoTHP). A diferença é pequena em valor absoluto, mas consistente entre as três sementes (desvio padrão de $0{,}002$).
+\textbf{Amazon: HoTHP wins.} The HoTHP obtains the best NLL in both conditions and shows the largest gain in extrapolation ($\Delta\text{NLL} = -0{,}074$, against $-0{,}020$ of the RoTHP). The difference is small in absolute value, but consistent across the three seeds (standard deviation of $0{,}002$).
 
-\textbf{Stackoverflow: empate.} Os três modelos apresentam NLL praticamente idênticas em $5\times$, com diferenças dentro da margem de erro. Nenhum modelo se beneficia mais do que os outros com sequências mais longas. Isso sugere que o dataset não possui estrutura temporal que diferencie os vieses posicionais dos três modelos.
+\textbf{Stackoverflow: tie.} The three models show practically identical NLL at $5\times$, with differences within the margin of error. No model benefits more than the others from longer sequences. This suggests that the dataset does not have a temporal structure that differentiates the positional biases of the three models.
 
-\textbf{Taxi: empate com leve vantagem do HoTHP.} O HoTHP degrada menos na extrapolação ($\Delta\text{NLL} = +0{,}059$ contra $+0{,}092$ do RoTHP), mas a diferença é modesta e a variância do RoTHP é alta.
+\textbf{Taxi: tie with a slight advantage for the HoTHP.} The HoTHP degrades less in extrapolation ($\Delta\text{NLL} = +0{,}059$ against $+0{,}092$ of the RoTHP), but the difference is modest and the variance of the RoTHP is high.
 
-\textbf{Retweet: ambos os modelos falham.} A NLL em $5\times$ explode para valores na ordem de $10^5$, com o HoTHP pior que o RoTHP ($367 \times 10^3$ contra $121 \times 10^3$). A escala temporal extrema desse dataset (intervalos entre eventos de até 582.928 unidades de tempo) faz com que o kernel hiperbólico sature numericamente, como discutido na Seção~\ref{sec:estabilidade-numerica}.
+\textbf{Retweet: both models fail.} The NLL at $5\times$ explodes to values on the order of $10^5$, with the HoTHP worse than the RoTHP ($367 \times 10^3$ against $121 \times 10^3$). The extreme temporal scale of this dataset (intervals between events of up to 582.928 time units) makes the hyperbolic kernel saturate numerically, as discussed in Section~\ref{sec:estabilidade-numerica}.
 
-\subsection{Convergência do treinamento}
+\subsection{Training convergence}
 \label{subsec:convergencia}
 
-A Figura~\ref{fig:convergencia} mostra as curvas de convergência da NLL de validação ao longo das 100 épocas de treinamento. Nos datasets Amazon e Stackoverflow, os três modelos convergem de forma suave, com a NLL estabilizando após a época 50. No Amazon, a curva ainda apresenta uma tendência de queda suave nas últimas 20 épocas, mas com declive inferior a $0{,}01$ por época, o que indica que épocas adicionais beneficiariam todos os modelos igualmente sem alterar o ranking.
+Figure~\ref{fig:convergencia} shows the convergence curves of the validation NLL over the 100 training epochs. On the Amazon and Stackoverflow datasets, the three models converge smoothly, with the NLL stabilizing after epoch 50. On Amazon, the curve still shows a slight downward trend in the last 20 epochs, but with a slope below $0{,}01$ per epoch, which indicates that additional epochs would benefit all the models equally without changing the ranking.
 
-No Taxi, o RoTHP apresenta maior variância entre sementes nas épocas iniciais (10 a 40), mas converge para o mesmo patamar que o HoTHP após a época 40. No Retweet, a convergência revela o colapso numérico: 2 de 3 sementes estabilizam em NLL $\approx 15{,}9$, enquanto apenas uma semente (2019) converge para valores informativos ($\text{NLL} \approx 5{,}5$). A banda de desvio padrão resultante é enorme, confirmando visualmente a instabilidade reportada na Tabela~\ref{tab:resultados-reais}.
+On Taxi, the RoTHP shows higher variance between seeds in the early epochs (10 to 40), but converges to the same level as the HoTHP after epoch 40. On Retweet, the convergence reveals the numerical collapse: 2 out of 3 seeds stabilize at NLL $\approx 15{,}9$, while only one seed (2019) converges to informative values ($\text{NLL} \approx 5{,}5$). The resulting standard deviation band is enormous, visually confirming the instability reported in Table~\ref{tab:resultados-reais}.
 
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:convergencia} Curvas de convergência da NLL de validação (média $\pm$ desvio padrão, 3 sementes). As primeiras épocas foram omitidas para melhorar a visualização. No Amazon e Stackoverflow, todos os modelos convergem de forma suave. No Taxi, o RoTHP é mais instável nas épocas iniciais. No Retweet, a banda larga do RoTHP reflete o colapso de 2 das 3 sementes.}
+    \Caption{\label{fig:convergencia} Convergence curves of the validation NLL (mean $\pm$ standard deviation, 3 seeds). The first epochs were omitted to improve the visualization. On Amazon and Stackoverflow, all the models converge smoothly. On Taxi, the RoTHP is more unstable in the early epochs. On Retweet, the wide band of the RoTHP reflects the collapse of 2 of the 3 seeds.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_convergencia.pdf}
     }{
     }
 \end{figure}
 
-\section{Intensidades aprendidas pelos modelos}
+\section{Intensities learned by the models}
 \label{sec:intensidades-aprendidas}
 
-Para entender por que o HoTHP se comporta de forma diferente em cada dataset, extraímos a função de intensidade condicional $\lambda^*(t)$ que cada modelo treinado calcula para sequências de teste representativas. A Figura~\ref{fig:intensidades} mostra a intensidade total $\lambda^*(t) = \sum_k \lambda_k^*(t)$ ao longo do tempo para os datasets Amazon, Stackoverflow e Retweet.
+To understand why the HoTHP behaves differently on each dataset, we extracted the conditional intensity function $\lambda^*(t)$ that each trained model computes for representative test sequences. Figure~\ref{fig:intensidades} shows the total intensity $\lambda^*(t) = \sum_k \lambda_k^*(t)$ over time for the Amazon, Stackoverflow, and Retweet datasets.
 
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:intensidades} Intensidade condicional $\lambda^*(t)$ aprendida pelo THP (laranja), RoTHP (azul) e HoTHP (verde) para uma sequência de teste de cada dataset. As barras verticais cinzas indicam os eventos. No Amazon, a intensidade cresce entre eventos e cai ao ocorrer um evento (auto-inibição). No Stackoverflow, a intensidade é aproximadamente constante (processo sem memória). No Retweet, ambos os modelos colapsam para $\lambda^* \approx 0$ após o burst inicial devido à escala temporal extrema.}
+    \Caption{\label{fig:intensidades} Conditional intensity $\lambda^*(t)$ learned by the THP (orange), RoTHP (blue), and HoTHP (green) for one test sequence of each dataset. The gray vertical bars indicate the events. On Amazon, the intensity grows between events and falls when an event occurs (self-inhibition). On Stackoverflow, the intensity is approximately constant (memoryless process). On Retweet, both models collapse to $\lambda^* \approx 0$ after the initial burst due to the extreme temporal scale.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_model_intensity.png}
     }{
     }
 \end{figure}
 
-No Amazon, a intensidade cresce entre eventos e cai quando um evento ocorre, indicando que cada evento reduz a chance de novos eventos no curto prazo. Mesmo assim, o evento mais recente é o mais informativo para a previsão, o que explica por que o viés de recência do HoTHP ajuda nesse dataset. No Stackoverflow, os três modelos aprendem uma intensidade praticamente plana, sem reação visível aos eventos, caracteristico de um processo com pouca memória temporal, e nenhum viés posicional consegue se diferenciar. No Retweet, os modelos só reagem ao burst inicial e depois a intensidade cai para praticamente zero, porque os intervalos entre eventos são grandes demais para qualquer função de decaimento.
+On Amazon, the intensity grows between events and falls when an event occurs, indicating that each event reduces the chance of new events in the short term. Even so, the most recent event is the most informative for the prediction, which explains why the recency bias of the HoTHP helps on this dataset. On Stackoverflow, the three models learn a practically flat intensity, with no visible reaction to the events, characteristic of a process with little temporal memory, and no positional bias manages to stand out. On Retweet, the models only react to the initial burst and then the intensity falls to practically zero, because the intervals between events are too large for any decay function.
 
-A observação do Amazon é particularmente relevante à luz da Seção~\ref{sec:onde-atua-vies}: o HoTHP vence nesse dataset apesar de o processo ser auto-inibitório, não auto-excitante. Isso confirma que o viés de recência atua na atenção (``quais eventos passados são mais relevantes'') e não na intensidade (``a intensidade sobe ou desce após um evento''). No Amazon, o evento mais recente é o mais informativo para prever o próximo e o decaimento exponencial na atenção captura isso corretamente.
+The observation on Amazon is particularly relevant in light of Section~\ref{sec:onde-atua-vies}: the HoTHP wins on this dataset even though the process is self-inhibiting, not self-exciting. This confirms that the recency bias acts on the attention (``which past events are more relevant'') and not on the intensity (``the intensity rises or falls after an event''). On Amazon, the most recent event is the most informative for predicting the next one and the exponential decay in the attention captures this correctly.
 
-\section{Ablação: normalização temporal do Retweet}
+\section{Ablation: temporal normalization of Retweet}
 \label{sec:ablacao-retweet}
 
-O colapso numérico observado no Retweet levanta uma questão: o problema é a escala temporal ou o próprio viés do HoTHP? Para isolar esses fatores, realizamos uma ablação em que normalizamos os timestamps do Retweet antes do treinamento.
+The numerical collapse observed on Retweet raises a question: is the problem the temporal scale or the HoTHP bias itself? To isolate these factors, we ran an ablation in which we normalize the Retweet timestamps before training.
 
-A normalização consiste em dividir todos os instantes de cada sequência pela média dos intervalos daquela sequência.
+The normalization consists of dividing all the instants of each sequence by the mean of the intervals of that sequence.
 
-Após essa operação, o intervalo médio entre eventos passa a ser aproximadamente~1 em todas as sequências, com o intervalo máximo reduzido de~582.928 para aproximadamente~227. A estrutura temporal (ordem dos eventos, padrões de clustering, tipos) é preservada. Apenas a escala numérica muda.
+After this operation, the mean interval between events becomes approximately~1 in all the sequences, with the maximum interval reduced from~582.928 to approximately~227. The temporal structure (order of the events, clustering patterns, types) is preserved. Only the numerical scale changes.
 
-Treinamos o RoTHP e o HoTHP no Retweet normalizado com os mesmos hiperparâmetros (3 sementes, 100 épocas, $L_{\text{treino}} = 50$, $L_{5\times} = 250$) e comparamos com os resultados originais.
+We trained the RoTHP and the HoTHP on the normalized Retweet with the same hyperparameters (3 seeds, 100 epochs, $L_{\text{train}} = 50$, $L_{5\times} = 250$) and compared with the original results.
 
 \begin{table}[h!]
 \centering
-\caption{Ablação: efeito da normalização temporal no Retweet. ``Original'' usa os timestamps brutos; ``Normalizado'' usa os timestamps divididos pela média dos gaps. Média $\pm$ desvio padrão (3 sementes).}
+\caption{Ablation: effect of the temporal normalization on Retweet. ``Original'' uses the raw timestamps; ``Normalized'' uses the timestamps divided by the mean of the gaps. Mean $\pm$ standard deviation (3 seeds).}
 \label{tab:ablacao-retweet}
 \begin{tabular}{llcccc}
 \toprule
-Versão & Modelo & NLL $1\times$ & NLL $5\times$ & Acc $1\times$ & Acc $5\times$ \\
+Version & Model & NLL $1\times$ & NLL $5\times$ & Acc $1\times$ & Acc $5\times$ \\
 \midrule
 \multirow{2}{*}{Original}
     & RoTHP  & $12{,}456 \pm 6{,}038$ & $1 \times 10^{5}$ & $0{,}496 \pm 0{,}072$ & $0{,}520 \pm 0{,}051$ \\
     & HoTHP  & $12{,}517 \pm 5{,}932$ & $4 \times 10^{5}$ & $0{,}495 \pm 0{,}071$ & $0{,}518 \pm 0{,}047$ \\
 \midrule
-\multirow{2}{*}{Normalizado}
+\multirow{2}{*}{Normalized}
     & RoTHP  & $-2{,}197 \pm 0{,}163$ & $88{,}856 \pm 144{,}800$ & $0{,}588 \pm 0{,}036$ & $0{,}562 \pm 0{,}014$ \\
     & HoTHP  & $-2{,}168 \pm 0{,}010$ & $\mathbf{-0{,}542 \pm 0{,}004}$ & $0{,}591 \pm 0{,}002$ & $\mathbf{0{,}588 \pm 0{,}004}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-A normalização resolve o colapso numérico de forma inequívoca. Com timestamps brutos, a NLL em $1\times$ é de aproximadamente $12{,}5$ para ambos os modelos e a NLL em $5\times$ explode para a ordem de $10^5$. Com timestamps normalizados, a NLL em $1\times$ cai para valores negativos e o treino converge em todas as sementes.
+The normalization resolves the numerical collapse unambiguously. With raw timestamps, the NLL at $1\times$ is approximately $12{,}5$ for both models and the NLL at $5\times$ explodes to the order of $10^5$. With normalized timestamps, the NLL at $1\times$ drops to negative values and the training converges across all the seeds.
 
-A diferença entre os modelos aparece na extrapolação, como ilustra a Figura~\ref{fig:ablacao-retweet-norm}. O HoTHP normalizado obtém NLL $5\times = -0{,}542 \pm 0{,}004$, praticamente invariante entre sementes. O RoTHP normalizado, embora muito melhor que a versão com dados brutos, ainda é instável. Uma das sementes atinge NLL $5\times = 255{,}9$, resultando numa média de $88{,}9 \pm 144{,}8$ com uma barra de erro enorme. A acurácia de tipos segue o mesmo padrão: o HoTHP normalizado mantém Acc $5\times = 0{,}588$ com desvio de $0{,}004$, enquanto o RoTHP cai para $0{,}562$.
+The difference between the models appears in the extrapolation, as illustrated in Figure~\ref{fig:ablacao-retweet-norm}. The normalized HoTHP obtains NLL $5\times = -0{,}542 \pm 0{,}004$, practically invariant between seeds. The normalized RoTHP, although much better than the version with raw data, is still unstable. One of the seeds reaches NLL $5\times = 255{,}9$, resulting in a mean of $88{,}9 \pm 144{,}8$ with an enormous error bar. The type accuracy follows the same pattern: the normalized HoTHP keeps Acc $5\times = 0{,}588$ with a deviation of $0{,}004$, while the RoTHP drops to $0{,}562$.
 
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:ablacao-retweet-norm} NLL no Retweet normalizado (média $\pm$ desvio padrão, 3 sementes). À esquerda, a condição $1\times$ (comprimento de treino): ambos os modelos obtêm NLL similar. À direita, a condição $5\times$ (extrapolação): o HoTHP mantém NLL estável, enquanto o RoTHP apresenta alta variância devido a uma semente que diverge.}
+    \Caption{\label{fig:ablacao-retweet-norm} NLL on the normalized Retweet (mean $\pm$ standard deviation, 3 seeds). On the left, the $1\times$ condition (training length): both models obtain a similar NLL. On the right, the $5\times$ condition (extrapolation): the HoTHP keeps a stable NLL, while the RoTHP shows high variance due to one seed that diverges.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_ablacao_retweet_norm.png}
     }{
     }
 \end{figure}
 
-Esses resultados permitem separar os dois fatores que prejudicam o desempenho no Retweet. O problema primário era a escala numérica. A normalização beneficia ambos os modelos drasticamente. Mas mesmo com a escala corrigida, o HoTHP supera o RoTHP na extrapolação, confirmando que o viés de recência é vantajoso nesse dataset quando a escala temporal permite sua calibração. A instabilidade residual do RoTHP (com uma semente ainda explodindo em $5\times$) reforça a fragilidade do kernel oscilatório na extrapolação, observada também nos dados sintéticos.
+These results make it possible to separate the two factors that hurt the performance on Retweet. The primary problem was the numerical scale. The normalization benefits both models drastically. But even with the scale corrected, the HoTHP surpasses the RoTHP in extrapolation, confirming that the recency bias is advantageous on this dataset when the temporal scale allows its calibration. The residual instability of the RoTHP (with one seed still exploding at $5\times$) reinforces the fragility of the oscillatory kernel in extrapolation, also observed in the synthetic data.
 
-\section{Discussão}
+\section{Discussion}
 \label{sec:discussao-resultados}
 
-Os resultados em dados reais mostram que o viés de recência do HoTHP é benéfico em alguns cenários e neutro ou prejudicial em outros. A análise das intensidades aprendidas sugere que o fator determinante não é se o processo é auto-excitante ou auto-inibitório, mas sim se os eventos recentes são mais informativos do que os distantes para a construção do estado oculto.
+The results on real data show that the recency bias of the HoTHP is beneficial in some scenarios and neutral or harmful in others. The analysis of the learned intensities suggests that the determining factor is not whether the process is self-exciting or self-inhibiting, but whether recent events are more informative than distant ones for the construction of the hidden state.
 
-No Amazon, onde o HoTHP obtém o melhor resultado, o processo é auto-inibitório: a intensidade cresce com o tempo desde o último evento. Mesmo assim, o viés de recência ajuda, porque o evento imediatamente anterior é o mais relevante para prever o próximo. O decaimento exponencial na atenção captura corretamente essa relação de relevância decrescente.
+On Amazon, where the HoTHP obtains the best result, the process is self-inhibiting: the intensity grows with the time since the last event. Even so, the recency bias helps, because the immediately previous event is the most relevant for predicting the next one. The exponential decay in the attention correctly captures this relationship of decreasing relevance.
 
-No Stackoverflow, onde os três modelos empatam, a intensidade é praticamente constante. Isso indica um processo com pouca ou nenhuma memória temporal, no qual todos os eventos passados são igualmente (pouco) informativos. O viés de recência do HoTHP não prejudica significativamente (a intensidade constante mostra que o modelo consegue compensar na camada de intensidade), mas também não ajuda, porque não há estrutura temporal para explorar.
+On Stackoverflow, where the three models tie, the intensity is practically constant. This indicates a process with little or no temporal memory, in which all the past events are equally (little) informative. The recency bias of the HoTHP does not significantly hurt (the constant intensity shows that the model manages to compensate in the intensity layer), but it also does not help, because there is no temporal structure to exploit.
 
-No Retweet, o problema é duplo: a escala temporal extrema causa colapso numérico, e a estrutura de cascatas virais pode não se alinhar com o decaimento exponencial. A ablação da Seção~\ref{sec:ablacao-retweet} separou esses dois fatores e mostrou que o problema primário era a escala: com normalização, o HoTHP obtém o melhor resultado de todo o benchmark (NLL $5\times = -0{,}542$), com variância quase zero entre sementes. O RoTHP, mesmo com normalização, ainda apresenta instabilidade na extrapolação, com uma semente atingindo NLL $= 255{,}9$.
+On Retweet, the problem is twofold: the extreme temporal scale causes numerical collapse, and the structure of viral cascades may not align with the exponential decay. The ablation in Section~\ref{sec:ablacao-retweet} separated these two factors and showed that the primary problem was the scale: with normalization, the HoTHP obtains the best result of the whole benchmark (NLL $5\times = -0{,}542$), with almost zero variance between seeds. The RoTHP, even with normalization, still shows instability in the extrapolation, with one seed reaching NLL $= 255{,}9$.
 
-O HoTHP se mostra mais eficaz quando duas condições são satisfeitas simultaneamente: (i) o processo possui memória temporal de curto alcance, de modo que eventos recentes são mais informativos que distantes; e (ii) a escala dos intervalos entre eventos permite que o parâmetro $\theta'$ seja calibrado adequadamente durante o treinamento, sem saturação numérica. A ablação do Retweet confirma que a condição (ii) pode ser resolvida por pré-processamento, e quando o é, o viés de recência do HoTHP se mostra consistentemente vantajoso.
+The HoTHP proves more effective when two conditions are satisfied at the same time: (i) the process has short-range temporal memory, so that recent events are more informative than distant ones; and (ii) the scale of the intervals between events allows the parameter $\theta'$ to be calibrated properly during training, without numerical saturation. The Retweet ablation confirms that condition (ii) can be solved by preprocessing, and when it is, the recency bias of the HoTHP proves consistently advantageous.
 
-\subsection{Custo computacional versus benefício na extrapolação}
+\subsection{Computational cost versus benefit in extrapolation}
 \label{subsec:custo-beneficio}
 
-O kernel hiperbólico do HoTHP envolve mais operações que o kernel trigonométrico do RoTHP, o que se reflete no tempo de treinamento. A Tabela~\ref{tab:tempo-treino} apresenta os tempos médios de treinamento (100 épocas, 3 sementes) para cada combinação de dataset e modelo.
+The hyperbolic kernel of the HoTHP involves more operations than the trigonometric kernel of the RoTHP, which is reflected in the training time. Table~\ref{tab:tempo-treino} presents the average training times (100 epochs, 3 seeds) for each combination of dataset and model.
 
 \begin{table}[h!]
 \centering
-\caption{Tempo médio de treinamento (minutos, 3 sementes). O fator indica quantas vezes o HoTHP é mais lento que o RoTHP.}
+\caption{Average training time (minutes, 3 seeds). The factor indicates how many times slower the HoTHP is than the RoTHP.}
 \label{tab:tempo-treino}
 \begin{tabular}{lccc}
 \toprule
-Dataset & RoTHP (min) & HoTHP (min) & Fator \\
+Dataset & RoTHP (min) & HoTHP (min) & Factor \\
 \midrule
 Stackoverflow  &  2,4 &  3,1 & $1{,}26\times$ \\
 Amazon         &  9,4 & 11,8 & $1{,}25\times$ \\
@@ -245,6 +245,6 @@ Retweet (norm) & 43,5 & 97,6 & $2{,}24\times$ \\
 \end{tabular}
 \end{table}
 
-O overhead varia de $1{,}05\times$ (Taxi) a $2{,}24\times$ (Retweet normalizado), sendo mais pronunciado em datasets com sequências longas, onde o cálculo do kernel hiperbólico domina o tempo por batch. Para datasets de comprimento moderado (Stackoverflow, Amazon, Taxi), o custo adicional é inferior a $25\%$.
+The overhead ranges from $1{,}05\times$ (Taxi) to $2{,}24\times$ (normalized Retweet), being more pronounced on datasets with long sequences, where the computation of the hyperbolic kernel dominates the time per batch. For datasets of moderate length (Stackoverflow, Amazon, Taxi), the additional cost is below $25\%$.
 
-Esse custo, contudo, é pago uma única vez durante o treinamento. Na inferência, o modelo treinado é aplicado a sequências potencialmente muito mais longas do que as vistas no treino, exatamente o cenário de extrapolação. Nesse contexto, o que importa não é a velocidade do treinamento, mas se o modelo produz resultados válidos. Os resultados da Tabela~\ref{tab:ablacao-retweet} ilustram o ponto de forma clara: no Retweet normalizado com extrapolação $5\times$, o RoTHP obtém NLL $= 88{,}9 \pm 144{,}8$ (com uma semente explodindo para $255{,}9$), enquanto o HoTHP obtém NLL $= -0{,}542 \pm 0{,}004$. Treinar o RoTHP $2{,}2\times$ mais rápido para depois obter resultados inutilizáveis na extrapolação não constitui uma vantagem prática.
+This cost, however, is paid only once during training. At inference time, the trained model is applied to sequences that are potentially much longer than the ones seen in training, exactly the extrapolation scenario. In this context, what matters is not the training speed, but whether the model produces valid results. The results in Table~\ref{tab:ablacao-retweet} illustrate the point clearly: on the normalized Retweet with $5\times$ extrapolation, the RoTHP obtains NLL $= 88{,}9 \pm 144{,}8$ (with one seed exploding to $255{,}9$), while the HoTHP obtains NLL $= -0{,}542 \pm 0{,}004$. Training the RoTHP $2{,}2\times$ faster only to then obtain unusable results in extrapolation does not constitute a practical advantage.

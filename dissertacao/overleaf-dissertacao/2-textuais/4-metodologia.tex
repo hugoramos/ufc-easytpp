@@ -1,110 +1,110 @@
-\chapter{Metodologia}
+\chapter{Methodology}
 \label{chap:metodologia}
 
-O HoTHP (\textit{Hyperbolic Rotary Position Embedding-based Transformer Hawkes Process}) é uma variante do THP que substitui o kernel trigonométrico do RoTHP por um kernel hiperbólico com decaimento exponencial, inspirado no HoPE \cite{dai_hope_2025}. A principal motivação é a extrapolação de comprimento, onde treinamos em sequências curtas e mantemos o desempenho estável em sequências mais longas. O mecanismo por trás dessa capacidade é um viés exponencial de recência embutido diretamente no kernel de atenção, que faz os scores decaírem monotonicamente com a distância temporal, refletindo a estrutura do próprio processo de Hawkes.
+The HoTHP (\textit{Hyperbolic Rotary Position Embedding-based Transformer Hawkes Process}) is a variant of the THP that replaces the trigonometric kernel of the RoTHP with a hyperbolic kernel that has exponential decay, inspired by the HoPE \cite{dai_hope_2025}. The main motivation is length extrapolation, where we train on short sequences and keep performance stable on longer sequences. The mechanism behind this ability is an exponential recency bias embedded directly in the attention kernel, which makes the scores decay monotonically with the temporal distance, reflecting the structure of the Hawkes process itself.
 
-\section{A limitação oscilatória do RoTHP}
+\section{The oscillatory limitation of the RoTHP}
 \label{sec:limitacao-rothp}
 
-Como vimos na Seção \ref{sec:rothp}, o RoTHP representa a posição de cada evento por uma rotação trigonométrica aplicada aos vetores de query $\mathbf{q}$ e key $\mathbf{k}$. O score de atenção entre os eventos $i$ e $j$ depende apenas de $\Delta t = t_i - t_j$, o que é garantido pelas propriedades algébricas da matrize de rotação trigonométrica, que é ortogonal.
+As we saw in Section \ref{sec:rothp}, the RoTHP represents the position of each event by a trigonometric rotation applied to the query $\mathbf{q}$ and key $\mathbf{k}$ vectors. The attention score between events $i$ and $j$ depends only on $\Delta t = t_i - t_j$, which is guaranteed by the algebraic properties of the trigonometric rotation matrix, which is orthogonal.
 
-O problema é que o kernel resultante é oscilatório. Seno e cosseno não são funções monotônicas. Sendo assim, o score de atenção pode crescer para eventos mais distantes no tempo, dependendo da fase da oscilação, e diminuir para eventos próximos. Isso contradiz diretamente o kernel do processo de Hawkes, $\varphi(\Delta t) = \alpha e^{-\beta \Delta t}$, que é estritamente decrescente.
+The problem is that the resulting kernel is oscillatory. Sine and cosine are not monotonic functions. As a result, the attention score can grow for events more distant in time, depending on the phase of the oscillation, and shrink for nearby events. This directly contradicts the kernel of the Hawkes process, $\varphi(\Delta t) = \alpha e^{-\beta \Delta t}$, which is strictly decreasing.
 
-Na prática, a consequência mais grave dessa oscilação aparece na extrapolação de comprimento. Quando testado em sequências mais longas do que as de treinamento, o modelo encontra diferenças temporais $\Delta t$ que nunca observou durante o treino. Um kernel com decaimento exponencial teria um comportamento previsível nessa região, com a influência continuando a cair. Já o kernel trigonométrico continua oscilando com a mesma amplitude, e um evento muito distante pode receber um score alto simplesmente porque a fase do cosseno caiu em um pico naquele $\Delta t$. O modelo não aprendeu a lidar com essas fases porque nunca as viu durante o treino e o kernel não tem nada que force o score a decair. É essa ausência de viés de recência que impede o RoTHP de extrapolar de forma estável.
+In practice, the most serious consequence of this oscillation appears in length extrapolation. When tested on sequences longer than the training ones, the model encounters temporal differences $\Delta t$ that it never observed during training. A kernel with exponential decay would have a predictable behavior in this region, with the influence continuing to fall. The trigonometric kernel, on the other hand, keeps oscillating with the same amplitude, and a very distant event can receive a high score simply because the phase of the cosine fell on a peak at that $\Delta t$. The model did not learn to handle these phases because it never saw them during training, and the kernel has nothing that forces the score to decay. It is this absence of a recency bias that prevents the RoTHP from extrapolating in a stable way.
 
-\section{Do kernel trigonométrico ao kernel hiperbólico}
+\section{From the trigonometric kernel to the hyperbolic kernel}
 \label{sec:trig-to-hyp}
 
-Para cada par de dimensões $(2j{-}1, 2j)$, o RoTHP aplica o bloco $2 \times 2$ de rotação trigonométrica:
+For each pair of dimensions $(2j{-}1, 2j)$, the RoTHP applies the $2 \times 2$ trigonometric rotation block:
 %
 \begin{equation}
     \mathbf{R}_j(\Delta t) = \begin{bmatrix} \cos(\theta_j \Delta t) & \sin(\theta_j \Delta t) \\ -\sin(\theta_j \Delta t) & \cos(\theta_j \Delta t) \end{bmatrix}.
 \end{equation}
 %
-O HoPE \cite{dai_hope_2025} propõe trocar essa rotação por uma rotação hiperbólica, cujo bloco correspondente é:
+The HoPE \cite{dai_hope_2025} proposes to replace this rotation with a hyperbolic rotation, whose corresponding block is:
 %
 \begin{equation}
     \mathbf{B}_j(\Delta t) = \begin{bmatrix} \cosh(\theta_j \Delta t) & \sinh(\theta_j \Delta t) \\ \sinh(\theta_j \Delta t) & \cosh(\theta_j \Delta t) \end{bmatrix}.
     \label{eq:bloco-hiperbolico}
 \end{equation}
 %
-Diferentemente de $\cos$ e $\sin$, as funções $\cosh$ e $\sinh$ são monótonas para $\Delta t > 0$, eliminando as oscilações. Entretanto, não podemos usar $\mathbf{B}_j$ diretamente porque a rotação hiperbólica não é ortogonal e o produto interno $\mathbf{q}^\top \mathbf{B}(\Delta t) \mathbf{k}$ \textit{cresce} com $|\Delta t|$ em vez de decair \cite{dai_hope_2025}. Eventos distantes receberiam scores maiores do que eventos próximos, exatamente o oposto do que queremos.
+Unlike $\cos$ and $\sin$, the functions $\cosh$ and $\sinh$ are monotonic for $\Delta t > 0$, removing the oscillations. However, we cannot use $\mathbf{B}_j$ directly because the hyperbolic rotation is not orthogonal and the inner product $\mathbf{q}^\top \mathbf{B}(\Delta t) \mathbf{k}$ \textit{grows} with $|\Delta t|$ instead of decaying \cite{dai_hope_2025}. Distant events would receive larger scores than nearby events, exactly the opposite of what we want.
 
-A Figura~\ref{fig:trig-vs-hyp} ilustra essa diferença. No painel esquerdo, $\cos$ e $\sin$ oscilam entre $-1$ e $1$ indefinidamente, sem qualquer tendência de decaimento. No painel direito, $\cosh$ e $\sinh$ eliminam as oscilações mas crescem exponencialmente em ambas as direções. Note que $\cosh$ é uma função par (simétrica, com valor mínimo $\cosh(0) = 1$) enquanto $\sinh$ é ímpar (antissimétrica, com $\sinh(0) = 0$).
+Figure~\ref{fig:trig-vs-hyp} illustrates this difference. In the left panel, $\cos$ and $\sin$ oscillate between $-1$ and $1$ indefinitely, without any decay trend. In the right panel, $\cosh$ and $\sinh$ remove the oscillations but grow exponentially in both directions. Note that $\cosh$ is an even function (symmetric, with minimum value $\cosh(0) = 1$) while $\sinh$ is odd (antisymmetric, with $\sinh(0) = 0$).
 
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:trig-vs-hyp} Funções base dos kernels de atenção ($\theta = 1{,}0$). Esquerda: funções trigonométricas do RoTHP, que oscilam entre $-1$ e $1$ sem decair. Direita: funções hiperbólicas do HoPE, que são monótonas mas crescem exponencialmente. O crescimento das funções hiperbólicas precisa ser compensado por um fator de decaimento para que o kernel de atenção funcione corretamente.}
+    \Caption{\label{fig:trig-vs-hyp} Base functions of the attention kernels ($\theta = 1{,}0$). Left: trigonometric functions of the RoTHP, which oscillate between $-1$ and $1$ without decaying. Right: hyperbolic functions of the HoPE, which are monotonic but grow exponentially. The growth of the hyperbolic functions needs to be compensated by a decay factor so that the attention kernel works correctly.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_trig_vs_hyp.pdf}
     }{
     }
 \end{figure}
 
-\section{Decaimento exponencial e o parâmetro \texorpdfstring{$\theta'$}{theta'}}
+\section{Exponential decay and the parameter \texorpdfstring{$\theta'$}{theta'}}
 \label{sec:decaimento-theta-prime}
 
-Para corrigir o crescimento hiperbólico, o HoPE \cite{dai_hope_2025} introduz um parâmetro aprendível $\theta'$ e aplica fatores de amortecimento nos vetores $\mathbf{q}$ e $\mathbf{k}$. O vetor $\mathbf{q}$ na posição $m$ é multiplicado por $e^{-m\theta'}$ e o vetor $\mathbf{k}$ na posição $n$ é multiplicado por $e^{+n\theta'}$. Ao computar o score entre as posições $m$ e $n$, esses fatores se combinam:
+To correct the hyperbolic growth, the HoPE \cite{dai_hope_2025} introduces a learnable parameter $\theta'$ and applies damping factors to the $\mathbf{q}$ and $\mathbf{k}$ vectors. The vector $\mathbf{q}$ at position $m$ is multiplied by $e^{-m\theta'}$ and the vector $\mathbf{k}$ at position $n$ is multiplied by $e^{+n\theta'}$. When computing the score between positions $m$ and $n$, these factors combine:
 %
 \begin{equation}
     g(\mathbf{x}_m, \mathbf{x}_n, n{-}m) = e^{-(m-n)\theta'} \; \mathbf{q}^\top \mathbf{B}(\theta, m{-}n) \; \mathbf{k}.
     \label{eq:hope-score-discreto}
 \end{equation}
 %
-No HoTHP, as posições discretas $m, n$ são substituídas pelos instantes contínuos $t_i, t_j$ e a diferença $m - n$ pela diferença temporal $\Delta t = t_i - t_j$:
+In the HoTHP, the discrete positions $m, n$ are replaced by the continuous instants $t_i, t_j$ and the difference $m - n$ by the temporal difference $\Delta t = t_i - t_j$:
 %
 \begin{equation}
     g(\Delta t) = e^{-\Delta t \cdot \theta'} \; \mathbf{q}^\top \, \mathbf{B}(\theta, \Delta t) \; \mathbf{k}.
     \label{eq:kernel-hothp-completo}
 \end{equation}
 %
-Para que o decaimento domine o crescimento hiperbólico, é necessário que $\theta' > \max_j \theta_j$. Sob essa condição, o score decresce monotonicamente com $|\Delta t|$, o que introduz um viés exponencial de recência no mecanismo de atenção. Esse viés reflete a mesma estrutura do kernel de Hawkes ($\alpha e^{-\beta \Delta t}$) e, por ser estrutural e não aprendido dos dados, vale inclusive para valores de $\Delta t$ que o modelo nunca viu durante o treinamento. É esse viés que dá ao HoTHP a capacidade de extrapolar para sequências mais longas sem degradação.
+For the decay to dominate the hyperbolic growth, it is necessary that $\theta' > \max_j \theta_j$. Under this condition, the score decreases monotonically with $|\Delta t|$, which introduces an exponential recency bias into the attention mechanism. This bias reflects the same structure as the Hawkes kernel ($\alpha e^{-\beta \Delta t}$) and, because it is structural and not learned from the data, it holds even for values of $\Delta t$ that the model never saw during training. It is this bias that gives the HoTHP the ability to extrapolate to longer sequences without degradation.
 
-A Figura~\ref{fig:decay-hiperbolico} ilustra o viés de recência na prática. A imagem da esquerda mostra os componentes separados: $\cosh$ e $\sinh$ crescem exponencialmente enquanto o fator de decaimento $e^{-\theta'\Delta t}$ cai rapidamente para zero. A imagem central mostra o produto das funções hiperbólicas pelo fator de decaimento, garantindo que $\theta' > \theta$, o decaimento domina o crescimento e tanto $e^{-\theta'\Delta t}\cosh(\theta\Delta t)$ quanto $e^{-\theta'\Delta t}\sinh(\theta\Delta t)$ decaem monotonicamente. A imagem da direita mostra a decomposição em exponenciais puras usada na implementação (Seção~\ref{sec:estabilidade-numerica}): como ambos os expoentes $(\theta' - \theta)$ e $(\theta' + \theta)$ são positivos, todas as exponenciais têm argumento negativo e nenhum overflow ocorre.
+Figure~\ref{fig:decay-hiperbolico} illustrates the recency bias in practice. The left image shows the separate components: $\cosh$ and $\sinh$ grow exponentially while the decay factor $e^{-\theta'\Delta t}$ falls quickly to zero. The center image shows the product of the hyperbolic functions by the decay factor, ensuring that $\theta' > \theta$, the decay dominates the growth, and both $e^{-\theta'\Delta t}\cosh(\theta\Delta t)$ and $e^{-\theta'\Delta t}\sinh(\theta\Delta t)$ decay monotonically. The right image shows the decomposition into pure exponentials used in the implementation (Section~\ref{sec:estabilidade-numerica}): since both exponents $(\theta' - \theta)$ and $(\theta' + \theta)$ are positive, all the exponentials have a negative argument and no overflow occurs.
 
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:decay-hiperbolico} Efeito do decaimento exponencial sobre as funções hiperbólicas ($\theta = 1{,}0$, $\theta' = 1{,}5$). Esquerda: componentes separados, mostrando que $\cosh$ e $\sinh$ crescem mas o decay cai. Centro: o produto resulta em funções que decaem monotonamente. Direita: decomposição em exponenciais puras, ambas com expoente negativo, garantindo estabilidade numérica.}
+    \Caption{\label{fig:decay-hiperbolico} Effect of the exponential decay on the hyperbolic functions ($\theta = 1{,}0$, $\theta' = 1{,}5$). Left: separate components, showing that $\cosh$ and $\sinh$ grow but the decay falls. Center: the product results in functions that decay monotonically. Right: decomposition into pure exponentials, both with a negative exponent, ensuring numerical stability.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_decay_hiperbolico.pdf}
     }{
     }
 \end{figure}
 
-\subsection{Parametrização do \texorpdfstring{$\theta'$}{theta'} aprendível}
+\subsection{Parametrization of the learnable \texorpdfstring{$\theta'$}{theta'}}
 \label{subsec:parametrizacao-theta-prime}
 
-Como $\theta'$ precisa ser aprendível mas ao mesmo tempo satisfazer $\theta' > \max_j \theta_j$, não podemos simplesmente treinar um parâmetro livre. As frequências $\theta_j$ seguem a fórmula do RoPE \cite{su_roformer_2023}:
+Since $\theta'$ needs to be learnable but at the same time satisfy $\theta' > \max_j \theta_j$, we cannot simply train a free parameter. The frequencies $\theta_j$ follow the RoPE formula \cite{su_roformer_2023}:
 %
 \begin{equation}
     \theta_j = 10000^{-2(j-1)/d}, \quad j = 1, \ldots, d/2,
     \label{eq:frequencias-theta}
 \end{equation}
 %
-onde $d$ é a dimensão de cada cabeça de atenção. Cada par de dimensões recebe uma frequência diferente, cobrindo múltiplas escalas de $\Delta t$. Note que, pela Equação~\ref{eq:frequencias-theta}, o maior valor de $\theta_j$ ocorre quando $j = 1$, resultando em $\theta_1 = 10000^0 = 1$. Todos os demais $\theta_j$ são frações cada vez menores (por exemplo, $\theta_2 \approx 0{,}013$, $\theta_3 \approx 0{,}00017$, e assim por diante). Portanto, na prática, a restrição $\theta' > \max_j \theta_j$ se resume a garantir que $\theta' > 1$. Ainda assim, optamos por uma formulação geral que funcione independentemente dos valores de $\theta_j$, para que a restrição seja satisfeita por construção. A solução é parametrizar $\theta'$ como:
+where $d$ is the dimension of each attention head. Each pair of dimensions receives a different frequency, covering multiple scales of $\Delta t$. Note that, by Equation~\ref{eq:frequencias-theta}, the largest value of $\theta_j$ occurs when $j = 1$, resulting in $\theta_1 = 10000^0 = 1$. All the other $\theta_j$ are increasingly smaller fractions (for example, $\theta_2 \approx 0{,}013$, $\theta_3 \approx 0{,}00017$, and so on). Therefore, in practice, the constraint $\theta' > \max_j \theta_j$ reduces to ensuring that $\theta' > 1$. Even so, we chose a general formulation that works regardless of the values of $\theta_j$, so that the constraint is satisfied by construction. The solution is to parametrize $\theta'$ as:
 %
 \begin{equation}
     \theta' = \mathrm{softplus}(\theta'_{\mathrm{raw}}) + \max_j(\theta_j) + \epsilon,
     \label{eq:theta-prime-parametrizacao}
 \end{equation}
 %
-onde $\theta'_{\mathrm{raw}}$ é o parâmetro treinável, $\mathrm{softplus}(x) = \ln(1 + e^x)$ garante que o primeiro termo seja positivo e $\epsilon = 10^{-4}$ é uma margem de segurança. Assim, $\theta'$ é sempre maior do que qualquer $\theta_j$ e o decaimento exponencial é garantido estruturalmente, independentemente do que o gradiente faça.
+where $\theta'_{\mathrm{raw}}$ is the trainable parameter, $\mathrm{softplus}(x) = \ln(1 + e^x)$ ensures that the first term is positive, and $\epsilon = 10^{-4}$ is a safety margin. Thus, $\theta'$ is always larger than any $\theta_j$ and the exponential decay is structurally guaranteed, regardless of what the gradient does.
 
-\section{Score de atenção do HoTHP}
+\section{Attention score of the HoTHP}
 \label{sec:score-atencao-hothp}
 
-Expandindo a multiplicação matricial de $\mathbf{B}_j$ (Equação \ref{eq:bloco-hiperbolico}) sobre os vetores de dimensões pares $\mathbf{q}_1, \mathbf{k}_1$ e ímpares $\mathbf{q}_2, \mathbf{k}_2$, obtemos:
+Expanding the matrix multiplication of $\mathbf{B}_j$ (Equation \ref{eq:bloco-hiperbolico}) over the even-dimension vectors $\mathbf{q}_1, \mathbf{k}_1$ and the odd-dimension vectors $\mathbf{q}_2, \mathbf{k}_2$, we obtain:
 %
 \begin{equation}
     \mathbf{q}^\top \mathbf{B}_j(\Delta t) \mathbf{k}
-    = \underbrace{(\mathbf{q}_1 \cdot \mathbf{k}_1 + \mathbf{q}_2 \cdot \mathbf{k}_2)}_{\text{parte cosh}} \cdot \cosh(\theta_j \Delta t)
-    + \underbrace{(\mathbf{q}_1 \cdot \mathbf{k}_2 + \mathbf{q}_2 \cdot \mathbf{k}_1)}_{\text{parte sinh}} \cdot \sinh(\theta_j \Delta t).
+    = \underbrace{(\mathbf{q}_1 \cdot \mathbf{k}_1 + \mathbf{q}_2 \cdot \mathbf{k}_2)}_{\text{cosh part}} \cdot \cosh(\theta_j \Delta t)
+    + \underbrace{(\mathbf{q}_1 \cdot \mathbf{k}_2 + \mathbf{q}_2 \cdot \mathbf{k}_1)}_{\text{sinh part}} \cdot \sinh(\theta_j \Delta t).
     \label{eq:score-par-dimensoes}
 \end{equation}
 %
-O score completo incorpora o fator de decaimento e soma sobre os $d/2$ pares de dimensões:
+The complete score incorporates the decay factor and sums over the $d/2$ pairs of dimensions:
 %
 \begin{equation}
     s_{ij} = \frac{1}{\sqrt{d}} \sum_{j=1}^{d/2}
@@ -115,16 +115,16 @@ O score completo incorpora o fator de decaimento e soma sobre os $d/2$ pares de 
     \label{eq:score-hothp-completo}
 \end{equation}
 %
-onde $\Delta t = t_i - t_j$ e $1/\sqrt{d}$ é a normalização padrão do \textit{scaled dot-product attention} \cite{vaswani_attention_2017}.
+where $\Delta t = t_i - t_j$ and $1/\sqrt{d}$ is the standard normalization of the \textit{scaled dot-product attention} \cite{vaswani_attention_2017}.
 
-No RoTHP, os vetores $\mathbf{q}$ e $\mathbf{k}$ são pré-rotacionados individualmente por $\mathbf{R}(t_i)$ e $\mathbf{R}(t_j)$ antes do produto interno e a dependência em $\Delta t$ emerge do cancelamento algébrico, demonstrado pelos autores. No HoTHP, o score é formulado diretamente em termos de $\Delta t$, o que torna natural e necessário incluir o fator $e^{-|\Delta t|\theta'}$ dentro do próprio kernel. A consequência prática é que, para qualquer $\Delta t$ (incluindo valores maiores do que os vistos no treino), o score é dominado pelo decaimento exponencial. Esse é o mecanismo que permite a extrapolação: o viés de recência não depende dos dados, ele está na estrutura da atenção.
+In the RoTHP, the $\mathbf{q}$ and $\mathbf{k}$ vectors are pre-rotated individually by $\mathbf{R}(t_i)$ and $\mathbf{R}(t_j)$ before the inner product, and the dependence on $\Delta t$ emerges from the algebraic cancellation demonstrated by the authors. In the HoTHP, the score is formulated directly in terms of $\Delta t$, which makes it natural and necessary to include the factor $e^{-|\Delta t|\theta'}$ inside the kernel itself. The practical consequence is that, for any $\Delta t$ (including values larger than those seen in training), the score is dominated by the exponential decay. This is the mechanism that enables extrapolation: the recency bias does not depend on the data, it is in the structure of the attention.
 
-\section{Estabilidade numérica}
+\section{Numerical stability}
 \label{sec:estabilidade-numerica}
 
-As funções $\cosh$ e $\sinh$ crescem como $e^{|\Delta t|\theta_j}$ e para eventos muito espaçados esses valores podem causar \textit{overflow} antes mesmo de serem multiplicados pelo fator de decaimento $e^{-|\Delta t|\theta'}$.
+The functions $\cosh$ and $\sinh$ grow like $e^{|\Delta t|\theta_j}$ and, for events that are very far apart, these values can cause \textit{overflow} even before being multiplied by the decay factor $e^{-|\Delta t|\theta'}$.
 
-A solução é distribuir o decaimento para dentro das funções hiperbólicas usando as identidades:
+The solution is to distribute the decay into the hyperbolic functions using the identities:
 %
 \begin{align}
     e^{-|\Delta t|\theta'} \cdot \cosh(|\Delta t|\theta_j)
@@ -135,45 +135,45 @@ A solução é distribuir o decaimento para dentro das funções hiperbólicas u
     \label{eq:decay-sinh}
 \end{align}
 %
-Como $\theta' > \max_j \theta_j$, temos $\theta' - \theta_j > 0$ e $\theta' + \theta_j > 0$, portanto ambos os expoentes são negativos para qualquer $\Delta t$ e o \textit{overflow} não ocorre. O sinal de $\Delta t$ é reintroduzido explicitamente por $\mathrm{sgn}(\Delta t)$, pois $\sinh(-x) = -\sinh(x)$.
+Since $\theta' > \max_j \theta_j$, we have $\theta' - \theta_j > 0$ and $\theta' + \theta_j > 0$, so both exponents are negative for any $\Delta t$ and the \textit{overflow} does not occur. The sign of $\Delta t$ is reintroduced explicitly by $\mathrm{sgn}(\Delta t)$, since $\sinh(-x) = -\sinh(x)$.
 
-\section{Normalização temporal}
+\section{Temporal normalization}
 \label{sec:normalizacao-temporal}
 
-Datasets diferentes têm escalas temporais muito distintas. Em redes sociais, os intervalos entre eventos podem estar na ordem de milissegundos, enquanto em dados sísmicos ficam na ordem de dias. Se usássemos os instantes brutos no kernel hiperbólico, os valores de $\theta_j \Delta t$ estariam em escalas incompatíveis e o modelo precisaria de hiperparâmetros específicos para cada dataset.
+Different datasets have very distinct temporal scales. In social networks, the intervals between events can be on the order of milliseconds, while in seismic data they are on the order of days. If we used the raw instants in the hyperbolic kernel, the values of $\theta_j \Delta t$ would be on incompatible scales and the model would need specific hyperparameters for each dataset.
 
-Para evitar isso, aplicamos duas transformações a cada sequência. Primeiro, deslocamos os instantes de modo que a sequência comece em zero e, em seguida, dividimos todos os instantes pela média dos intervalos inter-evento daquela sequência:
+To avoid this, we apply two transformations to each sequence. First, we shift the instants so that the sequence starts at zero and, next, we divide all the instants by the mean of the inter-event intervals of that sequence:
 %
 \begin{equation}
     \tilde{t}_i = \frac{t_i - t_1}{\bar{g}},
     \label{eq:normalizacao-temporal}
 \end{equation}
 %
-onde $\bar{g}$ é a média aritmética dos intervalos entre eventos consecutivos da sequência. Essa operação é feita independentemente para cada sequência. O deslocamento garante que $\tilde{t}_1 = 0$ e a divisão por $\bar{g}$ faz com que o intervalo médio entre eventos passe a ser aproximadamente 1 em todas as sequências, independentemente da escala temporal original do dataset. A ordem e a proporção entre os intervalos são preservadas.
+where $\bar{g}$ is the arithmetic mean of the intervals between consecutive events of the sequence. This operation is done independently for each sequence. The shift ensures that $\tilde{t}_1 = 0$ and the division by $\bar{g}$ makes the mean interval between events become approximately 1 in all sequences, regardless of the original temporal scale of the dataset. The order and the proportion between the intervals are preserved.
 
-A escolha dessa normalização foi feita após avaliarmos duas alternativas. A primeira foi uma normalização MinMax aplicada aos \emph{intervalos} entre eventos, e não aos instantes absolutos: cada $\Delta t_i = t_i - t_{i-1}$ é mapeado para o intervalo $[0, 1]$ por $\Delta\tilde{t}_i = (\Delta t_i - \Delta t_{\min}) / (\Delta t_{\max} - \Delta t_{\min})$, onde $\Delta t_{\min}$ e $\Delta t_{\max}$ são o menor e o maior intervalo da sequência. Aplicar o MinMax diretamente aos instantes absolutos seria inadequado, pois o último evento é sempre o máximo e, à medida que a sequência cresce, todos os instantes anteriores são empurrados para perto de zero; normalizar os intervalos evita esse problema. Ainda assim, essa alternativa mostrou-se inadequada para o protocolo \textit{train-short, test-long}: nos experimentos sintéticos de extrapolação ela favoreceu sistematicamente o NHP, que não depende de embeddings posicionais explícitos, enquanto os modelos com atenção temporal (THP, RoTHP e HoTHP) foram prejudicados ou apresentaram instabilidade, sobretudo nos fatores de extrapolação elevados.
+The choice of this normalization was made after we evaluated two alternatives. The first was a MinMax normalization applied to the \emph{intervals} between events, and not to the absolute instants: each $\Delta t_i = t_i - t_{i-1}$ is mapped to the interval $[0, 1]$ by $\Delta\tilde{t}_i = (\Delta t_i - \Delta t_{\min}) / (\Delta t_{\max} - \Delta t_{\min})$, where $\Delta t_{\min}$ and $\Delta t_{\max}$ are the smallest and the largest interval of the sequence. Applying the MinMax directly to the absolute instants would be inadequate, because the last event is always the maximum and, as the sequence grows, all the previous instants are pushed close to zero; normalizing the intervals avoids this problem. Even so, this alternative proved inadequate for the \textit{train-short, test-long} protocol: in the synthetic extrapolation experiments it systematically favored the NHP, which does not depend on explicit positional embeddings, while the models with temporal attention (THP, RoTHP, and HoTHP) were harmed or showed instability, especially at the high extrapolation factors.
 
-A razão é que o divisor do MinMax depende do intervalo \emph{máximo} da sequência, e o máximo é um valor extremo que tende a crescer quanto mais eventos a sequência tem, pois sequências mais longas têm maior chance de conter um intervalo atipicamente grande. A normalização por média não sofre desse problema porque o divisor $\bar{g}$ é a média dos intervalos, uma estatística estável que praticamente não muda ao adicionar mais eventos de um mesmo processo: o intervalo médio normalizado permanece $\approx 1$ em qualquer comprimento. Um intervalo atípico também é diluído pela média, ao passo que no MinMax ele alteraria o máximo e comprimiria todos os demais.
+The reason is that the MinMax divisor depends on the \emph{maximum} interval of the sequence, and the maximum is an extreme value that tends to grow the more events the sequence has, since longer sequences have a greater chance of containing an atypically large interval. The mean normalization does not suffer from this problem because the divisor $\bar{g}$ is the mean of the intervals, a stable statistic that barely changes when more events from the same process are added: the normalized mean interval stays $\approx 1$ at any length. An atypical interval is also diluted by the mean, whereas in the MinMax it would change the maximum and compress all the others.
 
 
-A segunda alternativa avaliada foi um fator de escala temporal aprendido como parâmetro do modelo durante o treinamento. Essa abordagem introduziu instabilidade na otimização, com alta variância entre sementes nos fatores de extrapolação elevados. A normalização por média dos intervalos, por ser simples e não depender do comprimento da sequência de teste, foi adotada nos experimentos com dados sintéticos e na ablação do Retweet (Seção~\ref{sec:ablacao-retweet}).
+The second alternative evaluated was a temporal scale factor learned as a parameter of the model during training. This approach introduced instability in the optimization, with high variance between seeds at the high extrapolation factors. The mean-interval normalization, because it is simple and does not depend on the length of the test sequence, was adopted in the experiments with synthetic data and in the Retweet ablation (Section~\ref{sec:ablacao-retweet}).
 
-\section{Arquitetura completa}
+\section{Complete architecture}
 \label{sec:arquitetura-hothp}
 
-A arquitetura do HoTHP segue o encoder do Transformer \cite{vaswani_attention_2017}. Cada evento $(t_i, k_i)$ é representado por um embedding de tipo aprendível $\mathbf{e}_{k_i} \in \mathbb{R}^d$. Ao contrário do THP \cite{zuo_transformer_2021}, que soma um encoding sinusoidal do tempo absoluto ao embedding, o HoTHP não inclui nenhuma informação temporal no embedding. Os instantes $t_i$ entram no modelo apenas pelo kernel hiperbólico.
+The HoTHP architecture follows the Transformer encoder \cite{vaswani_attention_2017}. Each event $(t_i, k_i)$ is represented by a learnable type embedding $\mathbf{e}_{k_i} \in \mathbb{R}^d$. Unlike the THP \cite{zuo_transformer_2021}, which adds a sinusoidal encoding of the absolute time to the embedding, the HoTHP does not include any temporal information in the embedding. The instants $t_i$ enter the model only through the hyperbolic kernel.
 
-O modelo empilha $N$ camadas de encoder hiperbólico, cada uma com um bloco de atenção multi-head hiperbólica seguido de uma rede \textit{feed-forward}. A atenção computa os scores via Equação \ref{eq:score-hothp-completo}, usando as diferenças normalizadas $\Delta\tilde{t}_{ij} = \tilde{t}_i - \tilde{t}_j$. Uma máscara causal garante que cada evento atenda apenas a eventos anteriores.
+The model stacks $N$ hyperbolic encoder layers, each one with a hyperbolic multi-head attention block followed by a \textit{feed-forward} network. The attention computes the scores via Equation \ref{eq:score-hothp-completo}, using the normalized differences $\Delta\tilde{t}_{ij} = \tilde{t}_i - \tilde{t}_j$. A causal mask ensures that each event attends only to previous events.
 
-A rede \textit{feed-forward} em cada camada tem duas projeções lineares com ReLU entre elas:
+The \textit{feed-forward} network in each layer has two linear projections with a ReLU between them:
 %
 \begin{equation}
     \mathrm{FFN}(\mathbf{x}) = \mathbf{W}_2 \cdot \mathrm{ReLU}(\mathbf{W}_1 \mathbf{x} + \mathbf{b}_1) + \mathbf{b}_2,
 \end{equation}
 %
-com dimensão interna $2d$. Assim como o RoTHP \cite{dai_rotary_2026}, o HoTHP não usa conexões residuais (add \& norm).
+with internal dimension $2d$. Like the RoTHP \cite{dai_rotary_2026}, the HoTHP does not use residual connections (add \& norm).
 
-A saída do encoder $\mathbf{h}(t_j) \in \mathbb{R}^d$ para o evento $j$ é usada para calcular a intensidade condicional de cada tipo $k$ no instante $t > t_j$:
+The encoder output $\mathbf{h}(t_j) \in \mathbb{R}^d$ for event $j$ is used to compute the conditional intensity of each type $k$ at the instant $t > t_j$:
 %
 \begin{equation}
     \lambda_k(t \mid \mathcal{H}_t)
@@ -185,73 +185,73 @@ A saída do encoder $\mathbf{h}(t_j) \in \mathbb{R}^d$ para o evento $j$ é usad
     \label{eq:intensidade-hothp}
 \end{equation}
 %
-onde $\alpha_k$, $\mathbf{w}_k$ e $b_k$ são parâmetros aprendíveis e $\mathrm{softplus}$ garante que a intensidade seja positiva. O termo $\alpha_k (t - t_j) / t_j$ captura a variação com o tempo desde o último evento, e $\mathbf{w}_k^\top \mathbf{h}(t_j)$ traz o contexto histórico do encoder. Essa forma segue o THP \cite{zuo_transformer_2021}.
+where $\alpha_k$, $\mathbf{w}_k$, and $b_k$ are learnable parameters and $\mathrm{softplus}$ ensures that the intensity is positive. The term $\alpha_k (t - t_j) / t_j$ captures the variation with the time since the last event, and $\mathbf{w}_k^\top \mathbf{h}(t_j)$ brings the historical context from the encoder. This form follows the THP \cite{zuo_transformer_2021}.
 
-\section{Onde atua o viés exponencial}
+\section{Where the exponential bias acts}
 \label{sec:onde-atua-vies}
 
-Uma distinção importante precisa ser feita sobre o papel do decaimento exponencial no HoTHP. O fator $e^{-|\Delta t|\theta'}$ não atua diretamente na função de intensidade $\lambda_k(t)$, e sim no mecanismo de atenção que produz o estado oculto $\mathbf{h}(t_j)$. Essas são duas etapas distintas do modelo, com papéis diferentes:
+An important distinction needs to be made about the role of the exponential decay in the HoTHP. The factor $e^{-|\Delta t|\theta'}$ does not act directly on the intensity function $\lambda_k(t)$, but on the attention mechanism that produces the hidden state $\mathbf{h}(t_j)$. These are two distinct steps of the model, with different roles:
 
 \begin{enumerate}
-    \item \textbf{Atenção hiperbólica} (Equação~\ref{eq:score-hothp-completo}): determina os pesos com que cada evento passado contribui para o estado oculto. O decaimento exponencial faz com que eventos recentes recebam pesos maiores e eventos distantes recebam pesos próximos de zero. O resultado é o vetor $\mathbf{h}(t_j)$, que codifica o contexto histórico da sequência.
+    \item \textbf{Hyperbolic attention} (Equation~\ref{eq:score-hothp-completo}): determines the weights with which each past event contributes to the hidden state. The exponential decay makes recent events receive larger weights and distant events receive weights close to zero. The result is the vector $\mathbf{h}(t_j)$, which encodes the historical context of the sequence.
 
-    \item \textbf{Função de intensidade} (Equação~\ref{eq:intensidade-hothp}): usa o estado oculto $\mathbf{h}(t_j)$ e o tempo decorrido desde o último evento para calcular $\lambda_k(t)$. O parâmetro $\alpha_k$ nessa equação é aprendível e pode assumir valores positivos ou negativos. Se $\alpha_k > 0$, a intensidade cresce com o tempo desde o último evento, caracterizando um processo auto-inibitório. Se $\alpha_k < 0$, a intensidade diminui, como em um processo de Hawkes auto-excitante clássico.
+    \item \textbf{Intensity function} (Equation~\ref{eq:intensidade-hothp}): uses the hidden state $\mathbf{h}(t_j)$ and the time elapsed since the last event to compute $\lambda_k(t)$. The parameter $\alpha_k$ in this equation is learnable and can take positive or negative values. If $\alpha_k > 0$, the intensity grows with the time since the last event, characterizing a self-inhibiting process. If $\alpha_k < 0$, the intensity decreases, as in a classical self-exciting Hawkes process.
 \end{enumerate}
 
-Essa separação tem uma consequência importante que é o fazer com que o viés exponencial do HoTHP não imponha que o processo modelado seja auto-excitante. O kernel hiperbólico impõe apenas que a relevância dos eventos passados para a construção do estado oculto decaia exponencialmente com a distância temporal. A dinâmica da intensidade em si (se ela sobe ou desce após um evento) é determinada pelos parâmetros aprendíveis da camada de intensidade, que são livres para se adaptar aos dados.
+This separation has an important consequence, which is that the exponential bias of the HoTHP does not require the modeled process to be self-exciting. The hyperbolic kernel only requires that the relevance of past events for the construction of the hidden state decay exponentially with the temporal distance. The dynamics of the intensity itself (whether it rises or falls after an event) is determined by the learnable parameters of the intensity layer, which are free to adapt to the data.
 
-Portanto, o HoTHP é adequado para qualquer processo pontual em que o evento mais recente carregue mais informação do que eventos distantes para prever o próximo. Isso inclui tanto processos auto-excitantes (onde eventos geram mais eventos próximos) quanto auto-inibitórios (onde a ocorrência de um evento reduz temporariamente a probabilidade de novos eventos). O viés é prejudicial quando eventos distantes são tão ou mais relevantes que os recentes, como em processos sem memória temporal ou com dependências de longo alcance.
+Therefore, the HoTHP is suitable for any point process in which the most recent event carries more information than distant events for predicting the next one. This includes both self-exciting processes (where events generate more nearby events) and self-inhibiting ones (where the occurrence of an event temporarily reduces the probability of new events). The bias is harmful when distant events are as relevant as, or more relevant than, recent ones, as in processes without temporal memory or with long-range dependencies.
 
-A Figura~\ref{fig:kernel-rothp-vs-hothp} sintetiza visualmente a diferença entre os kernels de atenção do RoTHP e do HoTHP. Na zona de treino (fundo verde), ambos os modelos observam as mesmas distâncias temporais e podem aprender pesos de atenção adequados. Na zona de extrapolação (fundo vermelho), o kernel trigonométrico do RoTHP continua oscilando em fases que o modelo nunca viu durante o treino, atribuindo scores potencialmente altos a eventos muito distantes. O kernel hiperbólico do HoTHP, por outro lado, decai monotonicamente para zero independentemente da distância, graças ao viés estrutural. Para referência, a curva tracejada mostra o kernel de Hawkes clássico ($e^{-\beta \Delta t}$), cuja forma o HoTHP reproduz pela própria arquitetura.
+Figure~\ref{fig:kernel-rothp-vs-hothp} visually summarizes the difference between the attention kernels of the RoTHP and the HoTHP. In the training zone (green background), both models observe the same temporal distances and can learn appropriate attention weights. In the extrapolation zone (red background), the trigonometric kernel of the RoTHP keeps oscillating in phases that the model never saw during training, assigning potentially high scores to very distant events. The hyperbolic kernel of the HoTHP, on the other hand, decays monotonically to zero regardless of the distance, thanks to the structural bias. For reference, the dashed curve shows the classical Hawkes kernel ($e^{-\beta \Delta t}$), whose shape the HoTHP reproduces by its own architecture.
 
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:kernel-rothp-vs-hothp} Comparação dos kernels de atenção em função da distância temporal $\Delta t$. Na zona de treino, ambos os modelos podem se ajustar aos dados. Na zona de extrapolação, o kernel trigonométrico do RoTHP oscila em fases não aprendidas, enquanto o kernel hiperbólico do HoTHP decai monotonicamente, como o kernel de Hawkes clássico.}
+    \Caption{\label{fig:kernel-rothp-vs-hothp} Comparison of the attention kernels as a function of the temporal distance $\Delta t$. In the training zone, both models can fit the data. In the extrapolation zone, the trigonometric kernel of the RoTHP oscillates in phases that were not learned, while the hyperbolic kernel of the HoTHP decays monotonically, like the classical Hawkes kernel.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_kernel_rothp_vs_hothp.pdf}
     }{
     }
 \end{figure}
 
-\section{Configuração experimental}
+\section{Experimental setup}
 \label{sec:configuracao-experimental}
 
-Os experimentos utilizam dois tipos de dados: sintéticos e reais. Os dados sintéticos são gerados por processos de Hawkes com kernel exponencial. A escolha de dados sintéticos é deliberada: como conhecemos o processo gerador, podemos verificar se o viés de recência do HoTHP de fato se alinha com o decaimento real dos dados e se essa correspondência é o que sustenta a extrapolação. Os dados reais são os datasets disponibilizados pela biblioteca EasyTPP \cite{xue_easytpp_2024}: Taxi, StackOverflow, Retweet e Amazon. Esses datasets cobrem domínios variados (transporte, fóruns de perguntas, redes sociais e comércio eletrônico) e permitem avaliar o desempenho do HoTHP em cenários onde o processo gerador é desconhecido.
+The experiments use two types of data: synthetic and real. The synthetic data is generated by Hawkes processes with an exponential kernel. The choice of synthetic data is deliberate: since we know the generating process, we can check whether the recency bias of the HoTHP actually aligns with the real decay of the data and whether this correspondence is what sustains the extrapolation. The real data are the datasets provided by the EasyTPP library \cite{xue_easytpp_2024}: Taxi, StackOverflow, Retweet, and Amazon. These datasets cover varied domains (transportation, question forums, social networks, and electronic commerce) and allow us to evaluate the performance of the HoTHP in scenarios where the generating process is unknown.
 
-\subsection{Geração de dados sintéticos}
+\subsection{Synthetic data generation}
 \label{subsec:geracao-dados}
 
-Geramos sequências de processos de Hawkes multivariados com $K = 2$ tipos de evento e kernel exponencial. Definimos dois cenários de geração para cobrir regimes distintos de dependência temporal.
+We generate sequences from multivariate Hawkes processes with $K = 2$ event types and an exponential kernel. We define two generation scenarios to cover distinct regimes of temporal dependence.
 
-No \textbf{cenário de decaimento lento}, o parâmetro $\beta$ é pequeno, de modo que a influência de eventos passados persiste por mais tempo e eventos distantes ainda afetam a intensidade presente.
+In the \textbf{slow decay scenario}, the parameter $\beta$ is small, so that the influence of past events persists for longer and distant events still affect the present intensity.
 
-No \textbf{cenário de decaimento rápido}, $\beta$ é grande e apenas eventos recentes têm influência relevante.
+In the \textbf{fast decay scenario}, $\beta$ is large and only recent events have relevant influence.
 
-Para cada cenário, geramos 400 sequências de treinamento, 100 de validação e 200 de teste. Todas as sequências são pré-processadas com a normalização temporal da Equação~\ref{eq:normalizacao-temporal} antes de alimentar os modelos.
+For each scenario, we generate 400 training sequences, 100 validation sequences, and 200 test sequences. All the sequences are preprocessed with the temporal normalization of Equation~\ref{eq:normalizacao-temporal} before being fed to the models.
 
-\subsection{Protocolo \textit{train short, test long}}
+\subsection{\textit{Train short, test long} protocol}
 \label{subsec:train-short-test-long}
 
-O protocolo \textit{train short, test long}, proposto por \citeonline{press_train_2021} para modelos de linguagem, treina o modelo em sequências curtas e o testa em sequências mais longas. Adaptamos o protocolo para processos pontuais usando o número de eventos como medida de comprimento.
+The \textit{train short, test long} protocol, proposed by \citeonline{press_train_2021} for language models, trains the model on short sequences and tests it on longer sequences. We adapted the protocol to point processes using the number of events as the measure of length.
 
-Fixamos o comprimento de treinamento em $L = 50$ eventos e variamos o fator de extrapolação em $\{1\times, 2\times, 5\times, 10\times\}$, onde o fator indica quantas vezes a sequência de teste é mais longa do que a de treinamento. Com fator $10\times$, por exemplo, treinamos com sequências de 50 eventos e testamos com sequências de 500. Cada fator é avaliado nos dois cenários de decaimento.
+We fix the training length at $L = 50$ events and vary the extrapolation factor over $\{1\times, 2\times, 5\times, 10\times\}$, where the factor indicates how many times longer the test sequence is than the training one. With a factor of $10\times$, for example, we train with sequences of 50 events and test with sequences of 500. Each factor is evaluated in the two decay scenarios.
 
-\subsection{Modelos comparados e implementação}
+\subsection{Compared models and implementation}
 \label{subsec:modelos-comparados}
 
-Nos dados sintéticos comparamos quatro modelos: NHP \cite{mei_neural_2017}, THP \cite{zuo_transformer_2021}, RoTHP \cite{dai_rotary_2026} e o HoTHP proposto. O RoTHP é o baseline mais próximo, pois compartilha exatamente a mesma estrutura de encoder e a mesma função de intensidade do HoTHP, diferindo apenas no kernel posicional; o NHP (recorrente) e o THP (encoding temporal absoluto) servem para situar o comportamento na extrapolação em relação a arquiteturas distintas. Nos dados reais comparamos THP, RoTHP e HoTHP no Amazon e no Stackoverflow, e RoTHP e HoTHP no Taxi e no Retweet.
+On the synthetic data we compare four models: NHP \cite{mei_neural_2017}, THP \cite{zuo_transformer_2021}, RoTHP \cite{dai_rotary_2026}, and the proposed HoTHP. The RoTHP is the closest baseline, since it shares exactly the same encoder structure and the same intensity function as the HoTHP, differing only in the positional kernel; the NHP (recurrent) and the THP (absolute temporal encoding) serve to situate the extrapolation behavior with respect to distinct architectures. On the real data we compare THP, RoTHP, and HoTHP on Amazon and Stackoverflow, and RoTHP and HoTHP on Taxi and Retweet.
 
-Todos os modelos são implementados no framework EasyTPP \cite{xue_easytpp_2024}, e os baselines compartilham os mesmos hiperparâmetros do HoTHP em cada cenário, de modo a isolar o efeito do kernel posicional. Nos experimentos sintéticos usamos dimensão do modelo $d = 32$, dimensão do \textit{embedding} temporal igual a $32$, $N_{\ell} = 2$ camadas, $H = 2$ cabeças de atenção, \textit{dropout} de $0{,}1$ e otimizador AdamW (\textit{weight decay} $10^{-4}$) com taxa de aprendizado $10^{-3}$, exceto o HoTHP, que usa $5 \times 10^{-4}$ para maior estabilidade numérica das funções hiperbólicas. Nos experimentos com dados reais usamos $d = 64$, \textit{embedding} temporal igual a $16$, $N_{\ell} = 2$ camadas, $H = 2$ cabeças e taxa de aprendizado $10^{-3}$ para todos os modelos.
+All the models are implemented in the EasyTPP framework \cite{xue_easytpp_2024}, and the baselines share the same hyperparameters as the HoTHP in each scenario, so as to isolate the effect of the positional kernel. In the synthetic experiments we use a model dimension $d = 32$, a temporal \textit{embedding} dimension equal to $32$, $N_{\ell} = 2$ layers, $H = 2$ attention heads, \textit{dropout} of $0{,}1$, and the AdamW optimizer (\textit{weight decay} $10^{-4}$) with learning rate $10^{-3}$, except the HoTHP, which uses $5 \times 10^{-4}$ for greater numerical stability of the hyperbolic functions. In the experiments with real data we use $d = 64$, a temporal \textit{embedding} equal to $16$, $N_{\ell} = 2$ layers, $H = 2$ heads, and a learning rate of $10^{-3}$ for all the models.
 
-\subsection{Métricas e avaliação estatística}
+\subsection{Metrics and statistical evaluation}
 \label{subsec:metricas}
 
-A métrica de avaliação é a \gls{NLL}, calculada sobre a sequência completa de teste, incluindo os eventos além do comprimento de treinamento. Se o viés de recência do HoTHP de fato habilita a extrapolação, a NLL deve se manter estável mesmo quando a sequência de teste é muito mais longa do que a de treino. Utilizamos também RMSE para avaliar a predição do próximo evento e Acurácia para avaliar predição do tipo do próximo evento.
+The evaluation metric is the \gls{NLL}, computed over the complete test sequence, including the events beyond the training length. If the recency bias of the HoTHP indeed enables extrapolation, the NLL should remain stable even when the test sequence is much longer than the training one. We also use RMSE to evaluate the prediction of the next event and Accuracy to evaluate the prediction of the type of the next event.
 
-Repetimos os experimentos sintéticos com $N = 10$ seeds e os experimentos com dados reais com $N = 3$ seeds, reportando média $\pm$ desvio padrão. Para verificar significância estatística nos experimentos sintéticos, usamos o teste de Wilcoxon de postos sinalizados (\textit{Wilcoxon signed-rank test}), um teste não paramétrico pareado que não assume normalidade e é adequado para amostras pequenas. O pareamento é por semente: a mesma semente gera o mesmo conjunto de treino, validação e teste para todos os modelos. Com $N = 10$, o menor $p$-valor unilateral atingível é $1/2^{10} \approx 0{,}001$, suficiente para o nível $\alpha = 0{,}05$.
+We repeat the synthetic experiments with $N = 10$ seeds and the experiments with real data with $N = 3$ seeds, reporting mean $\pm$ standard deviation. To check statistical significance in the synthetic experiments, we use the \textit{Wilcoxon signed-rank test}, a non-parametric paired test that does not assume normality and is suitable for small samples. The pairing is by seed: the same seed generates the same training, validation, and test set for all the models. With $N = 10$, the smallest attainable one-sided $p$-value is $1/2^{10} \approx 0{,}001$, sufficient for the level $\alpha = 0{,}05$.
 
-\subsection{Ambiente computacional}
+\subsection{Computational environment}
 \label{subsec:ambiente-computacional}
 
-Todos os experimentos foram executados em uma máquina com GPU NVIDIA A100-SXM4-80GB (80~GB de VRAM), 6 núcleos físicos (12 threads), 167~GB de RAM e CUDA 12.8. O código utiliza PyTorch 2.10.0 e Python 3.12.
+All the experiments were run on a machine with an NVIDIA A100-SXM4-80GB GPU (80~GB of VRAM), 6 physical cores (12 threads), 167~GB of RAM, and CUDA 12.8. The code uses PyTorch 2.10.0 and Python 3.12.

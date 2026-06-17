@@ -39,6 +39,19 @@ cd overleaf-dissertacao && make clean     # removes auxiliary files
 
 Note: Both LaTeX projects are synced with Overleaf. Local compilation is optional; Overleaf handles the build in most workflows.
 
+## Dissertation Translation (in progress)
+
+The MSc dissertation in `overleaf-dissertacao/` is being **translated from Portuguese to English in place**, chapter by chapter (the Portuguese originals are preserved in git history). Source chapters live in `overleaf-dissertacao/2-textuais/` (`1-introducao.tex`, `2-fundamentacao-teorica.tex`, `3-trabalhos-relacionados.tex`, `4-metodologia.tex`, `5-resultados.tex`, `6-conclusao.tex`).
+
+Translation rules:
+- Keep **all data, numbers, and statistics unchanged**.
+- Preserve all LaTeX commands verbatim: `\label`, `\ref`, `\cite`, `\gls{}`, `\textit{}`, table/figure environments.
+- Use **simple, plain English**: clear and correct, not childish, but avoid rare or fancy words. Keep the original meaning.
+- **No em-dashes (travessões) and no LLM tics.** Use plain punctuation (commas, periods, parentheses).
+- If a file is long enough that translating it in one pass would hurt quality, stop and flag it instead of pushing through.
+
+Status: all `2-textuais/` chapters translated (`1-introducao.tex` through `6-conclusao.tex`). Note: the `\section{Future work}` in `6-conclusao.tex` is empty in the original and was left empty (no content invented). Front/back matter (abstract, `resumo`, cover) and other folders not yet translated.
+
 ## Writing Guidelines
 
 - The paper is drafted in **Portuguese** first, then translated to English. Figures and their labels are always in **English**.
