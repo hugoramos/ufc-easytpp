@@ -1,38 +1,38 @@
-\chapter{Conclusões e Trabalhos Futuros}
+\chapter{Conclusions and Future Work}
 \label{chap:conclusoes-e-trabalhos-futuros}
 
-Este trabalho propôs o HoTHP, uma variante do Transformer Hawkes Process que substitui o kernel trigonométrico do RoTHP por um kernel hiperbólico com decaimento exponencial. A motivação era melhorar a extrapolação de comprimento em processos pontuais temporais: treinar em sequências curtas e manter o desempenho em sequências mais longas.
+This work proposed the HoTHP, a variant of the Transformer Hawkes Process that replaces the trigonometric kernel of the RoTHP with a hyperbolic kernel that has exponential decay. The motivation was to improve length extrapolation in temporal point processes: to train on short sequences and keep performance on longer sequences.
 
-\section{Contribuições}
+\section{Contributions}
 
-A principal contribuição é a introdução do viés exponencial de recência no mecanismo de atenção temporal. Diferentemente do kernel oscilatório do RoTHP, cujo score de atenção pode crescer para distâncias temporais não vistas no treino, o kernel hiperbólico do HoTHP garante um decaimento monotônico. Para qualquer distância temporal, incluindo valores maiores que os observados durante o treinamento, o score de atenção é limitado e tende a zero. Isso permite que o modelo generalize para sequências mais longas sem degradação.
+The main contribution is the introduction of the exponential recency bias into the temporal attention mechanism. Unlike the oscillatory kernel of the RoTHP, whose attention score can grow for temporal distances not seen in training, the hyperbolic kernel of the HoTHP guarantees a monotonic decay. For any temporal distance, including values larger than those observed during training, the attention score is bounded and tends to zero. This allows the model to generalize to longer sequences without degradation.
 
-Além da proposta arquitetural, a análise experimental revelou duas observações que consideramos relevantes para a área:
-
-\begin{enumerate}
-    \item O viés exponencial atua exclusivamente no mecanismo de atenção, que constrói o estado oculto a partir dos eventos passados. A função de intensidade é uma camada separada com parâmetros aprendíveis livres. Isso significa que o HoTHP pode modelar tanto processos auto-excitantes quanto auto-inibitórios. O que o viés impõe não é a forma da intensidade, mas a forma da relevância: eventos recentes recebem mais peso na construção da representação interna.
-
-    \item A visualização das intensidades aprendidas mostrou que o dataset Amazon exibe um padrão auto-inibitório (a intensidade cresce entre eventos e cai quando um evento ocorre), enquanto o Stackoverflow exibe uma intensidade quase constante (sem memória temporal). O HoTHP vence no primeiro e empata no segundo, confirmando que o fator relevante é a presença de memória temporal de curto alcance, independentemente da direção (excitação ou inibição).
-\end{enumerate}
-
-\section{Resultados principais}
-
-Nos dados sintéticos gerados por processos de Hawkes com kernel exponencial, o HoTHP obtém a melhor NLL em todos os fatores de extrapolação ($2\times$, $5\times$ e $10\times$) nos dois regimes de decaimento, superando todos os baselines (NHP, THP e RoTHP); a vantagem é estatisticamente significativa (teste de Wilcoxon pareado, unilateral) em todos os casos, sendo o decaimento lento em $10\times$ frente ao NHP a comparação de margem mais estreita. Esse resultado era esperado, pois o viés do modelo está perfeitamente alinhado com o processo gerador.
-
-Nos dados reais, os resultados variam conforme o dataset. O HoTHP obtém o melhor desempenho no Amazon ($\Delta\text{NLL} = -0{,}074$ na extrapolação $5\times$, contra $-0{,}020$ do RoTHP), empata no Stackoverflow e no Taxi e falha no Retweet com dados brutos devido à escala temporal extrema do dataset. A ablação com normalização temporal revelou que o problema do Retweet era primariamente de escala numérica: com timestamps normalizados, o HoTHP obtém NLL $5\times$ de $-0{,}542 \pm 0{,}004$, o melhor resultado entre todos os modelos e condições testados, com variância quase zero entre sementes. A análise desses resultados aponta duas condições necessárias para o viés ser benéfico: o processo precisa ter memória temporal de curto alcance, e a escala dos intervalos entre eventos precisa estar numa faixa que permita a calibração do parâmetro $\theta'$.
-
-Do ponto de vista computacional, o HoTHP é entre $1{,}05\times$ e $2{,}24\times$ mais lento no treinamento, dependendo do comprimento das sequências. Esse custo adicional é pago uma única vez e se justifica pelo benefício na extrapolação: o modelo treinado produz resultados estáveis em sequências até $5\times$ mais longas, enquanto o RoTHP pode colapsar numericamente nesse mesmo cenário.
-
-\section{Limitações}
-
-O trabalho apresenta algumas limitações que devem ser consideradas:
+Besides the architectural proposal, the experimental analysis revealed two observations that we consider relevant for the field:
 
 \begin{enumerate}
-    \item A avaliação em dados reais é limitada a quatro datasets. Uma avaliação mais ampla, incluindo datasets de domínios como sismologia, finanças e redes de computadores, fortaleceria as conclusões sobre quando o viés é benéfico.
+    \item The exponential bias acts exclusively on the attention mechanism, which builds the hidden state from the past events. The intensity function is a separate layer with free learnable parameters. This means that the HoTHP can model both self-exciting and self-inhibiting processes. What the bias imposes is not the shape of the intensity, but the shape of the relevance: recent events receive more weight in the construction of the internal representation.
 
-    \item O HoTHP não possui um mecanismo interno de normalização temporal. A escala dos timestamps é tratada apenas pelo deslocamento para zero ($\tilde{t}_i = t_i - t_1$), que preserva as diferenças mas não controla a magnitude absoluta. Datasets com intervalos muito grandes (como o Retweet) causam saturação numérica no kernel.
-
-    \item O parâmetro $\theta'$ controla uma única taxa de decaimento global. Processos com múltiplas escalas temporais podem requerer decaimentos.
+    \item The visualization of the learned intensities showed that the Amazon dataset exhibits a self-inhibiting pattern (the intensity grows between events and falls when an event occurs), while Stackoverflow exhibits an almost constant intensity (no temporal memory). The HoTHP wins on the first and ties on the second, confirming that the relevant factor is the presence of short-range temporal memory, regardless of the direction (excitation or inhibition).
 \end{enumerate}
 
-\section{Trabalhos futuros}
+\section{Main results}
+
+On the synthetic data generated by Hawkes processes with an exponential kernel, the HoTHP obtains the best NLL at all extrapolation factors ($2\times$, $5\times$, and $10\times$) in both decay regimes, surpassing all the baselines (NHP, THP, and RoTHP); the advantage is statistically significant (paired, one-sided Wilcoxon test) in all cases, with the slow decay at $10\times$ against the NHP being the narrowest-margin comparison. This result was expected, since the bias of the model is perfectly aligned with the generating process.
+
+On the real data, the results vary by dataset. The HoTHP obtains the best performance on Amazon ($\Delta\text{NLL} = -0{,}074$ in the $5\times$ extrapolation, against $-0{,}020$ of the RoTHP), ties on Stackoverflow and Taxi, and fails on Retweet with raw data due to the extreme temporal scale of the dataset. The ablation with temporal normalization revealed that the Retweet problem was primarily one of numerical scale: with normalized timestamps, the HoTHP obtains an NLL $5\times$ of $-0{,}542 \pm 0{,}004$, the best result among all the models and conditions tested, with almost zero variance between seeds. The analysis of these results points to two conditions necessary for the bias to be beneficial: the process needs to have short-range temporal memory, and the scale of the intervals between events needs to be in a range that allows the calibration of the parameter $\theta'$.
+
+From the computational point of view, the HoTHP is between $1{,}05\times$ and $2{,}24\times$ slower in training, depending on the length of the sequences. This additional cost is paid only once and is justified by the benefit in extrapolation: the trained model produces stable results on sequences up to $5\times$ longer, while the RoTHP can collapse numerically in this same scenario.
+
+\section{Limitations}
+
+The work has some limitations that should be considered:
+
+\begin{enumerate}
+    \item The evaluation on real data is limited to four datasets. A broader evaluation, including datasets from domains such as seismology, finance, and computer networks, would strengthen the conclusions about when the bias is beneficial.
+
+    \item The HoTHP does not have an internal mechanism for temporal normalization. The scale of the timestamps is handled only by the shift to zero ($\tilde{t}_i = t_i - t_1$), which preserves the differences but does not control the absolute magnitude. Datasets with very large intervals (such as Retweet) cause numerical saturation in the kernel.
+
+    \item The parameter $\theta'$ controls a single global decay rate. Processes with multiple temporal scales may require multiple decay rates.
+\end{enumerate}
+
+\section{Future work}

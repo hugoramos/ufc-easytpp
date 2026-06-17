@@ -1,37 +1,37 @@
-\chapter{Fundamentação teórica}
+\chapter{Theoretical background}
 \label{cap:fundamentacao-teorica}
 
-Entender o comportamento de sequencias de eventos ao longo do tempo e como eventos influenciam uns aos outros requer o uso de ferramentas matemáticas complexas. Este capitulo irá apresentar a fundamentação teórica necessária para suportar o modelo proposto. Vamos começar com a distribuição de Poisson e a modelagem de processos pontuais, necessárias para entender como eventos acontecem em tempo contínuo de forma irregular. Em seguida, veremos Processo de Hawkes, que mostra como eventos podem afetar a probabilidade de eventos futuros. Depois, apresentamos os processos de Hawkes neurais, que substituem o kernel paramétrico por redes neurais, culminando no \textit{Neural Hawkes Process}, e revisamos a arquitetura Transformer e seu mecanismo de atenção. As abordagens de processos de Hawkes baseadas em Transformers (THP e RoTHP) e as técnicas de extrapolação de comprimento, que são a base direta do modelo proposto, são tratadas no Capítulo~\ref{cap:trabalhos-relacionados}.
+Understanding the behavior of event sequences over time and how events influence one another requires the use of complex mathematical tools. This chapter presents the theoretical background needed to support the proposed model. We start with the Poisson distribution and the modeling of point processes, which are needed to understand how events happen in continuous time in an irregular way. Next, we look at the Hawkes process, which shows how events can affect the probability of future events. After that, we present neural Hawkes processes, which replace the parametric kernel with neural networks, culminating in the \textit{Neural Hawkes Process}, and we review the Transformer architecture and its attention mechanism. The Transformer-based Hawkes process approaches (THP and RoTHP) and the length extrapolation techniques, which are the direct basis of the proposed model, are covered in Chapter~\ref{cap:trabalhos-relacionados}.
 
-\section{Distribuição de Poisson}\label{sec:distribuicao-de-poisson}
+\section{Poisson distribution}\label{sec:distribuicao-de-poisson}
 
-    Antes de tratarmos do Processo de Poisson, convém relembrar a distribuição de Poisson, da qual ele herda o nome. A distribuição de Poisson é uma distribuição de probabilidade discreta que modela o número de eventos que ocorrem em um intervalo fixo (de tempo, espaço, etc.), supondo que esses eventos sejam independentes e aconteçam a uma taxa média constante $\lambda$. A probabilidade de observar exatamente $k$ eventos é dada por:
+    Before dealing with the Poisson process, it is worth recalling the Poisson distribution, from which it takes its name. The Poisson distribution is a discrete probability distribution that models the number of events that occur in a fixed interval (of time, space, etc.), assuming that these events are independent and happen at a constant average rate $\lambda$. The probability of observing exactly $k$ events is given by:
     \begin{equation}
         \Pr(X = k) = \frac{\lambda^{k} e^{-\lambda}}{k!}, \quad k = 0, 1, 2, \ldots,
         \label{eq:distribuicao-poisson}
     \end{equation}
-    onde $\lambda > 0$ é o número médio de eventos esperado no intervalo. Uma propriedade marcante dessa distribuição é que sua média e sua variância são ambas iguais a $\lambda$: quanto maior a taxa, mais eventos esperamos e maior a variabilidade em torno desse valor.
+    where $\lambda > 0$ is the average number of events expected in the interval. A notable property of this distribution is that its mean and its variance are both equal to $\lambda$: the higher the rate, the more events we expect and the greater the variability around this value.
 
-    Na próxima seção veremos que o Processo de Poisson é justamente o mecanismo que gera eventos ao longo do tempo de modo que a contagem em qualquer intervalo siga essa distribuição. Lá, a Equação~\ref{eq:poisson} reaparece com $\Lambda = \lambda T$ no lugar de $\lambda$, indicando que o número esperado de eventos cresce proporcionalmente ao tamanho $T$ do intervalo observado.
+    In the next section we will see that the Poisson process is exactly the mechanism that generates events over time so that the count in any interval follows this distribution. There, Equation~\ref{eq:poisson} reappears with $\Lambda = \lambda T$ in place of $\lambda$, indicating that the expected number of events grows proportionally to the size $T$ of the observed interval.
 
 
-\section{Processos de Poisson}\label{sec:processos-de-poisson}
+\section{Poisson processes}\label{sec:processos-de-poisson}
 
-    O Processo de Poisson é um objeto matemático que consiste de pontos aleatórios em um espaço matemático com a importante característica de não dependência entre os pontos. Esse modelo é amplamente utilizado em áreas como teoria das filas, astronomia, biologia e análise de sobrevivência. O nome deriva do fato de que os pontos, ou eventos, ocorrem seguindo uma distribuição de Poisson.
-    
-    Processo de Poisson é a forma mais comum de Processos Pontuais. \citeonline{daley_introduction_2003} definem um Processo de Poisson estacionário pela equação a seguir, onde usamos $N(a_i, b_i]$ para representar o número de eventos do processo. 
+    The Poisson process is a mathematical object that consists of random points in a mathematical space with the important feature of no dependence between the points. This model is widely used in areas such as queueing theory, astronomy, biology, and survival analysis. The name comes from the fact that the points, or events, occur following a Poisson distribution.
+
+    The Poisson process is the most common form of point process. \citeonline{daley_introduction_2003} define a stationary Poisson process by the following equation, where we use $N(a_i, b_i]$ to represent the number of events of the process.
     \begin{equation}
         \Pr\{N((a_i, b_i]) = n_i,\; i = 1, \ldots, k\}
-        = 
+        =
         \prod_{i=1}^{k}
         \frac{[\lambda (b_i - a_i)]^{n_i}}{n_i!}\,
         e^{-\lambda (b_i - a_i)}.
         \label{eq:start-poisson}
     \end{equation}
 
-    Esta definição engloba três aspectos importantes: $(\mathrm{i})$ o número de pontos em cada intervalo finito $(a_i,b_i]$ possui uma distribuição de Poisson; $(\mathrm{ii})$ o número de pontos em intervalos disjuntos são variáveis aleatórias independentes; e $(\mathrm{iii})$ as distribuições são estacionárias, ou seja, dependem apenas dos comprimentos $b_i-a_i$ dos intervalos. A constante $\lambda$ é a taxa média ou a densidade média dos eventos do processo. Nas subseções a seguir veremos que $\lambda$ é também a intensidade com a qual os eventos ocorrem.
+    This definition covers three important aspects: $(\mathrm{i})$ the number of points in each finite interval $(a_i,b_i]$ has a Poisson distribution; $(\mathrm{ii})$ the numbers of points in disjoint intervals are independent random variables; and $(\mathrm{iii})$ the distributions are stationary, that is, they depend only on the lengths $b_i-a_i$ of the intervals. The constant $\lambda$ is the average rate or the average density of the events of the process. In the following subsections we will see that $\lambda$ is also the intensity with which the events occur.
 
-    Considerando o caso especial de apenas um intervalo $k=1$, temos  $(a_i, b_i] = (0,T]$. Então, o tamanho do intervalo é $b_i-a_i=T$. Substituindo na Equação \ref{eq:start-poisson}, temos: 
+    Considering the special case of a single interval $k=1$, we have $(a_i, b_i] = (0,T]$. Then, the interval size is $b_i-a_i=T$. Substituting into Equation \ref{eq:start-poisson}, we have:
 
     \begin{equation}
         \Pr\{N((0,T]) = n_1\}
@@ -39,8 +39,8 @@ Entender o comportamento de sequencias de eventos ao longo do tempo e como event
         e^{-\lambda T}.
         \label{eq:poisson-lambda}
     \end{equation}
-        
-    Na Equação \ref{eq:poisson-lambda}, substituindo $(0,T]$ por $N$ e $\lambda T$ por $\Lambda$, temos a forma clássica da distribuição de Poisson associada ao Processo de Poisson:
+
+    In Equation \ref{eq:poisson-lambda}, replacing $(0,T]$ by $N$ and $\lambda T$ by $\Lambda$, we obtain the classical form of the Poisson distribution associated with the Poisson process:
     \begin{equation}
         \Pr(N = n)
         =
@@ -48,52 +48,52 @@ Entender o comportamento de sequencias de eventos ao longo do tempo e como event
         \label{eq:poisson}
     \end{equation}
 
-    A Equação \ref{eq:poisson} explicita a relação entre a distribuição de Poisson e o Processo de Poisson: o numero de eventos observados em qualquer intervalo de tamanho T é Poisson com a média $\Lambda = \lambda T$. Em outras palavras, o Processo de Poisson é uma forma de gerar tempos de eventos cuja contagem satisfaz a distribuição de Poisson e que sejam independentes e estacionários. Processos de Poisson são a forma mais fundamental de Processos Pontuais Temporais, que iremos falar na próxima seção. 
+    Equation \ref{eq:poisson} makes explicit the relationship between the Poisson distribution and the Poisson process: the number of events observed in any interval of size T is Poisson with mean $\Lambda = \lambda T$. In other words, the Poisson process is a way of generating event times whose count satisfies the Poisson distribution and that are independent and stationary. Poisson processes are the most fundamental form of temporal point process, which we will discuss in the next section.
 
-    A Figura \ref{fig:poisson} ilustra um Processo de Poisson homogêneo no intervalo $[0,T]$. O eixo horizontal representa o tempo e cada traço vertical representa a ocorrência de um evento gerado pelo processo. Embora os eventos pareçam irregulares, eles foram gerados de modo que o tempo de espera entre um evento e outro seja exponencial $1/\lambda$ e independente, onde $\lambda$ é constante e portanto o número de eventos esperado em um determinado intervalo $T$ é definido por $\lambda T$. Isso ilustra a intuição por trás do processo de Poisson que é a ocorrência aleatória de eventos, independentes e seguidos por uma taxa constante $\lambda$.
-    
+    Figure \ref{fig:poisson} illustrates a homogeneous Poisson process in the interval $[0,T]$. The horizontal axis represents time and each vertical mark represents the occurrence of an event generated by the process. Although the events look irregular, they were generated so that the waiting time between one event and another is exponential $1/\lambda$ and independent, where $\lambda$ is constant and therefore the expected number of events in a given interval $T$ is defined by $\lambda T$. This illustrates the intuition behind the Poisson process, which is the random occurrence of events, independent and following a constant rate $\lambda$.
+
     \begin{figure}[h!]
 		\centering
 		\captionsetup{width=14cm}%Da mesma largura que a figura
-		\Caption{\label{fig:poisson}Processo de Poisson.}        
+		\Caption{\label{fig:poisson}Poisson process.}
 		\UFCfig{}{
 			\includegraphics[width=14cm]{figuras/figura-poisson.png}
 		}{
-			}	
+			}
 	\end{figure}
 
-\section{Processos Pontuais Temporais}\label{sec:processos-pontuais-temporais}
+\section{Temporal point processes}\label{sec:processos-pontuais-temporais}
 
-    Processos Pontuais Temporais (TPP) são modelos probabilísticos desenhados para descrever sequências de eventos discretos que acontecem em tempo contínuo \cite{zuo_transformer_2021}. Diferentemente de modelos discretos, que assumem que os eventos acontecem em intervalos de tempo conhecidos, TPPs permitem lidar com eventos que acontecem em tempos irregulares, arbitrários. Isso os tornam particularmente uteis em domínios onde o momento da ocorrência do evento é tão importante quanto o evento em si. 
+    Temporal point processes (TPP) are probabilistic models designed to describe sequences of discrete events that happen in continuous time \cite{zuo_transformer_2021}. Unlike discrete models, which assume that events happen at known time intervals, TPPs make it possible to handle events that happen at irregular, arbitrary times. This makes them particularly useful in domains where the moment of the event occurrence is as important as the event itself.
 
-    Muitas cenários geram tais sequências de eventos, desde de picos de neurônios em neurociência, compra e venda de ações no mercado financeiro, tuítes em redes sociais, etc \cite{zhou_advances_2025}. Essas sequências de eventos, composta por eventos assíncronos, geralmente influenciam uns aos outros, tornando o estudo desses fenômenos não apenas complexo como também necessário. 
+    Many scenarios generate such event sequences, from neuron spikes in neuroscience, to buying and selling stocks in the financial market, to tweets in social networks, etc. \cite{zhou_advances_2025}. These event sequences, made up of asynchronous events, usually influence one another, making the study of these phenomena not only complex but also necessary.
 
-    Os TPPs são formalmente definidos por uma função de intensidade condicional $\lambda(t \mid \mathcal{H}_t)$, onde $\mathcal{H}_t$ é o histórico de eventos até o tempo $t$. A intensidade é a taxa instantânea pela qual espera-se que um evento ocorra em um tempo $t$, dado os eventos passados.
+    TPPs are formally defined by a conditional intensity function $\lambda(t \mid \mathcal{H}_t)$, where $\mathcal{H}_t$ is the history of events up to time $t$. The intensity is the instantaneous rate at which an event is expected to occur at a time $t$, given the past events.
 
-    Uma variação dos TPPs é a existência de \textit{marcas}, ou seja, tipos de eventos, onde a sequência passa a ser descrita como $X = \{(t_1, m_1), \ldots, (t_N, m_N)\}$, onde $N$ representa o número de eventos e cada $m_i$ é a marca (tipo) associado ao evento $i$. 
+    One variation of TPPs is the existence of \textit{marks}, that is, event types, where the sequence is now described as $X = \{(t_1, m_1), \ldots, (t_N, m_N)\}$, where $N$ represents the number of events and each $m_i$ is the mark (type) associated with event $i$.
 
-    A distribuição de um TPP com marcas $K$ pode ser caracterizado por $K$ funções de intensidade condicionais $\lambda_k(t \mid \mathcal{H}_t)$ (uma para cada marca $k$) e é definida como 
+    The distribution of a TPP with $K$ marks can be characterized by $K$ conditional intensity functions $\lambda_k(t \mid \mathcal{H}_t)$ (one for each mark $k$) and is defined as
     \begin{equation}
         \lambda_k(t \mid \mathcal{H}_t)
         = \lim_{\Delta t \to 0}
         \frac{
-        \Pr(\text{evento do tipo } k \text{ em } [t, t + \Delta t) \mid \mathcal{H}_t)
+        \Pr(\text{event of type } k \text{ in } [t, t + \Delta t) \mid \mathcal{H}_t)
         }{
         \Delta t
         }.
     \end{equation}
-    Perceba que a definição acima também pode ser aplicada para TPPs sem marcas, apenas definindo $K = 1$ \cite{shchur_neural_2021}.
+    Note that the definition above can also be applied to TPPs without marks, simply by setting $K = 1$ \cite{shchur_neural_2021}.
 
-    \subsection{Função custo}\label{sec:funcao-custo}
+    \subsection{Loss function}\label{sec:funcao-custo}
 
-    Para processos pontuais, dada a observação de todos os eventos no intervalo $[0,T]$, utilizamos o logaritmo da verissimilhança conforme equação abaixo: 
+    For point processes, given the observation of all events in the interval $[0,T]$, we use the log-likelihood as in the equation below:
     \begin{equation}
-        \mathcal{L} = \sum_{i:t_i \leq T} \log \lambda_{k_i}(t_i) - \underbrace{\int_{t=0}^{T} \lambda(t)dt}_{\text{Chamemos de $\Lambda$}}. \label{eq:log_likelihood_final}
+        \mathcal{L} = \sum_{i:t_i \leq T} \log \lambda_{k_i}(t_i) - \underbrace{\int_{t=0}^{T} \lambda(t)dt}_{\text{Let us call it $\Lambda$}}. \label{eq:log_likelihood_final}
     \end{equation}
 
-    Vamos derivar esta função de acordo com \citeonline{mei_neural_2017}. Primeiro, define-se $N(t) = |\{h : t_h \leq t\}|$ como a contagem de eventos (de qualquer tipo) anteriores ao tempo $t$. Dado o histórico passado $\mathcal{H}_i$, o número de eventos em $(t_{i-1}, t]$ é $\Delta N (t_{i-1}, t) \overset{\text{def}}{=} N(t) - N(t_{i-1})$.
-    
-    Seja $T_i > t_{i-1}$ a variável aleatória do tempo do próximo evento e $K_{i+1}$ a variável aleatória do tipo do próximo evento. A função de distribuição cumulativa e a função densidade de probabilidade de $T_i$ (condicionada a $\mathcal{H}_i$) são dadas por:
+    We will derive this function following \citeonline{mei_neural_2017}. First, we define $N(t) = |\{h : t_h \leq t\}|$ as the count of events (of any type) before time $t$. Given the past history $\mathcal{H}_i$, the number of events in $(t_{i-1}, t]$ is $\Delta N (t_{i-1}, t) \overset{\text{def}}{=} N(t) - N(t_{i-1})$.
+
+    Let $T_i > t_{i-1}$ be the random variable of the time of the next event and $K_{i+1}$ the random variable of the type of the next event. The cumulative distribution function and the probability density function of $T_i$ (conditioned on $\mathcal{H}_i$) are given by:
     \begin{align}
         F(t) &= P(T_i \leq t) = 1 - P(T_i > t) \\
         &= 1 - P(\Delta N (t_{i-1}, t) = 0) \\
@@ -101,21 +101,21 @@ Entender o comportamento de sequencias de eventos ao longo do tempo e como event
         &= 1 - \exp (\Lambda(t_{i-1}) - \Lambda(t)) \label{eq:cdf_4} \\
         f(t) &= exp(\Lambda(t_{t-1})-\Lambda(t))\lambda(t),
     \end{align}
-    onde $\Lambda(t) = \int_{0}^{t} \lambda(s)ds$ e $\lambda(t) = \sum_{k=1}^K \lambda_k(t)$.
-        
-    Além disso, dado o histórico passado $\mathcal{H}_i$ e o tempo do próximo evento $t_i$, a distribuição do tipo de evento $k_i$ (probabilidade de ser do tipo $k_i$) é dada por:
+    where $\Lambda(t) = \int_{0}^{t} \lambda(s)ds$ and $\lambda(t) = \sum_{k=1}^K \lambda_k(t)$.
+
+    In addition, given the past history $\mathcal{H}_i$ and the time of the next event $t_i$, the distribution of the event type $k_i$ (probability of being of type $k_i$) is given by:
     \begin{equation}
-        P (K_i = k_i \mid t_i = \frac{\lambda_{k_i}(t_i)}{\lambda(t_i)} \label{eq:cond_type_prob}
+        P(K_i = k_i \mid t_i) = \frac{\lambda_{k_i}(t_i)}{\lambda(t_i)} \label{eq:cond_type_prob}
     \end{equation}
-    
-    Portanto, podemos derivar a função de verossimilhança $L$ assim:
+
+    Therefore, we can derive the likelihood function $L$ as follows:
     \begin{align}
-        L &= \prod_{i:t_i \leq T} L_i \\ 
+        L &= \prod_{i:t_i \leq T} L_i \\
         &= \prod_{i:t_i \leq T} \{ f(t_i) P(K_i = k_i \mid t_i) \} \label{eq:likelihood_prod_1} \\
         &= \prod_{i:t_i \leq T} \left\{ \exp (\Lambda(t_{i-1}) - \Lambda(t_i)) \lambda_{k_i}(t_i) \right\} \label{eq:likelihood_prod_3}
     \end{align}
-    
-    Finalmente, ao aplicar o logaritmo na verossimilhança transformamos o produto em soma:    
+
+    Finally, by applying the logarithm to the likelihood we turn the product into a sum:
     \begin{align}
         \mathcal{L} &\overset{\text{def}}{=} \log L \\
         &= \sum_{i:t_i \leq T} \log\lambda_{k_i}(t_i)-\sum_{i:t_i \leq T}(\Lambda (t_i)-\Lambda(t_{i-1})) \\
@@ -123,57 +123,57 @@ Entender o comportamento de sequencias de eventos ao longo do tempo e como event
         &= \sum_{i:t_i \leq T} \log \lambda_{k_i}(t_i) - \int_{t=0}^{T} \lambda(t)dt \label{eq:log_likelihood_final_3}
     \end{align}
 
-\section{Processos de Hawkes}\label{sec:processos-de-hawkes}
+\section{Hawkes processes}\label{sec:processos-de-hawkes}
 
-    Processos de Poisson são uma forma básica de trabalhar com sequências de eventos discretos, porém, parte-se do principio de que tais eventos são independentes uns dos outros. Mesmo em um processo de Poisson multivariado e não homogêneo, onde a variação da probabilidade da ocorrência de um evento em $t$ varia em função de $t$, ainda assim os eventos são independentes entre si. Ele assume que um evento do tipo $k$ acontece no intervalo infinitesimal $[t,t+\mathrm{d}t]$, com probabilidade $\lambda_k(t)\mathrm{d}t$. A intensidade total de todos os eventos é data por $\lambda(t)=\sum_{k=1}^{K}\lambda_k(t)$.
-    
-    Já o Processo de Hawkes parte do princípio de que eventos passados influenciam a probabilidade de eventos futuros. Em um Processo de Hawkes tradicional, supomos que essa probabilidade é sempre aumentada, somada à probabilidade de eventos passados e decai exponencialmente \cite{mei_neural_2017}.
+    Poisson processes are a basic way of working with sequences of discrete events; however, they start from the assumption that such events are independent of one another. Even in a multivariate and non-homogeneous Poisson process, where the variation in the probability of an event occurring at $t$ varies as a function of $t$, the events are still independent of one another. It assumes that an event of type $k$ happens in the infinitesimal interval $[t,t+\mathrm{d}t]$ with probability $\lambda_k(t)\mathrm{d}t$. The total intensity of all events is given by $\lambda(t)=\sum_{k=1}^{K}\lambda_k(t)$.
 
-    O Processo de Hawkes é considerado duplamente estocástico \cite{zuo_transformer_2021}, pois  $\lambda(t)$ é uma variável aleatória, como em um processo de Cox, mas também é um processo de Poisson. A intensidade de um Processo de Hawkes tradicional univariado é dada por:
-    \begin{equation}        
-        \lambda(t \mid \mathcal{H}_t)= \mu+        \sum_{t_i < t}\alpha\, e^{-\beta (t - t_i)}, 
+    The Hawkes process, on the other hand, starts from the principle that past events influence the probability of future events. In a traditional Hawkes process, we assume that this probability is always increased, added to the probability from past events, and decays exponentially \cite{mei_neural_2017}.
+
+    The Hawkes process is considered doubly stochastic \cite{zuo_transformer_2021}, because $\lambda(t)$ is a random variable, as in a Cox process, but it is also a Poisson process. The intensity of a traditional univariate Hawkes process is given by:
+    \begin{equation}
+        \lambda(t \mid \mathcal{H}_t)= \mu+        \sum_{t_i < t}\alpha\, e^{-\beta (t - t_i)},
         \label{eq:hawkes}
     \end{equation}
 
-    onde $\alpha$ representa o aumento na intensidade de probabilidade instantâneo causado por pelo evento $e$ e $\beta$ representa a velocidade com que essa intensidade decai ao londo do tempo.
+    where $\alpha$ represents the instantaneous increase in the probability intensity caused by event $e$ and $\beta$ represents the speed at which this intensity decays over time.
 
-    A Figura \ref{fig:hawkes} ilustra a intensidade de probabilidade $\lambda$ de um evento onde do $t = 0$ até $t = 2$ essa intensidade está estacionada em uma basaline $\mu$. No momento $t = 2$, acontece o evento $e$, elevando a intensidade de probabilidade instantaneamente. Em seguida, $\lambda$ decai exponencialmente, voltando para o estado  estacionário $\mu$, que representa a não influência de nenhum evento no momento $t$.
-    
+    Figure \ref{fig:hawkes} illustrates the probability intensity $\lambda$ of an event where, from $t = 0$ to $t = 2$, this intensity stays at a baseline $\mu$. At time $t = 2$, event $e$ happens, raising the probability intensity instantaneously. Then, $\lambda$ decays exponentially, returning to the stationary state $\mu$, which represents the absence of influence from any event at time $t$.
+
 	\begin{figure}[h!]
 		\centering
 		\captionsetup{width=14cm}%Da mesma largura que a figura
-		\Caption{\label{fig:hawkes}Função de intensidade de probabilidade}{Função de intensidade de probabilidade representando auto excitação instantânea e decaimento exponencial.}	
+		\Caption{\label{fig:hawkes}Probability intensity function}{Probability intensity function representing instantaneous self-excitation and exponential decay.}
 		\UFCfig{}{
 			\includegraphics[width=14cm]{figuras/figura-hawkes.png}
 		}{
-			}	
+			}
 	\end{figure}
 
-    Ao longo deste trabalho iremos considerar o Processo de Hawkes multivariado, que é capaz de capturar a influencia de eventos de diferentes tipos $k$ entre si, como uma postagem em uma rede social influenciar positivamente a ocorrência de um outro tipo de interação, ou evento neurológico ser gatilho para um determinado acidente cerebral.
+    Throughout this work we will consider the multivariate Hawkes process, which is able to capture the influence of events of different types $k$ on one another, such as a post on a social network positively influencing the occurrence of another type of interaction, or a neurological event being a trigger for a certain stroke.
 
-    \subsection{Relação com o Processo de Cox}\label{subsec:processo-de-cox}
+    \subsection{Relationship with the Cox process}\label{subsec:processo-de-cox}
 
-    Vale situar o Processo de Hawkes dentro de uma progressão de modelos de intensidade cada vez mais flexíveis. No Processo de Poisson homogêneo, a intensidade $\lambda$ é constante. No Processo de Poisson não homogêneo, ela passa a variar no tempo de forma determinística, $\lambda(t)$. Um passo além é o \textbf{Processo de Cox}, também chamado de Processo de Poisson duplamente estocástico, no qual a própria intensidade $\lambda(t)$ é um processo aleatório, governado por fatores externos ao histórico de eventos.
+    It is worth placing the Hawkes process within a progression of increasingly flexible intensity models. In the homogeneous Poisson process, the intensity $\lambda$ is constant. In the non-homogeneous Poisson process, it now varies in time in a deterministic way, $\lambda(t)$. One step further is the \textbf{Cox process}, also called the doubly stochastic Poisson process, in which the intensity $\lambda(t)$ itself is a random process, governed by factors external to the event history.
 
-    O Processo de Hawkes pode ser visto como um caso particular dessa ideia de intensidade estocástica: a aleatoriedade de $\lambda(t)$ não vem de uma fonte externa, mas dos próprios eventos passados, cada um elevando temporariamente a probabilidade de novos eventos (Equação~\ref{eq:hawkes}). É nesse sentido que o Processo de Hawkes é descrito como duplamente estocástico, como mencionado anteriormente. Neste trabalho, é justamente essa dependência do histórico (e o decaimento exponencial da influência de eventos passados) que motiva o viés de recência do modelo proposto.
+    The Hawkes process can be seen as a particular case of this idea of stochastic intensity: the randomness of $\lambda(t)$ does not come from an external source, but from the past events themselves, each one temporarily raising the probability of new events (Equation~\ref{eq:hawkes}). It is in this sense that the Hawkes process is described as doubly stochastic, as mentioned earlier. In this work, it is exactly this dependence on the history (and the exponential decay of the influence of past events) that motivates the recency bias of the proposed model.
 
-\section{Processos Pontuais Temporais Neurais}\label{sec:processos-pontuais-temporais-neurais}
+\section{Neural temporal point processes}\label{sec:processos-pontuais-temporais-neurais}
 
-    Vimos que Processos de Hawkes descrevem muitos cenários, porém, a sua forma clássica não contempla as complexidades do dia a dia, intrínsecas à muitos eventos. Eventos podem possuir uma influência inibitória, ao invés de excitatória, sobre outros eventos, como, por exemplo, uma manutenção preventiva diminui a probabilidade de ocorrência de uma falha em um equipamento. Outra premissa dos processos de Hawkes tradicionais é considerar que eventos do mesmo tipo possuem influência constante sobre outros eventos, porém, sabemos que, por exemplo, ao assistir um fenômeno pela vigésima vez nosso cérebro é menos excitado do que quando presenciamos o evento pela primeira vez. Por fim, podemos também lembrar de fenômenos onde a influência sobre outros eventos não decai de forma exponencial \cite{mei_neural_2017}.
+    We saw that Hawkes processes describe many scenarios; however, their classical form does not account for the everyday complexities that are intrinsic to many events. Events may have an inhibitory influence, instead of an excitatory one, on other events, such as, for example, preventive maintenance lowering the probability of a failure in a piece of equipment. Another assumption of traditional Hawkes processes is to consider that events of the same type have a constant influence on other events; however, we know that, for example, when watching a phenomenon for the twentieth time our brain is less excited than when we witness the event for the first time. Finally, we can also recall phenomena where the influence on other events does not decay in an exponential way \cite{mei_neural_2017}.
 
-    \citeonline{mei_neural_2017} mencionam como é dificil aplicar o processo de Hawkes tradicional em cenários com dados faltantes. Até mesmo em domínios onde Hawkes seria apropriado, a própria natureza dos dados pode apresentar desafios, tais como sequências parcialmente observadas ou dados omitidos de forma sistemática. Existem também dados omitidos de forma estocástica, que podem ser bastante complexos para a versão tradicional de Hawkes.
+    \citeonline{mei_neural_2017} mention how hard it is to apply the traditional Hawkes process in scenarios with missing data. Even in domains where Hawkes would be appropriate, the nature of the data itself may present challenges, such as partially observed sequences or data omitted in a systematic way. There is also data omitted in a stochastic way, which can be quite complex for the traditional version of Hawkes.
 
-    Para resolver tais limitações do processo de Hawkes, abordagens utilizando redes neurais foram propostas, sendo o de \citeonline{mei_neural_2017} um dos trabalhos mais difundidos e aceitos pela comunidade, onde propuseram o \gls{NHP}.
+    To address such limitations of the Hawkes process, approaches using neural networks were proposed, with the work of \citeonline{mei_neural_2017} being one of the most widespread and accepted by the community, where they proposed the \gls{NHP}.
 
-    O primeiro passo foi relaxar a regra de manter $\alpha$ e $\mu$ estritamente positivos, e isso fez com que os valores orbitassem no $\mathbb{R}$, abordando inibição $(\alpha < 0)$ e inércia $(\mu < 0)$. Porém, agora o resultado pode ser negativo, o que não faria sentido para uma intensidade de probabilidade, então é necessário fazer uma transformação $f = \mathbb{R} \to \mathbb{R_+}$, fazendo $\lambda_k(t) = f_k(\tilde \lambda_k(t))$, onde $k$ é o tipo do evento. A função ReLU $f(x) = \mathrm{max}(x, 0)$ seria uma escolha natural para fazer essa conversão, porém, ela assume valor 0 para números negativos e a nossa intensidade precisa assumir valores sempre positivos quando houver possibilidade de um evento ocorrer. 
-    
-    A função escolhida, então, pelos autores foi a softplus $f(x) = s\mathrm{log}(1 + exp(x/s))$, onde $s$ é um parâmetro de escala aprendido introduzido pelo modelo para trazer estabilidade numérica, pois quando a unidade de $x$ varia, por exemplo, de segundos para milissegundos, a intensidade base $f(\mu_k)$ se torna mil vezes menor, forçando $\mu_k$ a assumir valore negativos e dessa forma criando um forte efeito de inércia. 
+    The first step was to relax the rule of keeping $\alpha$ and $\mu$ strictly positive, and this allowed the values to range over $\mathbb{R}$, addressing inhibition $(\alpha < 0)$ and inertia $(\mu < 0)$. However, the result can now be negative, which would not make sense for a probability intensity, so it is necessary to apply a transformation $f = \mathbb{R} \to \mathbb{R_+}$, with $\lambda_k(t) = f_k(\tilde \lambda_k(t))$, where $k$ is the event type. The ReLU function $f(x) = \mathrm{max}(x, 0)$ would be a natural choice for this conversion, but it takes the value 0 for negative numbers, and our intensity needs to take always positive values whenever there is a possibility of an event occurring.
 
-    O segundo passo foi remover a restrição de que eventos passados possuem independência e influência aditiva em $\lambda(t)$. Ao invés de prever $\lambda(t)$ utilizando o somatório do modelo paramétrico tradicional de Hawkes (Equação \ref{eq:hawkes}), \citeonline{mei_neural_2017} utilizaram uma rede neural recorrente, que permitiu capturarem padrões complexos, antes dificilmente percebidos em versões paramétricas do modelo.
-    
-    Como nos modelos tradicionais, cada tipo de evento $k$ possui uma densidade dependente do tempo $\lambda_k(t)$, que salta a cada novo evento e decai exponencialmente até um valor estacionário, análogo ao $\mu$ da Equação \ref{eq:hawkes}. Entretanto, no modelo proposto por \citeonline{mei_neural_2017} essa dinâmica é controlada por uma vetor de estados oculto $\mathbf{h}(t) \in (-1,1)^D$, que depende do vetor $\mathbf{c}(t) \in \mathbb{R}^D$, que é o vetor de memória de uma rede neural recorrente com uma camada e $D$ neurônios. 
-    
-    \citeonline{mei_neural_2017} propuseram uma variação da \gls{LSTM} para tempo continuo, a Continuous-Time LSTM (CT-LSTM), onde após cada evento cada célula de memória $c$ decai exponencialmente a uma determinada taxa $\mathbf{\delta}$ até um estado estável (estacionário) $\mathbf{\bar{c}}$. A cada momento em $t>0$, é possível obter a intensidade de cada tipo de evento com $\lambda_k(t)=f_k(\mathbf{w}_k^T\mathbf{h}(t))$, onde $\mathbf{h}$ pode ser calculado com $\mathbf{h}(t)=\mathbf{o}_i \odot (2\mathbf{\sigma}(2\mathbf{c}(t))-1$ para $t \in (t_{i-1},t_i]$, onde $\mathbf{o}$ é o vetor de saída (output) da LSTM e $\mathbf{w}$ um vetor de pesos. 
+    The function then chosen by the authors was the softplus $f(x) = s\mathrm{log}(1 + exp(x/s))$, where $s$ is a learned scale parameter introduced by the model to bring numerical stability, because when the unit of $x$ varies, for example, from seconds to milliseconds, the base intensity $f(\mu_k)$ becomes a thousand times smaller, forcing $\mu_k$ to take negative values and thus creating a strong inertia effect.
+
+    The second step was to remove the restriction that past events have independence and additive influence on $\lambda(t)$. Instead of predicting $\lambda(t)$ using the summation of the traditional parametric Hawkes model (Equation \ref{eq:hawkes}), \citeonline{mei_neural_2017} used a recurrent neural network, which allowed them to capture complex patterns that were previously hard to perceive in parametric versions of the model.
+
+    As in the traditional models, each event type $k$ has a time-dependent density $\lambda_k(t)$, which jumps at each new event and decays exponentially toward a stationary value, analogous to the $\mu$ in Equation \ref{eq:hawkes}. However, in the model proposed by \citeonline{mei_neural_2017} this dynamic is controlled by a hidden state vector $\mathbf{h}(t) \in (-1,1)^D$, which depends on the vector $\mathbf{c}(t) \in \mathbb{R}^D$, which is the memory vector of a recurrent neural network with one layer and $D$ neurons.
+
+    \citeonline{mei_neural_2017} proposed a continuous-time variation of the \gls{LSTM}, the Continuous-Time LSTM (CT-LSTM), where after each event each memory cell $c$ decays exponentially at a certain rate $\mathbf{\delta}$ toward a stable (stationary) state $\mathbf{\bar{c}}$. At each moment $t>0$, it is possible to obtain the intensity of each event type with $\lambda_k(t)=f_k(\mathbf{w}_k^T\mathbf{h}(t))$, where $\mathbf{h}$ can be computed with $\mathbf{h}(t)=\mathbf{o}_i \odot (2\mathbf{\sigma}(2\mathbf{c}(t))-1$ for $t \in (t_{i-1},t_i]$, where $\mathbf{o}$ is the LSTM output vector and $\mathbf{w}$ a weight vector.
     \begin{align}
         \mathbf{i}_{i+1} &\leftarrow \sigma(\mathbf{W}_i \mathbf{k}_i+\mathbf{U}_i \mathbf{h}(t_i)+\mathbf{d}_i) \label{eq:neural-i} \\
         \mathbf{f}_{i+1} &\leftarrow \sigma(\mathbf{W}_f \mathbf{k}_i+\mathbf{U}_f \mathbf{h}(t_i)+\mathbf{d}_f) \label{eq:neural-f} \\
@@ -186,35 +186,35 @@ Entender o comportamento de sequencias de eventos ao longo do tempo e como event
         \mathbf{\delta}_{i+1} &\leftarrow f(\mathbf{W}_d \mathbf{k}_i+\mathbf{U}_d \mathbf{h}(t_i)+\mathbf{d}_d) \label{eq:neural-delta}
     \end{align}
 
-    As Equações \ref{eq:neural-i}, \ref{eq:neural-f} e \ref{eq:neural-o} referem-se respectivamente aos \textit{Gates} de \textit{input}, \textit{forget} e \textit{output}, comuns a uma rede LSTM convencional. A Equação \ref{eq:neural-z} refere-se ao valor candidato (\textit{Candidate Memory}). As Equações \ref{eq:neural-c} e \ref{eq:neural-cbar} representam a Célula de Memória (\textit{Memory Cell}) e o estado estável da Célula de Memória. Finalmente, a Equação \ref{eq:neural-delta} calcula o vetor $\mathbf{\delta}$, a taxa de decaimento, análogo ao $\beta$ da Equação \ref{eq:hawkes}.
+    Equations \ref{eq:neural-i}, \ref{eq:neural-f}, and \ref{eq:neural-o} refer respectively to the \textit{input}, \textit{forget}, and \textit{output} \textit{gates}, common to a conventional LSTM network. Equation \ref{eq:neural-z} refers to the candidate value (\textit{Candidate Memory}). Equations \ref{eq:neural-c} and \ref{eq:neural-cbar} represent the Memory Cell (\textit{Memory Cell}) and the stable state of the Memory Cell. Finally, Equation \ref{eq:neural-delta} computes the vector $\mathbf{\delta}$, the decay rate, analogous to the $\beta$ in Equation \ref{eq:hawkes}.
 
-    As equações acima se assemelham bastante a uma LSTM convencional (discreta), mas com duas diferenças fundamentais. As atualizações não dependem do valor anterior $t_{t-1}$ e sim do valor de $\mathbf{h}(t_i)$, após ele ter sofrido decaimento no período $t_i-t_{i-1}$. Além disso, as Equações \ref{eq:neural-cbar} e \ref{eq:neural-delta} são novas, adicionadas por \citeonline{mei_neural_2017}, e elas definem como, ao longo do tempo, à medida em que $t>t_i$ aumenta os elementos de $\mathbf{c}(t)$ irão continuamente decair de $\mathbf{c}_{i+1}$ até $\mathbf{\bar{c}}_{i+1}$. $\mathbf{c}(t)$ é calculado de acordo com a equação
+    The equations above are quite similar to a conventional (discrete) LSTM, but with two fundamental differences. The updates do not depend on the previous value $t_{t-1}$, but on the value of $\mathbf{h}(t_i)$, after it has undergone decay over the period $t_i-t_{i-1}$. In addition, Equations \ref{eq:neural-cbar} and \ref{eq:neural-delta} are new, added by \citeonline{mei_neural_2017}, and they define how, over time, as $t>t_i$ increases, the elements of $\mathbf{c}(t)$ will continuously decay from $\mathbf{c}_{i+1}$ to $\mathbf{\bar{c}}_{i+1}$. $\mathbf{c}(t)$ is computed according to the equation
     \begin{equation}
-        \mathbf{c}(t) \overset{\text{def}}{=} \mathbf{\bar{c}}_{i+1} + (\mathbf{c}_{i+1}-\mathbf{\bar{c}}_{i+1}) \exp(-\mathbf{\delta}_{i+1}(t-t_i)) \quad \text{para } t \in (t_i,t_{i+1}].
+        \mathbf{c}(t) \overset{\text{def}}{=} \mathbf{\bar{c}}_{i+1} + (\mathbf{c}_{i+1}-\mathbf{\bar{c}}_{i+1}) \exp(-\mathbf{\delta}_{i+1}(t-t_i)) \quad \text{for } t \in (t_i,t_{i+1}].
         \label{eq:neural-ct}
     \end{equation}
 
-    Importante lembrar que $\mathbf{c}(t)$ é utilizado na função $\mathbf{h}(t)$, que é análoga ao vetor do estado oculto $\mathbf{h}_i$ da LSTM, que, por sua vez, é utilizada no cálculo do $\lambda_k(t)$, para um determinado tipo de evento $k$. 
-    
-    A abordagem de \citeonline{mei_neural_2017} foi simples, mas bastante engenhosa, obtendo excelentes resultados tanto em datasets sintéticos como reais, sendo muitas vezes ainda o melhor benchmark, apesar de ser um algoritmo de 2017.
+    It is important to remember that $\mathbf{c}(t)$ is used in the function $\mathbf{h}(t)$, which is analogous to the LSTM hidden state vector $\mathbf{h}_i$, which in turn is used in the computation of $\lambda_k(t)$, for a given event type $k$.
 
-\section{Transformers e o mecanismo de atenção}\label{sec:transformers-atencao}
+    The approach of \citeonline{mei_neural_2017} was simple but quite clever, achieving excellent results on both synthetic and real datasets, often still being the best benchmark, despite being a 2017 algorithm.
 
-    Abordagens baseadas em redes neurais recorrentes (RNN), como a Continuous Time LSTM (CT-LSTM) proposta por \citeonline{mei_neural_2017} trouxe grandes avanços na modelagem de padrões complexos, porém, continuaram com o ponto fraco das RNNs que é o fato de seu processamento ser sequencial. RNNs processam um evento após o outro, ou seja, o calculo do evento próximo evento ($t_{i+1}$) depende do evento atual ($t_i$), fazendo com que o treino da rede seja lento. Em alguns cenários, de sequências muito longas, se torna inviável utilizar RNN. Trabalhos mais recente adaptaram a arquitetura Transformer proposta por \citeonline{vaswani_attention_2017}, adaptando o mecanismo de Atenção para TPP, especialemnte voltadas para o Processo de Hawkes, que é o foco deste trabalho. As subseções seguintes vão nos ajudar a relembrar como é a arquitetura proposta em 2017.
+\section{Transformers and the attention mechanism}\label{sec:transformers-atencao}
 
-\subsection{Encoders e Decoders}\label{subsec:encoders-decoders}
+    Approaches based on recurrent neural networks (RNN), such as the Continuous-Time LSTM (CT-LSTM) proposed by \citeonline{mei_neural_2017}, brought great advances in the modeling of complex patterns; however, they kept the weak point of RNNs, which is the fact that their processing is sequential. RNNs process one event after another, that is, the computation of the next event ($t_{i+1}$) depends on the current event ($t_i$), which makes training the network slow. In some scenarios, with very long sequences, it becomes infeasible to use an RNN. More recent works adapted the Transformer architecture proposed by \citeonline{vaswani_attention_2017}, adapting the attention mechanism for TPP, especially aimed at the Hawkes process, which is the focus of this work. The following subsections will help us recall how the architecture proposed in 2017 works.
 
-    O Encoder é o componente responsável por processar a sequência de entrada e transformá-la em uma representação mais rica de informação. Ele é composto por $N$ camadas idênticas empilhadas (no modelo original de \citeonline{vaswani_attention_2017}, $N = 6$ e a dimensão dos vetores é $d_{model} = 512$, mas esses valores são hiperparâmetros que variam conforme a aplicação). Cada camada possui duas subcamadas: a primeira é a Multi-Head Self Attention, que calcula a relevância de cada input com relação aos demais inputs da sequência. A segunda é uma rede feed-forward completamente conectada, que aplica não linearidade para cada posição.
+\subsection{Encoders and Decoders}\label{subsec:encoders-decoders}
 
-    De forma semelhante, o Decoder também é constituído por $N$ camadas empilhadas. Porém, para gerar o output, o Decoder utiliza uma terceira subcamada, que faz um Multi-Head Attention no output do Encoder, conectando o contexto processado pelo Encoder com a sequência gerada pelo Decoder. Além disso, o Decoder utiliza máscara para prevenir que o modelo compute posições futuras na sequência, fazendo com que cada predição considere apenas eventos conhecidos \cite{vaswani_attention_2017}.
+    The Encoder is the component responsible for processing the input sequence and transforming it into a representation richer in information. It is composed of $N$ identical stacked layers (in the original model of \citeonline{vaswani_attention_2017}, $N = 6$ and the dimension of the vectors is $d_{model} = 512$, but these values are hyperparameters that vary according to the application). Each layer has two sublayers: the first is the Multi-Head Self Attention, which computes the relevance of each input with respect to the other inputs in the sequence. The second is a fully connected feed-forward network, which applies nonlinearity at each position.
 
-\subsection{Mecanismo de Atenção}\label{subsec:mecanismo-de-atencao}
+    Similarly, the Decoder is also made up of $N$ stacked layers. However, to generate the output, the Decoder uses a third sublayer, which performs a Multi-Head Attention over the Encoder output, connecting the context processed by the Encoder with the sequence generated by the Decoder. In addition, the Decoder uses a mask to prevent the model from computing future positions in the sequence, so that each prediction considers only known events \cite{vaswani_attention_2017}.
 
-    A inovação principal introduzida pelo modelo é o mecanismo de atenção, também chamada de Scaled Dot-Product Attention, sem a necessidade de redes neurais recorrentes, que faz com que todas as entradas (eventos) sejam processados simultaneamente. Dessa forma o modelo consegue calcular a influência (atenção) de cada evento em relação aos demais eventos.
+\subsection{Attention mechanism}\label{subsec:mecanismo-de-atencao}
 
-    Diferentemente das RNNs, que mantém apenas um vetor com o estado oculto $\mathbf{h}$, redes baseadas em Transformers calculam a influência de cada evento e calcula $\mathbf{h}$ através de uma soma ponderada, que, por sua vez, foi calculada com base na influência de cada evento, dentro do contexto da lista de eventos. 
+    The main innovation introduced by the model is the attention mechanism, also called Scaled Dot-Product Attention, without the need for recurrent neural networks, which makes all the inputs (events) be processed simultaneously. In this way the model is able to compute the influence (attention) of each event with respect to the other events.
 
-    A entrada consiste de vetores de queries $Q$ e chaves $K$ de dimensão $d_k$ e valores $V$ de dimensão $d_v$. É calculado então o produto da query com todas as chaves, dividido cada um por $\sqrt{d_k}$ e então uma função softmax é aplicada para obter os pesos dos valores (dos vetores chave-valor). A matrix de outputs é calculada como
+    Unlike RNNs, which keep only a single hidden state vector $\mathbf{h}$, Transformer-based networks compute the influence of each event and compute $\mathbf{h}$ through a weighted sum, which in turn was computed based on the influence of each event, within the context of the list of events.
+
+    The input consists of query vectors $Q$ and key vectors $K$ of dimension $d_k$ and value vectors $V$ of dimension $d_v$. The product of the query with all the keys is then computed, each divided by $\sqrt{d_k}$, and then a softmax function is applied to obtain the weights of the values (of the key-value vectors). The output matrix is computed as
     \begin{equation}
         \text{Attention}(Q,K,V) = \text{softmax}(\frac{QK^T}{\sqrt{d_k}})V
         \label{eq:attention}.
@@ -222,23 +222,23 @@ Entender o comportamento de sequencias de eventos ao longo do tempo e como event
 
 \subsection{Multi-Head Attention}\label{subsec:multi-head-attention}
 
-    Ao invés de performar apenas uma função de Atenção com Queries, Keys e Values de dimensão $d_{model}$, \citeonline{vaswani_attention_2017} decidiram projetar linearmente os vetores Q, K e V um número $h$ de vezes com projeções lineares diferentes e aprendidas para $d_k$, $d_k$ e $d_v$ dimensões, respectivamente. Para cada uma das versões projetadas de Q, K e V é executada a função de Atenção em paralelo, gerando outputs de $d_v$ dimensões. Os outputs são então concatenados e projetados novamente, gerando os valores finais, como mostra a equação abaixo:
+    Instead of performing a single Attention function with Queries, Keys, and Values of dimension $d_{model}$, \citeonline{vaswani_attention_2017} decided to linearly project the Q, K, and V vectors a number $h$ of times with different, learned linear projections to $d_k$, $d_k$, and $d_v$ dimensions, respectively. For each of the projected versions of Q, K, and V the Attention function is run in parallel, producing outputs of $d_v$ dimensions. The outputs are then concatenated and projected again, producing the final values, as shown in the equation below:
     \begin{equation}
     \begin{split}
         \text{MultiHead}(Q,K,V) &= \text{Concat}(\text{head}_1, \dots, \text{head}_h)W^O \\
-        &\quad \text{onde } \text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V)
+        &\quad \text{where } \text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V)
     \end{split}
     \label{eq:multi-head-attention}
     \end{equation}
 
-    A Figura \ref{fig:attention} ilustra a diferença entre o mecanismo simples de atenção e o mecanismo de multi-head attention \cite{vaswani_attention_2017}.
+    Figure \ref{fig:attention} illustrates the difference between the simple attention mechanism and the multi-head attention mechanism \cite{vaswani_attention_2017}.
 
     \begin{figure}[h!]
 		\centering
 		\captionsetup{width=14cm}%Da mesma largura que a figura
-		\Caption{\label{fig:attention}Attention x Multi-Head Attention.}        
+		\Caption{\label{fig:attention}Attention x Multi-Head Attention.}
 		\UFCfig{}{
 			\includegraphics[width=14cm]{figuras/figura-attention.png}
 		}{
-			}	
+			}
 	\end{figure}
