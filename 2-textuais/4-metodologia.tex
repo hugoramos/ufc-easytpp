@@ -249,7 +249,7 @@ Todos os modelos são implementados no framework EasyTPP \cite{xue_easytpp_2024}
 
 A métrica de avaliação é a \gls{NLL}, calculada sobre a sequência completa de teste, incluindo os eventos além do comprimento de treinamento. Se o viés de recência do HoTHP de fato habilita a extrapolação, a NLL deve se manter estável mesmo quando a sequência de teste é muito mais longa do que a de treino. Utilizamos também RMSE para avaliar a predição do próximo evento e Acurácia para avaliar predição do tipo do próximo evento.
 
-Repetimos todos os experimentos com $N = 5$ seeds e reportamos média $\pm$ desvio padrão. Para verificar significância estatística, usamos o teste de Wilcoxon de postos sinalizados (\textit{Wilcoxon signed-rank test}), um teste não paramétrico pareado que não assume normalidade e é adequado para $N = 5$.
+Repetimos os experimentos sintéticos com $N = 10$ seeds e os experimentos com dados reais com $N = 3$ seeds, reportando média $\pm$ desvio padrão. Para verificar significância estatística nos experimentos sintéticos, usamos o teste de Wilcoxon de postos sinalizados (\textit{Wilcoxon signed-rank test}), um teste não paramétrico pareado que não assume normalidade e é adequado para amostras pequenas. O pareamento é por semente: a mesma semente gera o mesmo conjunto de treino, validação e teste para todos os modelos. Com $N = 10$, o menor $p$-valor unilateral atingível é $1/2^{10} \approx 0{,}001$, suficiente para o nível $\alpha = 0{,}05$.
 
 \subsection{Ambiente computacional}
 \label{subsec:ambiente-computacional}
