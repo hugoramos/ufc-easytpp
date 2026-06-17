@@ -10,7 +10,7 @@ Os experimentos sintéticos seguem o protocolo descrito na Seção~\ref{sec:conf
 
 \begin{table}[h!]
 \centering
-\caption{NLL (média $\pm$ desvio padrão, 5 sementes) nos dados sintéticos. Valores menores indicam melhor desempenho. O melhor resultado para cada configuração está em negrito.}
+\caption{NLL (média $\pm$ desvio padrão, 10 sementes) nos dados sintéticos. Valores menores indicam melhor desempenho. O melhor resultado para cada configuração está em negrito.}
 \label{tab:resultados-sinteticos}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{llcccc}
@@ -18,16 +18,16 @@ Os experimentos sintéticos seguem o protocolo descrito na Seção~\ref{sec:conf
 Cenário & Modelo & $1\times$ & $2\times$ & $5\times$ & $10\times$ \\
 \midrule
 \multirow{4}{*}{Decaimento lento}
-    & NHP    & $\mathbf{1{,}472 \pm 0{,}010}$ & $2{,}225 \pm 0{,}073$ & $2{,}754 \pm 0{,}116$ & $\mathbf{2{,}916 \pm 0{,}129}$ \\
-    & THP    & $1{,}477 \pm 0{,}010$ & $3{,}789 \pm 0{,}586$ & $4{,}295 \pm 0{,}827$ & $4{,}309 \pm 1{,}146$ \\
-    & RoTHP  & $1{,}505 \pm 0{,}015$ & $2{,}073 \pm 0{,}199$ & $2{,}686 \pm 0{,}327$ & $3{,}048 \pm 0{,}602$ \\
-    & HoTHP  & $1{,}590 \pm 0{,}060$ & $\mathbf{1{,}713 \pm 0{,}142}$ & $\mathbf{2{,}219 \pm 0{,}392}$ & $2{,}939 \pm 0{,}784$ \\
+    & NHP    & $\mathbf{1{,}470 \pm 0{,}007}$ & $2{,}197 \pm 0{,}131$ & $2{,}667 \pm 0{,}236$ & $2{,}817 \pm 0{,}273$ \\
+    & THP    & $1{,}475 \pm 0{,}007$ & $3{,}926 \pm 1{,}505$ & $4{,}127 \pm 1{,}803$ & $4{,}199 \pm 2{,}117$ \\
+    & RoTHP  & $1{,}499 \pm 0{,}014$ & $2{,}007 \pm 0{,}284$ & $2{,}642 \pm 0{,}509$ & $3{,}001 \pm 0{,}625$ \\
+    & HoTHP  & $1{,}545 \pm 0{,}025$ & $\mathbf{1{,}609 \pm 0{,}096}$ & $\mathbf{1{,}943 \pm 0{,}313}$ & $\mathbf{2{,}364 \pm 0{,}625}$ \\
 \midrule
 \multirow{4}{*}{Decaimento rápido}
-    & NHP    & $\mathbf{1{,}661 \pm 0{,}007}$ & $1{,}838 \pm 0{,}088$ & $2{,}060 \pm 0{,}183$ & $2{,}122 \pm 0{,}190$ \\
-    & THP    & $1{,}671 \pm 0{,}003$ & $3{,}594 \pm 0{,}355$ & $3{,}642 \pm 0{,}295$ & $3{,}514 \pm 0{,}464$ \\
-    & RoTHP  & $1{,}682 \pm 0{,}010$ & $2{,}028 \pm 0{,}204$ & $2{,}198 \pm 0{,}326$ & $2{,}360 \pm 0{,}387$ \\
-    & HoTHP  & $1{,}708 \pm 0{,}024$ & $\mathbf{1{,}725 \pm 0{,}031}$ & $\mathbf{1{,}756 \pm 0{,}040}$ & $\mathbf{1{,}779 \pm 0{,}057}$ \\
+    & NHP    & $\mathbf{1{,}663 \pm 0{,}005}$ & $1{,}833 \pm 0{,}134$ & $2{,}057 \pm 0{,}223$ & $2{,}153 \pm 0{,}250$ \\
+    & THP    & $1{,}677 \pm 0{,}011$ & $3{,}391 \pm 0{,}781$ & $3{,}761 \pm 1{,}072$ & $3{,}897 \pm 1{,}509$ \\
+    & RoTHP  & $1{,}681 \pm 0{,}007$ & $2{,}039 \pm 0{,}279$ & $2{,}146 \pm 0{,}309$ & $2{,}275 \pm 0{,}372$ \\
+    & HoTHP  & $1{,}689 \pm 0{,}008$ & $\mathbf{1{,}701 \pm 0{,}012}$ & $\mathbf{1{,}740 \pm 0{,}050}$ & $\mathbf{1{,}774 \pm 0{,}092}$ \\
 \bottomrule
 \end{tabular}
 }
@@ -36,25 +36,27 @@ Cenário & Modelo & $1\times$ & $2\times$ & $5\times$ & $10\times$ \\
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:extrapolacao-sintetica} NLL (média $\pm$ desvio padrão, 5 sementes) em função do fator de extrapolação $\alpha$ nos cenários sintéticos. O HoTHP mantém a NLL mais estável à medida que $\alpha$ cresce, enquanto o THP degrada drasticamente e o RoTHP e NHP apresentam degradação intermediária.}
+    \Caption{\label{fig:extrapolacao-sintetica} NLL (média $\pm$ desvio padrão, 10 sementes) em função do fator de extrapolação $\alpha$ nos cenários sintéticos. O HoTHP mantém a NLL mais estável à medida que $\alpha$ cresce, enquanto o THP degrada drasticamente e o RoTHP e NHP apresentam degradação intermediária.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_extrapolation_nll_sintetico.png}
     }{
     }
 \end{figure}
 
-Com a inclusão do NHP e do THP como baselines, quatro comportamentos distintos emergem na extrapolação. O THP é o modelo que mais degrada: sua NLL salta para $\approx 3{,}8$ já em $2\times$ e permanece em $\approx 4{,}3$ nos fatores maiores, nos dois cenários. Isso confirma que o encoding temporal absoluto do THP produz representações fora da distribuição para posições novas. O NHP, apesar de não usar atenção, é surpreendentemente competitivo na extrapolação: no decaimento lento, empata com o HoTHP em $10\times$ ($2{,}916$ vs.\ $2{,}939$), provavelmente porque sua arquitetura recorrente acumula informação de forma incremental, sem depender de posições absolutas. No decaimento rápido, no entanto, o NHP fica bem atrás do HoTHP ($2{,}122$ vs.\ $1{,}779$ em $10\times$).
+Com a inclusão do NHP e do THP como baselines, quatro comportamentos distintos emergem na extrapolação. O THP é o modelo que mais degrada: sua NLL salta para $\approx 3{,}9$ já em $2\times$ e permanece entre $\approx 3{,}9$ e $\approx 4{,}2$ nos fatores maiores, nos dois cenários, com desvio padrão muito alto (até $\pm 2{,}12$) causado por sementes que divergem completamente. Isso confirma que o encoding temporal absoluto do THP produz representações fora da distribuição para posições novas. O NHP, apesar de não usar atenção, é o baseline mais competitivo na extrapolação, provavelmente porque sua arquitetura recorrente acumula informação de forma incremental, sem depender de posições absolutas; ainda assim, fica atrás do HoTHP em todos os fatores de extrapolação nos dois cenários.
 
-O HoTHP é o modelo com melhor extrapolação nos fatores intermediários ($2\times$ e $5\times$) em ambos os cenários, e domina claramente no decaimento rápido em todos os fatores de extrapolação (2x em diante). No decaimento rápido, a NLL do HoTHP cresce apenas $0{,}071$ entre $1\times$ e $10\times$ ($1{,}708 \to 1{,}779$), enquanto o segundo melhor modelo (NHP) cresce $0{,}461$ ($1{,}661 \to 2{,}122$). Essa estabilidade é esperada: como o processo gerador possui kernel exponencial, o viés de recência do HoTHP está perfeitamente alinhado com a estrutura real dos dados. Para distâncias temporais não vistas no treino, o kernel hiperbólico continua a decair monotonicamente, enquanto o kernel trigonométrico do RoTHP oscila em fases não aprendidas e o encoding absoluto do THP diverge.
+O HoTHP obtém a melhor NLL em todos os fatores de extrapolação ($2\times$, $5\times$ e $10\times$) nos dois cenários. O custo dessa vantagem aparece em distribuição: em $1\times$, o HoTHP é o modelo com pior NLL (por exemplo, $1{,}545$ contra $1{,}470$ do NHP no decaimento lento), uma diferença pequena que se inverte assim que a sequência de teste ultrapassa o comprimento de treino. No decaimento rápido, a NLL do HoTHP cresce apenas $0{,}085$ entre $1\times$ e $10\times$ ($1{,}689 \to 1{,}774$), permanecendo praticamente plana, enquanto o segundo melhor modelo (NHP) cresce $0{,}490$ ($1{,}663 \to 2{,}153$). Essa estabilidade é esperada: como o processo gerador possui kernel exponencial, o viés de recência do HoTHP está perfeitamente alinhado com a estrutura real dos dados. Para distâncias temporais não vistas no treino, o kernel hiperbólico continua a decair monotonicamente, enquanto o kernel trigonométrico do RoTHP oscila em fases não aprendidas e o encoding absoluto do THP diverge.
 
-No decaimento lento, onde a influência de eventos distantes persiste por mais tempo, a vantagem do HoTHP diminui em fatores extremos ($10\times$), convergindo com o NHP. Isso sugere que, quando a memória do processo é longa, o decaimento exponencial rápido imposto pelo kernel hiperbólico pode descartar prematuramente eventos ainda relevantes.
+A vantagem do HoTHP sobre os três baselines é estatisticamente significativa (teste de Wilcoxon de postos sinalizados, pareado por semente e unilateral, $p < 0{,}05$) em todos os fatores de extrapolação dos dois cenários, sem exceção. O caso menos folgado é o decaimento lento em $10\times$ frente ao NHP ($p = 0{,}042$); em todas as demais comparações o valor-$p$ fica em $0{,}025$ ou abaixo, atingindo o piso de $0{,}001$ (igual a $1/2^{10}$, o menor valor possível para o teste unilateral com 10 sementes) na maioria delas.
 
-A Figura~\ref{fig:extrapolacao-rmse} mostra o RMSE da predição do próximo evento. No decaimento lento, todos os modelos degradam de forma similar, com o HoTHP apresentando RMSE ligeiramente inferior nos fatores intermediários. No decaimento rápido, emerge um contraste interessante com a NLL: o NHP, que era competitivo em NLL, diverge em RMSE ($\approx 2{,}2$ em $10\times$), enquanto os modelos baseados em atenção (THP, RoTHP e HoTHP) mantêm RMSE estável ($\approx 1{,}4$). Isso indica que a arquitetura recorrente do NHP, embora capaz de modelar a distribuição temporal global (NLL), é menos precisa na predição pontual do próximo evento quando a sequência é longa.
+No decaimento lento, onde a influência de eventos distantes persiste por mais tempo, o HoTHP ainda obtém a melhor NLL média em todos os fatores, mas sua degradação é muito maior do que no decaimento rápido: a NLL cresce $0{,}819$ entre $1\times$ e $10\times$, contra apenas $0{,}085$ no decaimento rápido. Em $10\times$, a média do HoTHP ($2{,}364$) é inferior à do NHP ($2{,}817$) e a diferença permanece estatisticamente significativa, ainda que pela margem mais estreita de todo o experimento ($p = 0{,}042$), reflexo da alta variância entre sementes nesse regime ($\pm 0{,}625$). Isso sugere que, quando a memória do processo é longa, o decaimento exponencial imposto pelo kernel hiperbólico pode descartar prematuramente eventos ainda relevantes, reduzindo a margem de vantagem.
+
+A Figura~\ref{fig:extrapolacao-rmse} mostra o RMSE da predição do próximo evento. No decaimento lento, todos os modelos degradam de forma similar (RMSE $\approx 2{,}7$--$2{,}8$ em $10\times$), com o HoTHP apresentando o menor RMSE ($2{,}714$). No decaimento rápido, os quatro modelos mantêm RMSE estável e próximo (entre $\approx 1{,}40$ e $1{,}55$ em $10\times$): o RoTHP obtém o menor valor ($1{,}407$) e o NHP o maior ($1{,}549$), este último com variância um pouco mais alta por conta de uma semente atípica. Diferentemente da NLL, o RMSE não separa nitidamente os modelos. Isso indica que a vantagem do HoTHP se manifesta sobretudo na verossimilhança, ou seja, na modelagem da distribuição temporal completa, e não na predição pontual do próximo intervalo, em que os modelos de atenção ficam praticamente empatados.
 
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:extrapolacao-rmse} RMSE da predição do próximo evento (média $\pm$ desvio padrão, 5 sementes) em função do fator de extrapolação $\alpha$. No decaimento lento, todos os modelos degradam de forma similar. No decaimento rápido, o NHP diverge enquanto os modelos de atenção mantêm RMSE estável.}
+    \Caption{\label{fig:extrapolacao-rmse} RMSE da predição do próximo evento (média $\pm$ desvio padrão, 10 sementes) em função do fator de extrapolação $\alpha$. Diferentemente da NLL, o RMSE não separa nitidamente os modelos: no decaimento lento todos degradam de forma similar e no decaimento rápido permanecem próximos entre si.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_extrapolation_rmse_sintetico.png}
     }{
