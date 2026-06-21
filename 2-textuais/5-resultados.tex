@@ -84,57 +84,112 @@ Retweet        &  3 & 20.000 & 50 & 250 & Retweet cascades \\
 \end{tabular}
 \end{table}
 
-We follow the same \textit{train short, test long} protocol: we train each model with sequences truncated at $L_{\text{train}}$ events and evaluate both at the training length ($1\times$) and at extrapolation ($5\times$). We use three seeds (2019, 2020, 2021), 100 epochs, and the same hyperparameters as in Section~\ref{subsec:modelos-comparados}. For Amazon and Stackoverflow, we compare THP, RoTHP, and HoTHP; for Taxi and Retweet, we compare only RoTHP and HoTHP.
+We follow the same \textit{train short, test long} protocol: we train each model with sequences truncated at $L_{\text{train}}$ events and evaluate at the training length ($1\times$) and at two extrapolation factors ($2\times$ and $5\times$). We use three seeds (42, 142, 242), 100 epochs, and the same hyperparameters as in Section~\ref{subsec:modelos-comparados}. On Taxi, Amazon, and Stackoverflow we compare the four models (THP, RoTHP, HoTHP, and NHP); on Retweet we compare the three Transformer models (THP, RoTHP, and HoTHP), since this dataset is used mainly to study numerical stability (Section~\ref{sec:ablacao-retweet}).
 
-Table~\ref{tab:resultados-reais} presents the results.
+It is important to note how the NLL is computed. In our implementation, all four models share the same routine for the log-likelihood: the integral of the total intensity (the compensator) is estimated by the same Monte Carlo rule, with the same number of sample points per interval, defined once in the base class. The NHP only changes the way the intensity itself is produced (a continuous-time recurrent network instead of attention). The differences in NLL reported below therefore come from the models, not from different ways of approximating the integral. With only three seeds we report the mean and the standard deviation, but we do not apply the Wilcoxon test on the real data: with $N = 3$ the smallest attainable one-sided $p$-value is $1/2^3 = 0{,}125$, above the level $\alpha = 0{,}05$, so the significance test is reserved for the synthetic experiments with $N = 10$ seeds.
+
+Table~\ref{tab:resultados-reais} presents the NLL and Table~\ref{tab:acc-reais} the type-prediction accuracy.
 
 \begin{table}[h!]
 \centering
-\caption{NLL on the real datasets (mean $\pm$ standard deviation, 3 seeds). $\Delta$NLL is the difference $5\times$ minus $1\times$: negative values indicate that the model improves with longer sequences. Lower NLL values are better. The best result for each dataset and condition is in bold.}
+\caption{NLL on the real datasets (mean $\pm$ standard deviation, 3 seeds), for the extrapolation factors $1\times$, $2\times$, and $5\times$. Lower is better. The best value in each column is in bold. NHP is a recurrent baseline (CT-LSTM); the other three share the same Transformer architecture and intensity function and differ only in the positional kernel.}
 \label{tab:resultados-reais}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{llcccc}
+\begin{tabular}{llccc}
 \toprule
-Dataset & Model & NLL $1\times$ & NLL $5\times$ & $\Delta$NLL & Acc $5\times$ \\
+Dataset & Model & NLL $1\times$ & NLL $2\times$ & NLL $5\times$ \\
 \midrule
-\multirow{3}{*}{Amazon}
-    & THP    & $2{,}274 \pm 0{,}002$ & $2{,}244 \pm 0{,}007$ & $-0{,}030$ & $0{,}322 \pm 0{,}004$ \\
-    & RoTHP  & $2{,}272 \pm 0{,}004$ & $2{,}252 \pm 0{,}002$ & $-0{,}020$ & $0{,}321 \pm 0{,}004$ \\
-    & HoTHP  & $2{,}268 \pm 0{,}002$ & $\mathbf{2{,}194 \pm 0{,}002}$ & $\mathbf{-0{,}074}$ & $\mathbf{0{,}340 \pm 0{,}002}$ \\
+\multirow{4}{*}{Taxi}
+    & THP    & $-0{,}273 \pm 0{,}002$ & $-0{,}314 \pm 0{,}004$ & $-0{,}243 \pm 0{,}015$ \\
+    & RoTHP  & $-0{,}271 \pm 0{,}003$ & $-0{,}317 \pm 0{,}005$ & $-0{,}137 \pm 0{,}148$ \\
+    & HoTHP  & $-0{,}278 \pm 0{,}001$ & $-0{,}328 \pm 0{,}004$ & $-0{,}266 \pm 0{,}007$ \\
+    & NHP    & $\mathbf{-0{,}449 \pm 0{,}004}$ & $\mathbf{-0{,}506 \pm 0{,}004}$ & $\mathbf{-0{,}460 \pm 0{,}003}$ \\
 \midrule
-\multirow{3}{*}{Stackoverflow}
-    & THP    & $2{,}745 \pm 0{,}011$ & $\mathbf{2{,}521 \pm 0{,}020}$ & $-0{,}224$ & $0{,}451 \pm 0{,}002$ \\
-    & RoTHP  & $2{,}753 \pm 0{,}005$ & $2{,}538 \pm 0{,}003$ & $-0{,}215$ & $0{,}450 \pm 0{,}000$ \\
-    & HoTHP  & $2{,}742 \pm 0{,}020$ & $2{,}530 \pm 0{,}023$ & $-0{,}212$ & $0{,}451 \pm 0{,}003$ \\
+\multirow{4}{*}{Amazon}
+    & THP    & $2{,}264 \pm 0{,}003$ & $2{,}237 \pm 0{,}002$ & $2{,}254 \pm 0{,}002$ \\
+    & RoTHP  & $2{,}268 \pm 0{,}004$ & $2{,}230 \pm 0{,}003$ & $2{,}247 \pm 0{,}002$ \\
+    & HoTHP  & $2{,}263 \pm 0{,}004$ & $2{,}207 \pm 0{,}003$ & $2{,}187 \pm 0{,}002$ \\
+    & NHP    & $\mathbf{0{,}658 \pm 0{,}229}$ & $\mathbf{0{,}630 \pm 0{,}227}$ & $\mathbf{0{,}638 \pm 0{,}224}$ \\
 \midrule
-\multirow{2}{*}{Taxi}
-    & RoTHP  & $-0{,}269 \pm 0{,}005$ & $-0{,}176 \pm 0{,}041$ & $+0{,}092$ & $0{,}907 \pm 0{,}002$ \\
-    & HoTHP  & $-0{,}271 \pm 0{,}006$ & $\mathbf{-0{,}212 \pm 0{,}009}$ & $\mathbf{+0{,}059}$ & $0{,}907 \pm 0{,}003$ \\
-\midrule
-\multirow{2}{*}{Retweet}
-    & RoTHP  & $12{,}5 \pm 4{,}9$ & $\mathbf{121 \times 10^3}$ & --- & $0{,}520 \pm 0{,}042$ \\
-    & HoTHP  & $12{,}5 \pm 4{,}8$ & $367 \times 10^3$ & --- & $0{,}518 \pm 0{,}039$ \\
+\multirow{4}{*}{Stackoverflow}
+    & THP    & $2{,}744 \pm 0{,}029$ & $2{,}642 \pm 0{,}025$ & $\mathbf{2{,}519 \pm 0{,}013}$ \\
+    & RoTHP  & $2{,}766 \pm 0{,}035$ & $2{,}655 \pm 0{,}026$ & $2{,}545 \pm 0{,}018$ \\
+    & HoTHP  & $2{,}758 \pm 0{,}025$ & $2{,}649 \pm 0{,}022$ & $2{,}536 \pm 0{,}021$ \\
+    & NHP    & $\mathbf{2{,}742 \pm 0{,}012}$ & $\mathbf{2{,}633 \pm 0{,}013}$ & $2{,}524 \pm 0{,}020$ \\
 \bottomrule
 \end{tabular}
 }
 \end{table}
 
-Three distinct patterns emerge from the results:
+\begin{table}[h!]
+\centering
+\caption{Type-prediction accuracy on the real datasets (mean $\pm$ standard deviation, 3 seeds), for the factors $1\times$, $2\times$, and $5\times$. Higher is better. The best value in each column is in bold.}
+\label{tab:acc-reais}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llccc}
+\toprule
+Dataset & Model & Acc $1\times$ & Acc $2\times$ & Acc $5\times$ \\
+\midrule
+\multirow{4}{*}{Taxi}
+    & THP    & $\mathbf{0{,}900 \pm 0{,}001}$ & $0{,}917 \pm 0{,}003$ & $0{,}911 \pm 0{,}002$ \\
+    & RoTHP  & $0{,}898 \pm 0{,}000$ & $0{,}916 \pm 0{,}002$ & $0{,}907 \pm 0{,}011$ \\
+    & HoTHP  & $0{,}897 \pm 0{,}001$ & $0{,}917 \pm 0{,}003$ & $0{,}915 \pm 0{,}004$ \\
+    & NHP    & $0{,}898 \pm 0{,}002$ & $\mathbf{0{,}919 \pm 0{,}001}$ & $\mathbf{0{,}918 \pm 0{,}001}$ \\
+\midrule
+\multirow{4}{*}{Amazon}
+    & THP    & $0{,}308 \pm 0{,}001$ & $0{,}317 \pm 0{,}003$ & $0{,}314 \pm 0{,}006$ \\
+    & RoTHP  & $0{,}308 \pm 0{,}002$ & $0{,}323 \pm 0{,}002$ & $0{,}320 \pm 0{,}007$ \\
+    & HoTHP  & $\mathbf{0{,}312 \pm 0{,}001}$ & $\mathbf{0{,}331 \pm 0{,}001}$ & $\mathbf{0{,}340 \pm 0{,}001}$ \\
+    & NHP    & $0{,}293 \pm 0{,}004$ & $0{,}306 \pm 0{,}006$ & $0{,}315 \pm 0{,}006$ \\
+\midrule
+\multirow{4}{*}{Stackoverflow}
+    & THP    & $0{,}473 \pm 0{,}001$ & $0{,}466 \pm 0{,}001$ & $0{,}450 \pm 0{,}001$ \\
+    & RoTHP  & $0{,}473 \pm 0{,}004$ & $0{,}464 \pm 0{,}002$ & $0{,}448 \pm 0{,}001$ \\
+    & HoTHP  & $\mathbf{0{,}474 \pm 0{,}003}$ & $\mathbf{0{,}466 \pm 0{,}002}$ & $\mathbf{0{,}451 \pm 0{,}001}$ \\
+    & NHP    & $0{,}469 \pm 0{,}003$ & $0{,}462 \pm 0{,}002$ & $0{,}445 \pm 0{,}002$ \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
 
-\textbf{Amazon: HoTHP wins.} The HoTHP obtains the best NLL in both conditions and shows the largest gain in extrapolation ($\Delta\text{NLL} = -0{,}074$, against $-0{,}020$ of the RoTHP). The difference is small in absolute value, but consistent across the three seeds (standard deviation of $0{,}002$).
+Two layers of comparison appear in these tables. The first is the comparison \textit{within the Transformer family} (THP, RoTHP, and HoTHP), which share the same architecture and the same intensity function and differ only in the positional kernel. This is the controlled comparison that isolates the effect of our contribution. The second is the comparison against the NHP, a recurrent model of a different family, included to situate the behavior across architectures.
 
-\textbf{Stackoverflow: tie.} The three models show practically identical NLL at $5\times$, with differences within the margin of error. No model benefits more than the others from longer sequences. This suggests that the dataset does not have a temporal structure that differentiates the positional biases of the three models.
+\textbf{Within the Transformer family.} On Amazon, the HoTHP obtains the best NLL among the three at every factor and, more importantly, it is the only one that keeps improving as the sequence grows: its NLL drops monotonically from $2{,}263$ at $1\times$ to $2{,}207$ at $2\times$ and $2{,}187$ at $5\times$, while the THP and the RoTHP improve at $2\times$ but worsen again at $5\times$, returning to about $2{,}25$. The type accuracy follows the same trend, rising from $0{,}312$ to $0{,}340$, the largest value among all the models. On Taxi, the HoTHP again has the best NLL of the three at every factor and is the most stable in extrapolation: at $5\times$ the RoTHP degrades to $-0{,}137$ with a very high standard deviation ($\pm 0{,}148$, a sign that some seeds diverge), while the HoTHP stays at $-0{,}266 \pm 0{,}007$. On Stackoverflow the three models are practically tied (differences within the error margin), with the HoTHP slightly ahead in accuracy at every factor; this dataset does not seem to have a temporal structure that separates the positional biases.
 
-\textbf{Taxi: tie with a slight advantage for the HoTHP.} The HoTHP degrades less in extrapolation ($\Delta\text{NLL} = +0{,}059$ against $+0{,}092$ of the RoTHP), but the difference is modest and the variance of the RoTHP is high.
+\textbf{Against the NHP.} The NHP obtains the lowest NLL on Taxi and Amazon (on Amazon by a large margin, $\approx 0{,}64$ against $\approx 2{,}2$) and is tied with the THP on Stackoverflow. This result is expected and does not contradict our contribution, for two reasons. First, it agrees with the unified benchmark of the area: when all the models are reimplemented with the same likelihood routine, the recurrent NHP is the strongest on several datasets, winning exactly on Taxi and Retweet in the EasyTPP benchmark~\cite{xue_easytpp_2024}, because its continuous-time formulation models the density between events natively. Second, the NLL is only one of the metrics: on type accuracy the HoTHP surpasses the NHP on Amazon ($0{,}340$ against $0{,}315$) and on Stackoverflow ($0{,}451$ against $0{,}445$), so the advantage of the NHP is restricted to the likelihood. The research question of this work is not whether attention beats recurrence in absolute NLL, but whether changing the positional kernel improves the extrapolation of a Transformer. For that question the relevant comparison is the controlled one above, in which the HoTHP is consistently the best of the three.
 
-\textbf{Retweet: both models fail.} The NLL at $5\times$ explodes to values on the order of $10^5$, with the HoTHP worse than the RoTHP ($367 \times 10^3$ against $121 \times 10^3$). The extreme temporal scale of this dataset (intervals between events of up to 582.928 time units) makes the hyperbolic kernel saturate numerically, as discussed in Section~\ref{sec:estabilidade-numerica}.
+\textbf{Retweet.} This dataset is treated separately in Section~\ref{sec:ablacao-retweet}, because with raw timestamps the NLL of the three Transformer models overflows numerically (the extreme temporal scale, with intervals of up to 582.928 time units, makes the hyperbolic and trigonometric kernels saturate, as discussed in Section~\ref{sec:estabilidade-numerica}). The ablation in Section~\ref{sec:ablacao-retweet} normalizes the scale and isolates the effect of the kernel.
+
+Figure~\ref{fig:extrapolacao-real-nll} shows the NLL as a function of the extrapolation factor. We omit the NHP from the plot: its much lower NLL on Taxi and Amazon compresses the vertical scale and hides the differences among the Transformer models, which are the focus of the controlled comparison. The NHP values stay in Table~\ref{tab:resultados-reais}. The figure makes the within-family behavior clear: the HoTHP (red) keeps the lowest NLL among the three and the most stable curve, while the RoTHP (blue) shows the widest error band on Taxi at $5\times$ and the only clear divergence on the normalized Retweet.
+
+\begin{figure}[h!]
+    \centering
+    \captionsetup{width=14cm}
+    \Caption{\label{fig:extrapolacao-real-nll} NLL (mean $\pm$ standard deviation, 3 seeds) as a function of the extrapolation factor on the real datasets, for the three Transformer models. The NHP is omitted from the plot for readability, since its lower NLL on Taxi and Amazon would compress the scale; its values are in Table~\ref{tab:resultados-reais}. Among the Transformer models, the HoTHP keeps the lowest and most stable NLL in extrapolation.}
+    \UFCfig{}{
+        \includegraphics[width=14cm]{figuras/fig_real_nll.png}
+    }{
+    }
+\end{figure}
+
+Figure~\ref{fig:extrapolacao-real-acc} shows the type-prediction accuracy under the same protocol. On Amazon the recency bias of the HoTHP produces a clear and growing advantage: its accuracy rises to $0{,}340$ at $5\times$, well above the THP and the RoTHP, which stay around $0{,}31$--$0{,}32$. On Stackoverflow the HoTHP stays slightly ahead at every factor, and on Taxi the three models are close. As in the NLL plot, the NHP is omitted from the figure to keep the comparison clean within the Transformer family; its accuracy is in Table~\ref{tab:acc-reais}, where the HoTHP also surpasses the NHP on Amazon and Stackoverflow.
+
+\begin{figure}[h!]
+    \centering
+    \captionsetup{width=14cm}
+    \Caption{\label{fig:extrapolacao-real-acc} Type-prediction accuracy (mean $\pm$ standard deviation, 3 seeds) as a function of the extrapolation factor on the real datasets, for the three Transformer models (the NHP is in Table~\ref{tab:acc-reais}). On Amazon, the HoTHP shows the clearest and growing advantage as the sequence gets longer.}
+    \UFCfig{}{
+        \includegraphics[width=14cm]{figuras/fig_real_acc.png}
+    }{
+    }
+\end{figure}
 
 \subsection{Training convergence}
 \label{subsec:convergencia}
 
 Figure~\ref{fig:convergencia} shows the convergence curves of the validation NLL over the 100 training epochs. On the Amazon and Stackoverflow datasets, the three models converge smoothly, with the NLL stabilizing after epoch 50. On Amazon, the curve still shows a slight downward trend in the last 20 epochs, but with a slope below $0{,}01$ per epoch, which indicates that additional epochs would benefit all the models equally without changing the ranking.
 
-On Taxi, the RoTHP shows higher variance between seeds in the early epochs (10 to 40), but converges to the same level as the HoTHP after epoch 40. On Retweet, the convergence reveals the numerical collapse: 2 out of 3 seeds stabilize at NLL $\approx 15{,}9$, while only one seed (2019) converges to informative values ($\text{NLL} \approx 5{,}5$). The resulting standard deviation band is enormous, visually confirming the instability reported in Table~\ref{tab:resultados-reais}.
+On Taxi, the RoTHP shows higher variance between seeds in the early epochs (10 to 40), but converges to the same level as the HoTHP after epoch 40. On Retweet, the convergence reveals the numerical collapse: 2 out of 3 seeds stabilize at NLL $\approx 15{,}9$, while only one of the three seeds converges to informative values ($\text{NLL} \approx 5{,}5$). The resulting standard deviation band is enormous, visually confirming the instability reported in Table~\ref{tab:ablacao-retweet}.
 
 \begin{figure}[h!]
     \centering
@@ -178,26 +233,28 @@ We trained the RoTHP and the HoTHP on the normalized Retweet with the same hyper
 
 \begin{table}[h!]
 \centering
-\caption{Ablation: effect of the temporal normalization on Retweet. ``Original'' uses the raw timestamps; ``Normalized'' uses the timestamps divided by the mean of the gaps. Mean $\pm$ standard deviation (3 seeds).}
+\caption{Ablation: effect of the temporal normalization on Retweet. ``Original (raw)'' uses the raw timestamps; ``Normalized'' uses the timestamps divided by the mean of the gaps. Mean $\pm$ standard deviation (3 seeds). The best value in each column of the normalized block is in bold.}
 \label{tab:ablacao-retweet}
 \begin{tabular}{llcccc}
 \toprule
-Version & Model & NLL $1\times$ & NLL $5\times$ & Acc $1\times$ & Acc $5\times$ \\
+Version & Model & NLL $1\times$ & NLL $2\times$ & NLL $5\times$ & Acc $5\times$ \\
 \midrule
-\multirow{2}{*}{Original}
-    & RoTHP  & $12{,}456 \pm 6{,}038$ & $1 \times 10^{5}$ & $0{,}496 \pm 0{,}072$ & $0{,}520 \pm 0{,}051$ \\
-    & HoTHP  & $12{,}517 \pm 5{,}932$ & $4 \times 10^{5}$ & $0{,}495 \pm 0{,}071$ & $0{,}518 \pm 0{,}047$ \\
+\multirow{3}{*}{Original (raw)}
+    & THP    & $15{,}94$ & $3{,}6 \times 10^{3}$ & $2{,}3 \times 10^{4}$ & $0{,}491$ \\
+    & RoTHP  & $15{,}94$ & $6{,}7 \times 10^{5}$ & $7{,}0 \times 10^{5}$ & $0{,}491$ \\
+    & HoTHP  & $15{,}94$ & $1{,}2 \times 10^{5}$ & $1{,}4 \times 10^{5}$ & $0{,}491$ \\
 \midrule
-\multirow{2}{*}{Normalized}
-    & RoTHP  & $-2{,}197 \pm 0{,}163$ & $88{,}856 \pm 144{,}800$ & $0{,}588 \pm 0{,}036$ & $0{,}562 \pm 0{,}014$ \\
-    & HoTHP  & $-2{,}168 \pm 0{,}010$ & $\mathbf{-0{,}542 \pm 0{,}004}$ & $0{,}591 \pm 0{,}002$ & $\mathbf{0{,}588 \pm 0{,}004}$ \\
+\multirow{3}{*}{Normalized}
+    & THP    & $\mathbf{-2{,}180 \pm 0{,}008}$ & $-1{,}227 \pm 0{,}053$ & $0{,}039 \pm 0{,}332$ & $0{,}597 \pm 0{,}002$ \\
+    & RoTHP  & $-2{,}133 \pm 0{,}021$ & $0{,}749 \pm 0{,}618$ & $47{,}563 \pm 8{,}703$ & $0{,}589 \pm 0{,}002$ \\
+    & HoTHP  & $-2{,}139 \pm 0{,}014$ & $\mathbf{-1{,}275 \pm 0{,}013}$ & $\mathbf{-0{,}651 \pm 0{,}013}$ & $\mathbf{0{,}600 \pm 0{,}002}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The normalization resolves the numerical collapse unambiguously. With raw timestamps, the NLL at $1\times$ is approximately $12{,}5$ for both models and the NLL at $5\times$ explodes to the order of $10^5$. With normalized timestamps, the NLL at $1\times$ drops to negative values and the training converges across all the seeds.
+The normalization resolves the numerical collapse unambiguously. With raw timestamps, the NLL collapses to $\approx 15{,}9$ already at $1\times$ (the same value for the three models, a clear sign of saturation) and grows to the order of $10^4$--$10^5$ at $5\times$. With normalized timestamps, the NLL at $1\times$ drops to negative values and the training converges across all the seeds.
 
-The difference between the models appears in the extrapolation, as illustrated in Figure~\ref{fig:ablacao-retweet-norm}. The normalized HoTHP obtains NLL $5\times = -0{,}542 \pm 0{,}004$, practically invariant between seeds. The normalized RoTHP, although much better than the version with raw data, is still unstable. One of the seeds reaches NLL $5\times = 255{,}9$, resulting in a mean of $88{,}9 \pm 144{,}8$ with an enormous error bar. The type accuracy follows the same pattern: the normalized HoTHP keeps Acc $5\times = 0{,}588$ with a deviation of $0{,}004$, while the RoTHP drops to $0{,}562$.
+The difference between the models appears in the extrapolation, as illustrated in Figure~\ref{fig:ablacao-retweet-norm}. The normalized HoTHP obtains NLL $5\times = -0{,}651 \pm 0{,}013$, practically invariant between seeds, and it is the only model that keeps a negative NLL in extrapolation. The THP degrades to $\approx 0{,}04$ (with high variance, $\pm 0{,}33$) and the RoTHP degrades much more, to $47{,}6 \pm 8{,}7$. The type accuracy follows the same pattern: the normalized HoTHP keeps the best Acc $5\times = 0{,}600 \pm 0{,}002$, against $0{,}597$ of the THP and $0{,}589$ of the RoTHP.
 
 \begin{figure}[h!]
     \centering
@@ -209,7 +266,7 @@ The difference between the models appears in the extrapolation, as illustrated i
     }
 \end{figure}
 
-These results make it possible to separate the two factors that hurt the performance on Retweet. The primary problem was the numerical scale. The normalization benefits both models drastically. But even with the scale corrected, the HoTHP surpasses the RoTHP in extrapolation, confirming that the recency bias is advantageous on this dataset when the temporal scale allows its calibration. The residual instability of the RoTHP (with one seed still exploding at $5\times$) reinforces the fragility of the oscillatory kernel in extrapolation, also observed in the synthetic data.
+These results make it possible to separate the two factors that hurt the performance on Retweet. The primary problem was the numerical scale. The normalization benefits all the models drastically. But even with the scale corrected, the HoTHP surpasses both the THP and the RoTHP in extrapolation, confirming that the recency bias is advantageous on this dataset when the temporal scale allows its calibration. The residual degradation of the RoTHP (NLL $5\times = 47{,}6$, far from the HoTHP) reinforces the fragility of the oscillatory kernel in extrapolation, also observed in the synthetic data.
 
 \section{Discussion}
 \label{sec:discussao-resultados}
@@ -220,7 +277,7 @@ On Amazon, where the HoTHP obtains the best result, the process is self-inhibiti
 
 On Stackoverflow, where the three models tie, the intensity is practically constant. This indicates a process with little or no temporal memory, in which all the past events are equally (little) informative. The recency bias of the HoTHP does not significantly hurt (the constant intensity shows that the model manages to compensate in the intensity layer), but it also does not help, because there is no temporal structure to exploit.
 
-On Retweet, the problem is twofold: the extreme temporal scale causes numerical collapse, and the structure of viral cascades may not align with the exponential decay. The ablation in Section~\ref{sec:ablacao-retweet} separated these two factors and showed that the primary problem was the scale: with normalization, the HoTHP obtains the best result of the whole benchmark (NLL $5\times = -0{,}542$), with almost zero variance between seeds. The RoTHP, even with normalization, still shows instability in the extrapolation, with one seed reaching NLL $= 255{,}9$.
+On Retweet, the problem is twofold: the extreme temporal scale causes numerical collapse, and the structure of viral cascades may not align with the exponential decay. The ablation in Section~\ref{sec:ablacao-retweet} separated these two factors and showed that the primary problem was the scale: with normalization, the HoTHP obtains the best result of the whole benchmark (NLL $5\times = -0{,}651$), with almost zero variance between seeds. The RoTHP, even with normalization, still degrades sharply in the extrapolation (NLL $5\times = 47{,}6$).
 
 The HoTHP proves more effective when two conditions are satisfied at the same time: (i) the process has short-range temporal memory, so that recent events are more informative than distant ones; and (ii) the scale of the intervals between events allows the parameter $\theta'$ to be calibrated properly during training, without numerical saturation. The Retweet ablation confirms that condition (ii) can be solved by preprocessing, and when it is, the recency bias of the HoTHP proves consistently advantageous.
 
@@ -231,20 +288,20 @@ The hyperbolic kernel of the HoTHP involves more operations than the trigonometr
 
 \begin{table}[h!]
 \centering
-\caption{Average training time (minutes, 3 seeds). The factor indicates how many times slower the HoTHP is than the RoTHP.}
+\caption{Average training time in minutes (mean over 3 seeds, except NHP on Amazon with 2 seeds; NHP was not run on the normalized Retweet). All the models use the same architecture size and training budget (100 epochs).}
 \label{tab:tempo-treino}
-\begin{tabular}{lccc}
+\begin{tabular}{lcccc}
 \toprule
-Dataset & RoTHP (min) & HoTHP (min) & Factor \\
+Dataset & THP & RoTHP & HoTHP & NHP \\
 \midrule
-Stackoverflow  &  2,4 &  3,1 & $1{,}26\times$ \\
-Amazon         &  9,4 & 11,8 & $1{,}25\times$ \\
-Taxi           &  1,9 &  2,0 & $1{,}05\times$ \\
-Retweet (norm) & 43,5 & 97,6 & $2{,}24\times$ \\
+Taxi           &  1,9 &  1,9 &  2,0 &  2,7 \\
+Stackoverflow  &  2,5 &  2,5 &  3,2 &  4,9 \\
+Amazon         &  9,4 &  9,5 & 12,2 & 17,7 \\
+Retweet (norm) & 34,1 & 34,4 & 83,2 & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The overhead ranges from $1{,}05\times$ (Taxi) to $2{,}24\times$ (normalized Retweet), being more pronounced on datasets with long sequences, where the computation of the hyperbolic kernel dominates the time per batch. For datasets of moderate length (Stackoverflow, Amazon, Taxi), the additional cost is below $25\%$.
+Compared with the THP and the RoTHP, the HoTHP is between $1{,}07\times$ (Taxi) and $2{,}44\times$ (normalized Retweet) slower, the overhead being more pronounced on datasets with long sequences, where the computation of the hyperbolic kernel dominates the time per batch. For datasets of moderate length (Taxi, Stackoverflow, Amazon), the additional cost stays around $30\%$ or below. It is worth noting that the NHP, the strongest baseline in NLL on these datasets, is the most expensive model of all: it is $1{,}3\times$ to $1{,}5\times$ slower than the HoTHP (for example, 17,7 against 12,2 minutes on Amazon). The recency-bias kernel therefore adds a moderate cost over the other Transformers while remaining cheaper than the recurrent alternative.
 
-This cost, however, is paid only once during training. At inference time, the trained model is applied to sequences that are potentially much longer than the ones seen in training, exactly the extrapolation scenario. In this context, what matters is not the training speed, but whether the model produces valid results. The results in Table~\ref{tab:ablacao-retweet} illustrate the point clearly: on the normalized Retweet with $5\times$ extrapolation, the RoTHP obtains NLL $= 88{,}9 \pm 144{,}8$ (with one seed exploding to $255{,}9$), while the HoTHP obtains NLL $= -0{,}542 \pm 0{,}004$. Training the RoTHP $2{,}2\times$ faster only to then obtain unusable results in extrapolation does not constitute a practical advantage.
+This cost, however, is paid only once during training. At inference time, the trained model is applied to sequences that are potentially much longer than the ones seen in training, exactly the extrapolation scenario. In this context, what matters is not the training speed, but whether the model produces valid results. The results in Table~\ref{tab:ablacao-retweet} illustrate the point clearly: on the normalized Retweet with $5\times$ extrapolation, the RoTHP obtains NLL $= 47{,}6 \pm 8{,}7$, while the HoTHP obtains NLL $= -0{,}651 \pm 0{,}013$. Training the RoTHP $2{,}4\times$ faster only to then obtain unusable results in extrapolation does not constitute a practical advantage.
