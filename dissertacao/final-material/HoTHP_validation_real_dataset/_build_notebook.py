@@ -123,7 +123,12 @@ from easy_tpp.runner import Runner
 
 # Hiperparametros (metodologia da dissertacao, dados reais)
 SEEDS          = [42, 142, 242]   # mesma formula do notebook sintetico (42 + i*100), 3 primeiras
-MODELS         = ['NHP', 'THP', 'RoTHP', 'HoTHP']
+MODELS         = ['NHP', 'THP', 'RoTHP', 'HoTHP']   # modelos treinados/avaliados
+# Modelos OCULTOS nas tabelas/figuras (continuam no cache; nao re-treina nada).
+# Deixe vazio ([]) para mostrar todos. NHP e recorrente: sua NLL nao e diretamente
+# comparavel aos transformers (ele ganha na densidade temporal e perde em accuracy).
+EXCLUDE_FROM_PLOTS = ['NHP']
+PLOT_MODELS    = [m for m in MODELS if m not in EXCLUDE_FROM_PLOTS]
 EXTRAP_FACTORS = [1, 2, 5]
 MAX_EPOCH      = 100
 LEARNING_RATE  = 1e-3
@@ -439,11 +444,13 @@ def panels():
     return list(all_results.keys())
 
 def models_in(rd):
-    """Modelos presentes num painel, na ordem de MODELS (+ extras)."""
+    """Modelos a exibir num painel: presentes no cache, na ordem de MODELS,
+    filtrados por PLOT_MODELS (oculta os de EXCLUDE_FROM_PLOTS, ex.: NHP)."""
     seen = set()
     for f in rd:
         seen.update(rd[f].keys())
-    return [m for m in MODELS if m in seen] + [m for m in seen if m not in MODELS]
+    ordered = [m for m in MODELS if m in seen] + [m for m in seen if m not in MODELS]
+    return [m for m in ordered if m in PLOT_MODELS]
 
 save_json(RESULTS_PATH, {k: {str(f): v for f, v in rd.items()} for k, rd in all_results.items()})
 print('datasets/variantes acumulados no results.json:', panels())
