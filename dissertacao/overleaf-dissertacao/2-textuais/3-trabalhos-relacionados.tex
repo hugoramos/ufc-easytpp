@@ -38,10 +38,9 @@ This chapter reviews the Transformer-based point process models that precede and
             }
     \end{figure}
 
-    \citeonline{zhang_self-attentive_2020}, with the \gls{SAHP}, proposed a different computation for the temporal encoding. Unlike the THP, which uses only the timestamp $t_i$, the SAHP shifts the event to a new position $i'$, using both the position $i$ and the timestamp $t_i$, which is computed with $\mathrm{sin}(\omega_k \times i + w_k \times t_i)$, where $\omega$ is the angular frequency and $w$ is a scale parameter, adjusted by the model, that converts the timestamp $t_i$ into a phase shift inside the sinusoidal function (as in other models, the Self-Attentive Hawkes Process uses sine for even events and cosine for odd events).
-
     Figure \ref{fig:thp} shows the architecture of the Transformer Hawkes Process. Each event sequence passes through two embedding layers and several times through multi-head self attention modules.
 
+    Since it models a multivariate process, the total intensity at a time $t$ is the sum of the intensities of all $K$ event types:
     \begin{equation}
         \lambda(t \mid \mathcal{H}_t) = \sum_{k=1}^K \lambda_k (t \mid \mathcal{H}_t)
         \label{eq:thp-lambda}
@@ -59,6 +58,7 @@ This chapter reviews the Transformer-based point process models that precede and
 
     In Equation \ref{eq:htp-thp-lambdak}, the first "current" part is an interpolation between $t_j$ and $t_{j+1}$ where $\alpha$, which is a learned element, modulates the importance of this interpolation. The second part uses the history $\mathbf{h}(t)$ of the events, and the last element $\beta_k$ represents the stationary state, where the probability of the next event is not influenced by the event history.
 
+    \citeonline{zhang_self-attentive_2020}, with the \gls{SAHP}, proposed a different computation for the temporal encoding. Unlike the THP, which uses only the timestamp $t_i$, the SAHP shifts the event to a new position $i'$, using both the position $i$ and the timestamp $t_i$, which is computed with $\mathrm{sin}(\omega_k \times i + w_k \times t_i)$, where $\omega$ is the angular frequency and $w$ is a scale parameter, adjusted by the model, that converts the timestamp $t_i$ into a phase shift inside the sinusoidal function (as in other models, the Self-Attentive Hawkes Process uses sine for even events and cosine for odd events).
 
 \section{Rotary Position Embeddings (RoPE) and the RoTHP}\label{sec:rothp}
 
@@ -98,7 +98,7 @@ This chapter reviews the Transformer-based point process models that precede and
 
     \begin{table}[h]
         \centering
-        \caption{Model results by dataset}
+        \caption{Model log-likelihood by dataset}
         \label{tab:rothp_nll}
         \begin{tabular}{lcccccc}
             \toprule
@@ -148,11 +148,11 @@ This chapter reviews the Transformer-based point process models that precede and
 
 \section{Length Extrapolation and inductive bias}\label{sec:length-extrapolation}
 
-A common limitation shared by many Transformer-based sequence models is their inability to generalize to sequences longer than those used during training. This problem is known as $\textit{length extrapolation}$. Given a model trained on sequences of size $L_{treino}$, we check whether it remains stable when tested with sequences of size $L_{teste} > L_{treino}$ \cite{press_train_2021}. The practical relevance of this limitation is significant. In many real-world scenarios, collecting long sequences is expensive or even impractical and, therefore, it is desirable to train on shorter sequences and run the model on arbitrarily longer sequences.
+A common limitation shared by many Transformer-based sequence models is their inability to generalize to sequences longer than those used during training. This problem is known as $\textit{length extrapolation}$. Given a model trained on sequences of size $L_{train}$, we check whether it remains stable when tested with sequences of size $L_{test} > L_{train}$ \cite{press_train_2021}. The practical relevance of this limitation is significant. In many real-world scenarios, collecting long sequences is expensive or even impractical and, therefore, it is desirable to train on shorter sequences and run the model on arbitrarily longer sequences.
 
 The main cause of this failure has been attributed to the \textit{positional encoding} strategy applied in traditional Transformer models. The standard sinusoidal embedding, as introduced by \citeonline{vaswani_attention_2017}, produces absolute representations of the positions. When the model encounters a position index that was never presented during training, these representations are effectively considered \textit{out of distribution}, causing a rapid degradation in performance, as shown in the Results section.
 
-\citeonline{press_train_2021} showed empirically that sinusoidal models are unable to extrapolate to sequences larger than the ones used in training, with the perplexity metric increasing dramatically as $L_{teste}$ grows. Rotational embeddings, such as RoPE \cite{su_roformer_2023}, present improvements over the sinusoidal encoding by using relative encoding instead of absolute positions. However, \citeonline{press_train_2021} showed that even RoPE fails to extrapolate to substantially larger sequences, as shown in Figure \ref{fig:extrapolation-perplexity}.
+\citeonline{press_train_2021} showed empirically that sinusoidal models are unable to extrapolate to sequences larger than the ones used in training, with the perplexity metric increasing dramatically as $L_{test}$ grows, presenting a model called ALiBi. Rotational embeddings, such as RoPE \cite{su_roformer_2023}, present improvements over the sinusoidal encoding by using relative encoding instead of absolute positions, however, \citeonline{press_train_2021} showed that even RoPE fails to extrapolate to substantially larger sequences, as shown in Figure \ref{fig:extrapolation-perplexity}.
 
 \begin{figure}
     \centering
@@ -167,11 +167,11 @@ The main cause of this failure has been attributed to the \textit{positional enc
 
 In traditional Transformer models, position embeddings are added to the embeddings of the words (tokens). The dot product of the Q and K vectors is computed as follows:
 \begin{equation}
-    \text{softmax}\!\left(q_i K^\top\right),
+    \text{softmax}\!\left(\mathbf{q}_i \mathbf{K}^\top\right),
 \end{equation}
 where the result is then multiplied by the values of $V$. ALiBi only modifies the step after the dot product, leaving everything else intact:
 \begin{equation}
-    \text{softmax}\!\left(q_i K^\top + m \cdot \left[-(i-1), \ldots, -2,-1,\; 0\right]\right),
+    \text{softmax}\!\left(\mathbf{q}_i \mathbf{K}^\top + m \cdot \left[-(i-1), \ldots, -2,-1,\; 0\right]\right),
     \label{eq:alibi}
 \end{equation}
 where the vector $[-(i-1), \ldots, -2, -1, 0]$ represents the distances of each position K to the current Q position $i$, and the scalar $m$ is a slope coefficient specific to each attention head, fixed before training and never updated. The negative sign guarantees that the penalty lowers the attention score as the distance between Q and K increases, effectively suppressing the attention to distant tokens. For a model with $n$ attention heads, the slope $m$ forms a geometric progression with ratio and first term ${2^{\frac{-8}{n}}}$ \cite{press_train_2021}.
