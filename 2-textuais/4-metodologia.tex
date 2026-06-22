@@ -35,7 +35,7 @@ Figure~\ref{fig:trig-vs-hyp} illustrates this difference. In the left panel, $\c
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:trig-vs-hyp} Base functions of the attention kernels ($\theta = 1{,}0$). Left: trigonometric functions of the RoTHP, which oscillate between $-1$ and $1$ without decaying. Right: hyperbolic functions of the HoPE, which are monotonic but grow exponentially. The growth of the hyperbolic functions needs to be compensated by a decay factor so that the attention kernel works correctly.}
+    \caption[Base functions of the attention kernels]{\label{fig:trig-vs-hyp} Base functions of the attention kernels ($\theta = 1{,}0$). Left: trigonometric functions of the RoTHP, which oscillate between $-1$ and $1$ without decaying. Right: hyperbolic functions of the HoPE, which are monotonic but grow exponentially. The growth of the hyperbolic functions needs to be compensated by a decay factor so that the attention kernel works correctly.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_trig_vs_hyp.pdf}
     }{
@@ -66,7 +66,7 @@ Figure~\ref{fig:decay-hiperbolico} illustrates the recency bias in practice. The
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:decay-hiperbolico} Effect of the exponential decay on the hyperbolic functions ($\theta = 1{,}0$, $\theta' = 1{,}5$). Left: separate components, showing that $\cosh$ and $\sinh$ grow but the decay falls. Center: the product results in functions that decay monotonically. Right: decomposition into pure exponentials, both with a negative exponent, ensuring numerical stability.}
+    \caption[Effect of the exponential decay on the hyperbolic functions]{\label{fig:decay-hiperbolico} Effect of the exponential decay on the hyperbolic functions ($\theta = 1{,}0$, $\theta' = 1{,}5$). Left: separate components, showing that $\cosh$ and $\sinh$ grow but the decay falls. Center: the product results in functions that decay monotonically. Right: decomposition into pure exponentials, both with a negative exponent, ensuring numerical stability.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_decay_hiperbolico.pdf}
     }{
@@ -209,7 +209,7 @@ Figure~\ref{fig:kernel-rothp-vs-hothp} visually summarizes the difference betwee
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:kernel-rothp-vs-hothp} Comparison of the attention kernels as a function of the temporal distance $\Delta t$. In the training zone, both models can fit the data. In the extrapolation zone, the trigonometric kernel of the RoTHP oscillates in phases that were not learned, while the hyperbolic kernel of the HoTHP decays monotonically, like the classical Hawkes kernel.}
+    \caption[Attention kernels versus temporal distance]{\label{fig:kernel-rothp-vs-hothp} Comparison of the attention kernels as a function of the temporal distance $\Delta t$. In the training zone, both models can fit the data. In the extrapolation zone, the trigonometric kernel of the RoTHP oscillates in phases that were not learned, while the hyperbolic kernel of the HoTHP decays monotonically, like the classical Hawkes kernel.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_kernel_rothp_vs_hothp.pdf}
     }{

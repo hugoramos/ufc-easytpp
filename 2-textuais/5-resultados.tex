@@ -10,7 +10,7 @@ The synthetic experiments follow the protocol described in Section~\ref{sec:conf
 
 \begin{table}[h!]
 \centering
-\caption{NLL (mean $\pm$ standard deviation, 10 seeds) on the synthetic data. Lower values indicate better performance. The best result for each configuration is in bold.}
+\caption{NLL (mean $\pm$ standard deviation, 10 seeds) on the synthetic data. Lower values indicate better performance. The best result for each configuration is in bold and the second best is underlined.}
 \label{tab:resultados-sinteticos}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{llcccc}
@@ -18,14 +18,14 @@ The synthetic experiments follow the protocol described in Section~\ref{sec:conf
 Scenario & Model & $1\times$ & $2\times$ & $5\times$ & $10\times$ \\
 \midrule
 \multirow{4}{*}{Slow decay}
-    & NHP    & $\mathbf{1{,}470 \pm 0{,}007}$ & $2{,}197 \pm 0{,}131$ & $2{,}667 \pm 0{,}236$ & $2{,}817 \pm 0{,}273$ \\
-    & THP    & $1{,}475 \pm 0{,}007$ & $3{,}926 \pm 1{,}505$ & $4{,}127 \pm 1{,}803$ & $4{,}199 \pm 2{,}117$ \\
-    & RoTHP  & $1{,}499 \pm 0{,}014$ & $2{,}007 \pm 0{,}284$ & $2{,}642 \pm 0{,}509$ & $3{,}001 \pm 0{,}625$ \\
+    & NHP    & $\mathbf{1{,}470 \pm 0{,}007}$ & $2{,}197 \pm 0{,}131$ & $2{,}667 \pm 0{,}236$ & $\underline{2{,}817 \pm 0{,}273}$ \\
+    & THP    & $\underline{1{,}475 \pm 0{,}007}$ & $3{,}926 \pm 1{,}505$ & $4{,}127 \pm 1{,}803$ & $4{,}199 \pm 2{,}117$ \\
+    & RoTHP  & $1{,}499 \pm 0{,}014$ & $\underline{2{,}007 \pm 0{,}284}$ & $\underline{2{,}642 \pm 0{,}509}$ & $3{,}001 \pm 0{,}625$ \\
     & HoTHP  & $1{,}545 \pm 0{,}025$ & $\mathbf{1{,}609 \pm 0{,}096}$ & $\mathbf{1{,}943 \pm 0{,}313}$ & $\mathbf{2{,}364 \pm 0{,}625}$ \\
 \midrule
 \multirow{4}{*}{Fast decay}
-    & NHP    & $\mathbf{1{,}663 \pm 0{,}005}$ & $1{,}833 \pm 0{,}134$ & $2{,}057 \pm 0{,}223$ & $2{,}153 \pm 0{,}250$ \\
-    & THP    & $1{,}677 \pm 0{,}011$ & $3{,}391 \pm 0{,}781$ & $3{,}761 \pm 1{,}072$ & $3{,}897 \pm 1{,}509$ \\
+    & NHP    & $\mathbf{1{,}663 \pm 0{,}005}$ & $\underline{1{,}833 \pm 0{,}134}$ & $\underline{2{,}057 \pm 0{,}223}$ & $\underline{2{,}153 \pm 0{,}250}$ \\
+    & THP    & $\underline{1{,}677 \pm 0{,}011}$ & $3{,}391 \pm 0{,}781$ & $3{,}761 \pm 1{,}072$ & $3{,}897 \pm 1{,}509$ \\
     & RoTHP  & $1{,}681 \pm 0{,}007$ & $2{,}039 \pm 0{,}279$ & $2{,}146 \pm 0{,}309$ & $2{,}275 \pm 0{,}372$ \\
     & HoTHP  & $1{,}689 \pm 0{,}008$ & $\mathbf{1{,}701 \pm 0{,}012}$ & $\mathbf{1{,}740 \pm 0{,}050}$ & $\mathbf{1{,}774 \pm 0{,}092}$ \\
 \bottomrule
@@ -36,7 +36,7 @@ Scenario & Model & $1\times$ & $2\times$ & $5\times$ & $10\times$ \\
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:extrapolacao-sintetica} NLL (mean $\pm$ standard deviation, 10 seeds) as a function of the extrapolation factor $\alpha$ in the synthetic scenarios. The HoTHP keeps the NLL more stable as $\alpha$ grows, while the THP degrades drastically and the RoTHP and NHP show intermediate degradation.}
+    \caption[NLL versus extrapolation factor on synthetic data]{\label{fig:extrapolacao-sintetica} NLL (mean $\pm$ standard deviation, 10 seeds) as a function of the extrapolation factor $\alpha$ in the synthetic scenarios. The HoTHP keeps the NLL more stable as $\alpha$ grows, while the THP degrades drastically and the RoTHP and NHP show intermediate degradation.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_extrapolation_nll_sintetico.png}
     }{
@@ -56,7 +56,7 @@ Figure~\ref{fig:extrapolacao-rmse} shows the RMSE of the next event prediction. 
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:extrapolacao-rmse} RMSE of the next event prediction (mean $\pm$ standard deviation, 10 seeds) as a function of the extrapolation factor $\alpha$. Unlike the NLL, the RMSE does not separate the models clearly: in the slow decay all of them degrade in a similar way and in the fast decay they stay close to each other.}
+    \caption[RMSE versus extrapolation factor on synthetic data]{\label{fig:extrapolacao-rmse} RMSE of the next event prediction (mean $\pm$ standard deviation, 10 seeds) as a function of the extrapolation factor $\alpha$. Unlike the NLL, the RMSE does not separate the models clearly: in the slow decay all of them degrade in a similar way and in the fast decay they stay close to each other.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_extrapolation_rmse_sintetico.png}
     }{
@@ -92,7 +92,7 @@ Table~\ref{tab:resultados-reais} presents the NLL and Table~\ref{tab:acc-reais} 
 
 \begin{table}[h!]
 \centering
-\caption{NLL on the real datasets (mean $\pm$ standard deviation, 3 seeds), for the extrapolation factors $1\times$, $2\times$, and $5\times$. Lower is better. The best value in each column is in bold. NHP is a recurrent baseline (CT-LSTM); the other three share the same Transformer architecture and intensity function and differ only in the positional kernel.}
+\caption{NLL on the real datasets (mean $\pm$ standard deviation, 3 seeds), for the extrapolation factors $1\times$, $2\times$, and $5\times$. Lower is better. The best value in each column is in bold and the second best is underlined. NHP is a recurrent baseline (CT-LSTM); the other three share the same Transformer architecture and intensity function and differ only in the positional kernel.}
 \label{tab:resultados-reais}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{llccc}
@@ -102,20 +102,20 @@ Dataset & Model & NLL $1\times$ & NLL $2\times$ & NLL $5\times$ \\
 \multirow{4}{*}{Taxi}
     & THP    & $-0{,}273 \pm 0{,}002$ & $-0{,}314 \pm 0{,}004$ & $-0{,}243 \pm 0{,}015$ \\
     & RoTHP  & $-0{,}271 \pm 0{,}003$ & $-0{,}317 \pm 0{,}005$ & $-0{,}137 \pm 0{,}148$ \\
-    & HoTHP  & $-0{,}278 \pm 0{,}001$ & $-0{,}328 \pm 0{,}004$ & $-0{,}266 \pm 0{,}007$ \\
+    & HoTHP  & $\underline{-0{,}278 \pm 0{,}001}$ & $\underline{-0{,}328 \pm 0{,}004}$ & $\underline{-0{,}266 \pm 0{,}007}$ \\
     & NHP    & $\mathbf{-0{,}449 \pm 0{,}004}$ & $\mathbf{-0{,}506 \pm 0{,}004}$ & $\mathbf{-0{,}460 \pm 0{,}003}$ \\
 \midrule
 \multirow{4}{*}{Amazon}
     & THP    & $2{,}264 \pm 0{,}003$ & $2{,}237 \pm 0{,}002$ & $2{,}254 \pm 0{,}002$ \\
     & RoTHP  & $2{,}268 \pm 0{,}004$ & $2{,}230 \pm 0{,}003$ & $2{,}247 \pm 0{,}002$ \\
-    & HoTHP  & $2{,}263 \pm 0{,}004$ & $2{,}207 \pm 0{,}003$ & $2{,}187 \pm 0{,}002$ \\
+    & HoTHP  & $\underline{2{,}263 \pm 0{,}004}$ & $\underline{2{,}207 \pm 0{,}003}$ & $\underline{2{,}187 \pm 0{,}002}$ \\
     & NHP    & $\mathbf{0{,}658 \pm 0{,}229}$ & $\mathbf{0{,}630 \pm 0{,}227}$ & $\mathbf{0{,}638 \pm 0{,}224}$ \\
 \midrule
 \multirow{4}{*}{Stackoverflow}
-    & THP    & $2{,}744 \pm 0{,}029$ & $2{,}642 \pm 0{,}025$ & $\mathbf{2{,}519 \pm 0{,}013}$ \\
+    & THP    & $\underline{2{,}744 \pm 0{,}029}$ & $\underline{2{,}642 \pm 0{,}025}$ & $\mathbf{2{,}519 \pm 0{,}013}$ \\
     & RoTHP  & $2{,}766 \pm 0{,}035$ & $2{,}655 \pm 0{,}026$ & $2{,}545 \pm 0{,}018$ \\
     & HoTHP  & $2{,}758 \pm 0{,}025$ & $2{,}649 \pm 0{,}022$ & $2{,}536 \pm 0{,}021$ \\
-    & NHP    & $\mathbf{2{,}742 \pm 0{,}012}$ & $\mathbf{2{,}633 \pm 0{,}013}$ & $2{,}524 \pm 0{,}020$ \\
+    & NHP    & $\mathbf{2{,}742 \pm 0{,}012}$ & $\mathbf{2{,}633 \pm 0{,}013}$ & $\underline{2{,}524 \pm 0{,}020}$ \\
 \bottomrule
 \end{tabular}
 }
@@ -123,7 +123,7 @@ Dataset & Model & NLL $1\times$ & NLL $2\times$ & NLL $5\times$ \\
 
 \begin{table}[h!]
 \centering
-\caption{Type-prediction accuracy on the real datasets (mean $\pm$ standard deviation, 3 seeds), for the factors $1\times$, $2\times$, and $5\times$. Higher is better. The best value in each column is in bold.}
+\caption{Type-prediction accuracy on the real datasets (mean $\pm$ standard deviation, 3 seeds), for the factors $1\times$, $2\times$, and $5\times$. Higher is better. The best value in each column is in bold and the second best is underlined.}
 \label{tab:acc-reais}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{llccc}
@@ -131,20 +131,20 @@ Dataset & Model & NLL $1\times$ & NLL $2\times$ & NLL $5\times$ \\
 Dataset & Model & Acc $1\times$ & Acc $2\times$ & Acc $5\times$ \\
 \midrule
 \multirow{4}{*}{Taxi}
-    & THP    & $\mathbf{0{,}900 \pm 0{,}001}$ & $0{,}917 \pm 0{,}003$ & $0{,}911 \pm 0{,}002$ \\
-    & RoTHP  & $0{,}898 \pm 0{,}000$ & $0{,}916 \pm 0{,}002$ & $0{,}907 \pm 0{,}011$ \\
-    & HoTHP  & $0{,}897 \pm 0{,}001$ & $0{,}917 \pm 0{,}003$ & $0{,}915 \pm 0{,}004$ \\
-    & NHP    & $0{,}898 \pm 0{,}002$ & $\mathbf{0{,}919 \pm 0{,}001}$ & $\mathbf{0{,}918 \pm 0{,}001}$ \\
+    & THP    & $\mathbf{0{,}900 \pm 0{,}001}$ & $\underline{0{,}917 \pm 0{,}003}$ & $0{,}911 \pm 0{,}002$ \\
+    & RoTHP  & $\underline{0{,}898 \pm 0{,}000}$ & $0{,}916 \pm 0{,}002$ & $0{,}907 \pm 0{,}011$ \\
+    & HoTHP  & $0{,}897 \pm 0{,}001$ & $\underline{0{,}917 \pm 0{,}003}$ & $\underline{0{,}915 \pm 0{,}004}$ \\
+    & NHP    & $\underline{0{,}898 \pm 0{,}002}$ & $\mathbf{0{,}919 \pm 0{,}001}$ & $\mathbf{0{,}918 \pm 0{,}001}$ \\
 \midrule
 \multirow{4}{*}{Amazon}
-    & THP    & $0{,}308 \pm 0{,}001$ & $0{,}317 \pm 0{,}003$ & $0{,}314 \pm 0{,}006$ \\
-    & RoTHP  & $0{,}308 \pm 0{,}002$ & $0{,}323 \pm 0{,}002$ & $0{,}320 \pm 0{,}007$ \\
+    & THP    & $\underline{0{,}308 \pm 0{,}001}$ & $0{,}317 \pm 0{,}003$ & $0{,}314 \pm 0{,}006$ \\
+    & RoTHP  & $\underline{0{,}308 \pm 0{,}002}$ & $\underline{0{,}323 \pm 0{,}002}$ & $\underline{0{,}320 \pm 0{,}007}$ \\
     & HoTHP  & $\mathbf{0{,}312 \pm 0{,}001}$ & $\mathbf{0{,}331 \pm 0{,}001}$ & $\mathbf{0{,}340 \pm 0{,}001}$ \\
     & NHP    & $0{,}293 \pm 0{,}004$ & $0{,}306 \pm 0{,}006$ & $0{,}315 \pm 0{,}006$ \\
 \midrule
 \multirow{4}{*}{Stackoverflow}
-    & THP    & $0{,}473 \pm 0{,}001$ & $0{,}466 \pm 0{,}001$ & $0{,}450 \pm 0{,}001$ \\
-    & RoTHP  & $0{,}473 \pm 0{,}004$ & $0{,}464 \pm 0{,}002$ & $0{,}448 \pm 0{,}001$ \\
+    & THP    & $\underline{0{,}473 \pm 0{,}001}$ & $\underline{0{,}466 \pm 0{,}001}$ & $\underline{0{,}450 \pm 0{,}001}$ \\
+    & RoTHP  & $\underline{0{,}473 \pm 0{,}004}$ & $0{,}464 \pm 0{,}002$ & $0{,}448 \pm 0{,}001$ \\
     & HoTHP  & $\mathbf{0{,}474 \pm 0{,}003}$ & $\mathbf{0{,}466 \pm 0{,}002}$ & $\mathbf{0{,}451 \pm 0{,}001}$ \\
     & NHP    & $0{,}469 \pm 0{,}003$ & $0{,}462 \pm 0{,}002$ & $0{,}445 \pm 0{,}002$ \\
 \bottomrule
@@ -165,7 +165,7 @@ Figure~\ref{fig:extrapolacao-real-nll} shows the NLL as a function of the extrap
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:extrapolacao-real-nll} NLL (mean $\pm$ standard deviation, 3 seeds) as a function of the extrapolation factor on the real datasets, for the three Transformer models. The NHP is omitted from the plot for readability, since its lower NLL on Taxi and Amazon would compress the scale; its values are in Table~\ref{tab:resultados-reais}. Among the Transformer models, the HoTHP keeps the lowest and most stable NLL in extrapolation.}
+    \caption[NLL versus extrapolation factor on real data]{\label{fig:extrapolacao-real-nll} NLL (mean $\pm$ standard deviation, 3 seeds) as a function of the extrapolation factor on the real datasets, for the three Transformer models. The NHP is omitted from the plot for readability, since its lower NLL on Taxi and Amazon would compress the scale; its values are in Table~\ref{tab:resultados-reais}. Among the Transformer models, the HoTHP keeps the lowest and most stable NLL in extrapolation.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_real_nll.png}
     }{
@@ -177,7 +177,7 @@ Figure~\ref{fig:extrapolacao-real-acc} shows the type-prediction accuracy under 
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:extrapolacao-real-acc} Type-prediction accuracy (mean $\pm$ standard deviation, 3 seeds) as a function of the extrapolation factor on the real datasets, for the three Transformer models (the NHP is in Table~\ref{tab:acc-reais}). On Amazon, the HoTHP shows the clearest and growing advantage as the sequence gets longer.}
+    \caption[Accuracy versus extrapolation factor on real data]{\label{fig:extrapolacao-real-acc} Type-prediction accuracy (mean $\pm$ standard deviation, 3 seeds) as a function of the extrapolation factor on the real datasets, for the three Transformer models (the NHP is in Table~\ref{tab:acc-reais}). On Amazon, the HoTHP shows the clearest and growing advantage as the sequence gets longer.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_real_acc.png}
     }{
@@ -194,7 +194,7 @@ On Taxi, the RoTHP shows higher variance between seeds in the early epochs (10 t
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:convergencia} Convergence curves of the validation NLL (mean $\pm$ standard deviation, 3 seeds). The first epochs were omitted to improve the visualization. On Amazon and Stackoverflow, all the models converge smoothly. On Taxi, the RoTHP is more unstable in the early epochs. On Retweet, the wide band of the RoTHP reflects the collapse of 2 of the 3 seeds.}
+    \caption[Validation NLL convergence curves]{\label{fig:convergencia} Convergence curves of the validation NLL (mean $\pm$ standard deviation, 3 seeds). The first epochs were omitted to improve the visualization. On Amazon and Stackoverflow, all the models converge smoothly. On Taxi, the RoTHP is more unstable in the early epochs. On Retweet, the wide band of the RoTHP reflects the collapse of 2 of the 3 seeds.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_convergencia.pdf}
     }{
@@ -209,7 +209,7 @@ To understand why the HoTHP behaves differently on each dataset, we extracted th
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:intensidades} Conditional intensity $\lambda^*(t)$ learned by the THP (orange), RoTHP (blue), and HoTHP (green) for one test sequence of each dataset. The gray vertical bars indicate the events. On Amazon, the intensity grows between events and falls when an event occurs (self-inhibition). On Stackoverflow, the intensity is approximately constant (memoryless process). On Retweet, both models collapse to $\lambda^* \approx 0$ after the initial burst due to the extreme temporal scale.}
+    \caption[Conditional intensity learned by the models]{\label{fig:intensidades} Conditional intensity $\lambda^*(t)$ learned by the THP (orange), RoTHP (blue), and HoTHP (green) for one test sequence of each dataset. The gray vertical bars indicate the events. On Amazon, the intensity grows between events and falls when an event occurs (self-inhibition). On Stackoverflow, the intensity is approximately constant (memoryless process). On Retweet, both models collapse to $\lambda^* \approx 0$ after the initial burst due to the extreme temporal scale.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_model_intensity.png}
     }{
@@ -233,7 +233,7 @@ We trained the RoTHP and the HoTHP on the normalized Retweet with the same hyper
 
 \begin{table}[h!]
 \centering
-\caption{Ablation: effect of the temporal normalization on Retweet. ``Original (raw)'' uses the raw timestamps; ``Normalized'' uses the timestamps divided by the mean of the gaps. Mean $\pm$ standard deviation (3 seeds). The best value in each column of the normalized block is in bold.}
+\caption{Ablation: effect of the temporal normalization on Retweet. ``Original (raw)'' uses the raw timestamps; ``Normalized'' uses the timestamps divided by the mean of the gaps. Mean $\pm$ standard deviation (3 seeds). The best value in each column of the normalized block is in bold and the second best is underlined.}
 \label{tab:ablacao-retweet}
 \begin{tabular}{llcccc}
 \toprule
@@ -245,9 +245,9 @@ Version & Model & NLL $1\times$ & NLL $2\times$ & NLL $5\times$ & Acc $5\times$ 
     & HoTHP  & $15{,}94$ & $1{,}2 \times 10^{5}$ & $1{,}4 \times 10^{5}$ & $0{,}491$ \\
 \midrule
 \multirow{3}{*}{Normalized}
-    & THP    & $\mathbf{-2{,}180 \pm 0{,}008}$ & $-1{,}227 \pm 0{,}053$ & $0{,}039 \pm 0{,}332$ & $0{,}597 \pm 0{,}002$ \\
+    & THP    & $\mathbf{-2{,}180 \pm 0{,}008}$ & $\underline{-1{,}227 \pm 0{,}053}$ & $\underline{0{,}039 \pm 0{,}332}$ & $\underline{0{,}597 \pm 0{,}002}$ \\
     & RoTHP  & $-2{,}133 \pm 0{,}021$ & $0{,}749 \pm 0{,}618$ & $47{,}563 \pm 8{,}703$ & $0{,}589 \pm 0{,}002$ \\
-    & HoTHP  & $-2{,}139 \pm 0{,}014$ & $\mathbf{-1{,}275 \pm 0{,}013}$ & $\mathbf{-0{,}651 \pm 0{,}013}$ & $\mathbf{0{,}600 \pm 0{,}002}$ \\
+    & HoTHP  & $\underline{-2{,}139 \pm 0{,}014}$ & $\mathbf{-1{,}275 \pm 0{,}013}$ & $\mathbf{-0{,}651 \pm 0{,}013}$ & $\mathbf{0{,}600 \pm 0{,}002}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -259,7 +259,7 @@ The difference between the models appears in the extrapolation, as illustrated i
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \Caption{\label{fig:ablacao-retweet-norm} NLL on the normalized Retweet (mean $\pm$ standard deviation, 3 seeds). On the left, the $1\times$ condition (training length): both models obtain a similar NLL. On the right, the $5\times$ condition (extrapolation): the HoTHP keeps a stable NLL, while the RoTHP shows high variance due to one seed that diverges.}
+    \caption[NLL on the normalized Retweet]{\label{fig:ablacao-retweet-norm} NLL on the normalized Retweet (mean $\pm$ standard deviation, 3 seeds). On the left, the $1\times$ condition (training length): both models obtain a similar NLL. On the right, the $5\times$ condition (extrapolation): the HoTHP keeps a stable NLL, while the RoTHP shows high variance due to one seed that diverges.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_ablacao_retweet_norm.png}
     }{
