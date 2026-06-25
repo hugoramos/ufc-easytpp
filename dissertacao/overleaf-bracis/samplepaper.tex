@@ -36,21 +36,35 @@
 %\titlerunning{Abbreviated paper title}
 % If the paper title is too long for the running head, you can set
 % an abbreviated paper title here
-%
-% \author{Hugo Ramos Soares\inst{1,2}\orcidID{0000-1111-2222-3333} \and
-% César Lincoln C. Mattos\inst{1,3}\orcidID{1111-2222-3333-4444} \and
-% João Paulo Pordeus\inst{1,3}\orcidID{2222--3333-4444-5555}}
-\author{Anonymous authors}
+%\author{Anonymous authors}
+\author{Manolidis Efstratios Júnior\inst{1}\orcidID{0009-0007-3508-2885} \and
+César Lincoln C. Mattos\inst{1}\orcidID{0000-0002-2404-3625} \and
+João P. P. Gomes\inst{1}\orcidID{0000-0003-1686-595X}}
+
 %
 % \authorrunning{Soares et al.}
-\authorrunning{Anonymous authors}
+%\authorrunning{Anonymous authors}
 % First names are abbreviated in the running head.
 % If there are more than two authors, 'et al.' is used.
 %
 % \institute{Universidade Federal do Ceará, Fortaleza CE, Brazil \and
-% \email{hugoramos84@gmail.com}\and
+% \email{hugo.ramos@alu.ufc.br}\and
 % \email{\{cesarlincoln,jpaulo\}@dc.ufc.br}}
-\institute{Anonymous institution}
+%\institute{Anonymous institution}
+
+\author{Hugo Ramos Soares \and
+César Lincoln C. Mattos \and
+João P. P. Gomes}
+
+% \authorrunning{Manolidis E. et al.}
+\authorrunning{Soares H. R., Mattos C. L. C. and Gomes J. P. P.}
+
+\institute{
+  Department of Computing \\
+  Federal University of Ceará
+  (UFC), Fortaleza -- CE\\
+  \email{hugoramos84@alu.ufc.br, cesarlincoln@dc.ufc.br, jpaulo@dc.ufc.br}
+}
 
 %
 \maketitle              % typeset the header of the contribution
@@ -70,7 +84,7 @@ A Hawkes process has as its main characteristic the influence of past events on 
 
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{figures/hawkes_illustration.pdf}
+    \includegraphics[width=0.9\linewidth]{figures/hawkes_illustration.pdf}
     \caption{Illustration of a multivariate Hawkes process with two event types. Each event causes a jump in the conditional intensity $\lambda(t)$, which decays exponentially. Events close in time accumulate their effects, and each type can excite events of both its own type and other types.}
     \label{fig:hawkesprocess}
 \end{figure}
@@ -162,7 +176,7 @@ However, the cosine and sine functions are oscillatory. As $\Delta t$ grows, the
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/kernel_alignment.pdf}
+\includegraphics[width=0.72\textwidth]{figures/kernel_alignment.pdf}
 \caption{Normalized attention profile of each model compared to the true exponential kernel $e^{-\beta \Delta t}$. HoTHP aligns better with the real kernel than RoTHP.}
 \label{fig:kernel_alignment}
 \end{figure}
@@ -222,14 +236,16 @@ For the damping to dominate the growth of $\cosh$, it is required that $\theta' 
 
 \subsection{HoTHP Attention Score}
 
-Substituting the definition of $\bm{B}_j$ (Eq.~\ref{eq:boost}), the matrix multiplication results in:
+Substituting the definition of $\bm{B}_j$ (Eq.~\ref{eq:boost}) into Eq.~\ref{eq:kernel_completo}, the attention score for dimension pair $j$ becomes:
+
 %
-\begin{equation}
-\bm{q}^\top \, \bm{B}(\Delta t) \, \bm{k} = \underbrace{(q_1 k_1 + q_2 k_2)}_{\text{cosh part}} \cosh(\theta \Delta t) + \underbrace{(q_1 k_2 + q_2 k_1)}_{\text{sinh part}} \sinh(\theta \Delta t).
-\label{eq:score_par}
+\begin{equation}                                                        g_j(\Delta t) = e^{-|\Delta t|\theta'}
+\!\left[
+\underbrace{(q_1 k_1 + q_2 k_2)}_{\text{cosh part}} \cosh(\theta_j \Delta t)
++ \underbrace{(q_1 k_2 + q_2 k_1)}_{\text{sinh part}} \sinh(\theta_j \Delta t)                                                                      
+\right].                                                                    \label{eq:score_par}
 \end{equation}
-%
-We include the damping factor $e^{-\Delta t \cdot \theta'}$ and sum over all $d/2$ dimension pairs to compute the attention score.
+%      
 
 As in HoPE, we keep the parameter $\theta'$, enforcing the constraint $\theta' > \max \theta$ throughout training. Since $\theta'$ is a learnable parameter, we cannot simply fix its value. To enforce this constraint automatically during training, we parameterize $\theta'$ as:
 %
@@ -296,7 +312,7 @@ Process & Model & $1\times$ & $2\times$ & $5\times$ & $10\times$ \\
 
 \begin{figure}[t]
 \centering
-\includegraphics[trim={0 0 0 2.5cm},clip,width=0.9\textwidth]{figures/main_result.pdf}
+\includegraphics[trim={0 0 0 2.5cm},clip,width=0.8\textwidth]{figures/main_result.pdf}
 \caption{NLL evolution as a function of test length for the slow decay (left) and fast decay (right) scenarios. Error bars indicate $\pm 1$ standard deviation over 5 seeds.}
 \label{fig:main_result}
 \end{figure}
@@ -343,11 +359,15 @@ Figs.~\ref{fig:grid_lines_fast} and~\ref{fig:grid_lines_slow} show the NLL evolu
 
 \section{Related Work}
 
-Our contribution in neural networks for TPPs involves concepts drawn from the most recent advances in positional encoding for Transformers. Although parallel, these lines of research have maintained a recurring dialogue on advances in positional encoding originally proposed within the context of language models and their adaptations to TPP scenarios, and these adaptations have represented important performance leaps in the area. THP \cite{zuo2020transformer} established this pattern by adapting the original Transformer architecture \cite{vaswani2017attention} to continuous event sequences. RoTHP \cite{dai2026rothp} continued this trend by adapting RoPE \cite{su2024roformer} to continuous timestamps, addressing the fragility of THP with temporal shifts. ALiBi \cite{press2022train} introduced a linear decay bias to the attention scores, enabling length extrapolation in language models, but its linear profile does not match the exponential decay of the Hawkes kernel. Our research takes one more step in this direction, adapting the advantage of recency bias within the context of a Hawkes process and thus delivering more stability to the model in extrapolation scenarios, which are very useful for large datasets whose training becomes very expensive and time-consuming, or when training data is sparse. Fig.~\ref{fig:attention_profile} illustrates the theoretical attention profiles of these approaches: RoTHP oscillates without decaying, ALiBi decays linearly, and HoTHP decays exponentially --- the profile most aligned with the Hawkes kernel.
+Our contribution in neural networks for TPPs involves concepts drawn from the most recent advances in positional encoding for Transformers. Although parallel, these lines of research have maintained a recurring dialogue on advances in positional encoding originally proposed within the context of language models and their adaptations to TPP scenarios, and these adaptations have represented important performance leaps in the area. THP \cite{zuo2020transformer} established this pattern by adapting the original Transformer architecture \cite{vaswani2017attention} to continuous event sequences. RoTHP \cite{dai2026rothp} continued this trend by adapting RoPE \cite{su2024roformer} to continuous timestamps, addressing the fragility of THP with temporal shifts. 
+
+ALiBi \cite{press2022train} introduced a linear decay bias to the attention scores, enabling length extrapolation in language models, but its linear profile does not match the exponential decay of the Hawkes kernel. HoPE \cite{dai2025hope} addressed the oscillatory limitations of RoPE by replacing trigonometric rotations with hyperbolic functions. The resulting attention weights decay monotonically with distance, which is a property that aligns naturally with the recency bias of the Hawkes process, where the influence of past events decreases with time.
+
+Our research takes one more step in this direction, adapting the advantage of recency bias within the context of a Hawkes process and thus delivering more stability to the model in extrapolation scenarios, which are very useful for large datasets whose training becomes very expensive and time-consuming, or when training data is sparse. Fig.~\ref{fig:attention_profile} illustrates the theoretical attention profiles of these approaches, showing RoTHP oscillating without decaying, ALiBi decaying linearly, and HoTHP decaying exponentially.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.8\textwidth]{figures/attention_profile.pdf}
+\includegraphics[width=0.75\textwidth]{figures/attention_profile.pdf}
 \caption{Theoretical attention profiles as a function of $\Delta t$ for RoTHP, ALiBi, and HoTHP. The HoTHP profile most closely resembles the exponential decay kernel of the Hawkes process.}
 \label{fig:attention_profile}
 \end{figure}
@@ -360,11 +380,14 @@ The experiments on synthetic data confirm that HoTHP generalizes better in the l
 
 The experiments were conducted exclusively on synthetic data. Although this choice allowed precise control of the generating process and isolation of the effect of positional encoding from other factors, it does not directly demonstrate performance on real data, where the dependency structure may be more complex and the generating process is unknown.
 
-As future work, we plan to evaluate HoTHP on real-world event datasets, including financial transactions, social networks, and seismic data, where the ability to extrapolate length has a direct impact on practical applications. We will also investigate the extension of the hyperbolic decay mechanism to spatio-temporal point processes, in which the notion of distance combines temporal and spatial dimensions, representing an additional challenge for positional encodings with monotonic decay bias.
+As future work, we plan to evaluate HoTHP on real-world event datasets, including financial transactions, social networks, and seismic data, where the ability to extrapolate length has a direct impact on practical applications.
 
 \begin{credits}
 \subsubsection{\ackname} 
 The authors used Claude, an AI assistant by Anthropic, to support language editing and text refinement during manuscript preparation. All scientific content, experimental design, results, and conclusions were produced, reviewed, and validated entirely by the authors, who bear full responsibility for the final version of this work.
+
+This work was supported by the National Council for Scientific and
+Technological Development (CNPq), grant number 306569/2024-8.
 \end{credits}
 
 \bibliography{refs}
