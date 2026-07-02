@@ -177,7 +177,7 @@
   \vspace{-0.2em}
   \begin{figure}
     \centering
-    \includegraphics[width=0.78\textwidth]{figura-poisson}
+    \includegraphics[width=0.62\textwidth]{figura-poisson}
   \end{figure}
   \vspace{-0.4em}
   {\small Waiting times between events are exponential with mean $1/\lambda$ and
@@ -312,7 +312,7 @@
   \vspace{-0.2em}
   \begin{figure}
     \centering
-    \includegraphics[width=0.72\textwidth]{figura-attention}
+    \includegraphics[height=0.36\textheight,keepaspectratio]{figura-attention}
   \end{figure}
 \end{frame}
 
@@ -361,7 +361,7 @@
     \end{column}
     \begin{column}{0.44\textwidth}
       \centering
-      \includegraphics[width=0.82\textwidth]{figura-thp}
+      \includegraphics[width=0.82\textwidth,height=0.6\textheight,keepaspectratio]{figura-thp}
     \end{column}
   \end{columns}
 \end{frame}
@@ -427,7 +427,7 @@
     \end{column}
     \begin{column}{0.5\textwidth}
       \centering
-      \includegraphics[width=\textwidth]{figura-rope}
+      \includegraphics[width=\textwidth,height=0.58\textheight,keepaspectratio]{figura-rope}
     \end{column}
   \end{columns}
 \end{frame}
@@ -558,7 +558,8 @@
   \[
     \theta' = \mathrm{softplus}(\theta'_{\mathrm{raw}}) + \max_p(\theta_p) + \epsilon .
   \]
-  The full score sums over the $d/2$ dimension pairs (index $p$):
+  The full score sums over the $d/2$ dimension pairs (index $p$), with
+  $\Delta t = t_i - t_j$:
   \[
     \resizebox{\textwidth}{!}{$
     s_{ij} = \frac{1}{\sqrt{d}} \sum_{p=1}^{d/2}
@@ -566,7 +567,7 @@
         \big(q_1^{(p)} k_1^{(p)} + q_2^{(p)} k_2^{(p)}\big)\cosh(\theta_p \Delta t)
         + \big(q_1^{(p)} k_2^{(p)} + q_2^{(p)} k_1^{(p)}\big)\sinh(\theta_p \Delta t)
       \Big]
-    $}, \quad \Delta t = t_i - t_j.
+    $}.
   \]
   \begin{block}{Numerical stability}
     $\cosh, \sinh$ can overflow. We rewrite the product as pure exponentials, e.g.
@@ -783,7 +784,7 @@
   \begin{columns}[T]
     \begin{column}{0.46\textwidth}
       \centering
-      \includegraphics[height=0.72\textheight]{fig_model_intensity}
+      \includegraphics[height=0.68\textheight]{fig_model_intensity}
     \end{column}
     \begin{column}{0.52\textwidth}
       \small
@@ -941,8 +942,10 @@
   \end{itemize}
 \end{frame}
 
-% Invisible frame: needed to compile the \cite{}, never rendered
-\begin{frame}<0>[noframenumbering]{}
+% References (real frame so BibTeX runs and \cite{} resolves)
+\begin{frame}[noframenumbering]{References}
+  \setbeamertemplate{bibliography item}{\insertbiblabel}
+  \scriptsize
   \bibliographystyle{plain}
   \bibliography{refs}
 \end{frame}
