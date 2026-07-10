@@ -189,12 +189,12 @@ Figure~\ref{fig:extrapolacao-real-acc} shows the type-prediction accuracy under 
 
 Figure~\ref{fig:convergencia} shows the convergence curves of the validation NLL over the 100 training epochs. On the Amazon and Stackoverflow datasets, the three models converge smoothly, with the NLL stabilizing after epoch 50. On Amazon, the curve still shows a slight downward trend in the last 20 epochs, but with a slope below $0{,}01$ per epoch, which indicates that additional epochs would benefit all the models equally without changing the ranking.
 
-On Taxi, the RoTHP shows higher variance between seeds in the early epochs (10 to 40), but converges to the same level as the HoTHP after epoch 40. On Retweet, the convergence reveals the numerical collapse: 2 out of 3 seeds stabilize at NLL $\approx 15{,}9$, while only one of the three seeds converges to informative values ($\text{NLL} \approx 5{,}5$). The resulting standard deviation band is enormous, visually confirming the instability reported in Table~\ref{tab:ablacao-retweet}.
+On Taxi, the three models end up at the same level (NLL $\approx -0{,}24$), but they get there in different ways: the RoTHP and the HoTHP reach it around epoch 20, while the THP stays higher for a while and only catches up after about epoch 45. In the first epochs (10 to 20) the seeds disagree a lot for every model, which is normal on a dataset this short. For Retweet we use the normalized version (Section~\ref{sec:ablacao-retweet}), because with the raw timestamps the training breaks down numerically. Once normalized, the three models converge nicely to NLL $\approx -2{,}1$: the seeds spread out more in the early epochs (10 to 50) and the bands close up after about epoch 55. This smooth convergence, with no collapse, is the visual side of the ablation in Table~\ref{tab:ablacao-retweet}, which shows that normalizing each sequence removes the numerical instability.
 
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \caption[Validation NLL convergence curves]{\label{fig:convergencia} Convergence curves of the validation NLL (mean $\pm$ standard deviation, 3 seeds). The first epochs were omitted to improve the visualization. On Amazon and Stackoverflow, all the models converge smoothly. On Taxi, the RoTHP is more unstable in the early epochs. On Retweet, the wide band of the RoTHP reflects the collapse of 2 of the 3 seeds.}
+    \caption[Validation NLL convergence curves]{\label{fig:convergencia} Convergence curves of the validation NLL (mean $\pm$ standard deviation, 3 seeds). The first epochs were omitted to improve the visualization. On Amazon and Stackoverflow, all the models converge smoothly. On Taxi, the THP converges more slowly and only reaches the level of the other models after about epoch 45. On Retweet we use the normalized variant (Section~\ref{sec:ablacao-retweet}): the three models converge smoothly to informative values, in contrast with the numerical collapse observed on the raw timestamps.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_convergencia.pdf}
     }{
@@ -229,7 +229,7 @@ The normalization consists of dividing all the instants of each sequence by the 
 
 After this operation, the mean interval between events becomes approximately~1 in all the sequences, with the maximum interval reduced from~582.928 to approximately~227. The temporal structure (order of the events, clustering patterns, types) is preserved. Only the numerical scale changes.
 
-We trained the RoTHP and the HoTHP on the normalized Retweet with the same hyperparameters (3 seeds, 100 epochs, $L_{\text{train}} = 50$, $L_{5\times} = 250$) and compared with the original results.
+We trained the THP, the RoTHP, and the HoTHP on the normalized Retweet with the same hyperparameters (3 seeds, 100 epochs, $L_{\text{train}} = 50$, $L_{5\times} = 250$) and compared with the original results.
 
 \begin{table}[h!]
 \centering
@@ -259,7 +259,7 @@ The difference between the models appears in the extrapolation, as illustrated i
 \begin{figure}[h!]
     \centering
     \captionsetup{width=14cm}
-    \caption[NLL on the normalized Retweet]{\label{fig:ablacao-retweet-norm} NLL on the normalized Retweet (mean $\pm$ standard deviation, 3 seeds). On the left, the $1\times$ condition (training length): both models obtain a similar NLL. On the right, the $5\times$ condition (extrapolation): the HoTHP keeps a stable NLL, while the RoTHP shows high variance due to one seed that diverges.}
+    \caption[NLL on the normalized Retweet]{\label{fig:ablacao-retweet-norm} NLL on the normalized Retweet (mean $\pm$ standard deviation, 3 seeds). The figure compares the RoTHP and the HoTHP, the two rotary-kernel models. On the left, the $1\times$ condition (training length): the RoTHP and the HoTHP obtain a similar NLL. On the right, the $5\times$ condition (extrapolation): the HoTHP keeps a stable NLL, while the RoTHP shows high variance due to one seed that diverges.}
     \UFCfig{}{
         \includegraphics[width=14cm]{figuras/fig_ablacao_retweet_norm.png}
     }{

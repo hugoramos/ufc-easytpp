@@ -41,9 +41,12 @@ sobre muito mais chaves, o que amplifica o efeito de scores espúrios.
 
 ### D4. "Você tem alguma garantia teórica de extrapolação, ou o argumento é só qualitativo + empírico?"
 **Resposta honesta:** A garantia formal é sobre o *kernel*: com θ′ > max θ_p por
-construção, o score decai monotonicamente para zero em |Δt| e é limitado — isso
-é demonstrável pelas identidades das Eqs. de estabilidade (soma de exponenciais
-com expoentes negativos). Não há bound sobre a NLL em extrapolação; a evidência
+construção, o score decai exponencialmente para zero em |Δt|, sem oscilação, e é
+limitado — demonstrável pelas identidades das Eqs. de estabilidade (mistura de
+exponenciais decrescentes; o envelope é e^(−(θ′−θ_p)|Δt|)). Nuance se pressionarem:
+a componente par (cosh) é monótona, mas a ímpar (sinh amortecido) parte de 0, tem
+um pico em Δt* = artanh(θ_p/θ′)/θ_p e só então decai — por isso a afirmação
+correta é "decaimento exponencial sem oscilação", não "monotônico ponto a ponto". Não há bound sobre a NLL em extrapolação; a evidência
 é empírica (Wilcoxon, 10 seeds). Análise teórica do θ′ aprendido está nos
 trabalhos futuros.
 

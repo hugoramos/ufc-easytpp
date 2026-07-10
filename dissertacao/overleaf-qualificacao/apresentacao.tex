@@ -18,8 +18,13 @@
 \title[HoTHP]{HoTHP: Hyperbolic Rotary Position Embedding-based Transformer Hawkes Process}
 \subtitle{Length extrapolation in Temporal Point Processes}
 \author[H. R. Soares]{Hugo Ramos Soares}
-\institute[UFC]{Universidade Federal do Ceará \\ Advisors: César Lincoln C. Mattos and João Paulo Pordeus}
-\date{Qualification -- July 2026}
+\institute[UFC]{Universidade Federal do Ceará \\[0.4em]
+    {\small Orientador: César Lincoln C. Mattos (UFC)} \\
+    {\small Coorientador: João Paulo Pordeus Gomes (UFC)} \\[0.3em]
+    {\small Banca: José Antonio Fernandes de Macêdo (UFC) \\
+    Diego Parente Paiva Mesquita (FGV)}
+}
+\date{Proposta - July 2026}
 
 \begin{document}
 
@@ -102,8 +107,8 @@
     \item We would like to \textbf{train on short sequences} and run the model on
           \textbf{arbitrarily longer} ones \cite{press2022train}.
     \item Transformer-based point process models degrade sharply when the test
-          sequence is longer than the training one. This failure is called
-          \emph{length extrapolation}.
+          sequence is longer than the training one. The ability to remain stable
+          in this regime is called \emph{length extrapolation}.
   \end{itemize}
   \vspace{0.6em}
   \begin{block}{Contribution of this work: HoTHP}
@@ -141,47 +146,54 @@
 
 % Slide 6: Poisson distribution (NEW)
 \begin{frame}{The Poisson distribution}
-  Before the Poisson \emph{process}, recall the Poisson \emph{distribution}, from
-  which it takes its name.
-  \vspace{0.4em}
-
-  It is a discrete distribution that counts the number of events in a fixed
-  interval, assuming they are \textbf{independent} and occur at a constant average
-  rate $\lambda$:
-  \[
-    \Pr(X = k) = \frac{\lambda^{k} e^{-\lambda}}{k!}, \qquad k = 0, 1, 2, \ldots
-  \]
+  \textbf{The question it answers:} how many events will we see in a fixed
+  window, if they happen independently at a constant average rate?
+  \vspace{0.3em}
+  \begin{block}{Definition \cite{ross_first_2019}}
+    If the \emph{expected number} of events in the window is $\lambda > 0$, the
+    probability of observing exactly $k$ events is
+    \[
+      \Pr(X = k) = \frac{\lambda^{k} e^{-\lambda}}{k!}, \qquad k = 0, 1, 2, \ldots
+    \]
+    \vspace{-0.6em}
+    {\footnotesize
+    \begin{itemize}
+      \item $X$: a \textbf{random variable}, the count of events in the window
+            (unknown before we observe it);
+      \item $k$: a \textbf{concrete value} that count may take ($0, 1, 2, \ldots$);
+      \item $\Pr(X = k)$: the \textbf{probability} that the observed count $X$
+            equals exactly $k$.
+    \end{itemize}}
+  \end{block}
+  {\small
   \begin{itemize}
-    \item Both the mean and the variance equal $\lambda$.
-    \item It arises as the limit of a binomial when each trial is unlikely ($p$
-          small) but there are many trials ($n$ large), with $\lambda = np$
-          \cite{shchur2021neural}.
-  \end{itemize}
-  This same distribution underlies the Poisson process on the next slide, with
-  $\Lambda = \lambda T$ in place of $\lambda$.
+    \item $\lambda$ is both the \textbf{mean} and the \textbf{variance} of the
+          count.
+    \item Approximates a binomial: $n$ \textbf{trials}, each succeeding with
+          \textbf{small} probability $p$; expected count $\lambda = np$ (e.g.,
+          $n$ characters on a page, each misprinted with probability $p$).
+  \end{itemize}}
 \end{frame}
 
 % Slide 7: Poisson process
 \begin{frame}{The Poisson process}
-  The simplest point process: random points in time with \textbf{no dependence}
-  between them.
-  \[
-    \Pr\{N((0,T]) = n\} = \frac{(\lambda T)^{n}}{n!}\, e^{-\lambda T}
-  \]
+  Now let events keep happening over time, at a constant \textbf{rate}
+  $\lambda$ (events per unit time), and let $N(T)$ count them up to time $T$
+  \cite{ross_first_2019}. Roughly:
   \begin{itemize}
-    \item The count in any interval of length $T$ is Poisson with mean
-          $\Lambda = \lambda T$.
-    \item Counts in disjoint intervals are independent.
-    \item Stationary: depends only on the interval length.
+    \item events in short, \textbf{non-overlapping} intervals happen
+          \textbf{independently};
+    \item each short interval gets \textbf{at most one} event, with chance
+          proportional to $\lambda$.
   \end{itemize}
-  \vspace{-0.2em}
-  \begin{figure}
-    \centering
-    \includegraphics[width=0.62\textwidth]{figura-poisson}
-  \end{figure}
-  \vspace{-0.4em}
-  {\small Waiting times between events are exponential with mean $1/\lambda$ and
-  independent.}
+  Then $N(T)$ is Poisson with mean $\lambda T$ (rate times time):
+  \[
+    \Pr\{N(T) = n\} = \frac{(\lambda T)^{n}}{n!}\, e^{-\lambda T}
+  \]
+  \vspace{-0.3em}
+  \begin{center}
+    \includegraphics[width=0.56\textwidth]{figura-poisson}
+  \end{center}
 \end{frame}
 
 % Slide 8: Temporal Point Processes
@@ -211,7 +223,8 @@
   log-likelihood \cite{mei2017neural}:
   \[
     \mathcal{L} = \sum_{i:\, t_i \leq T} \log \lambda_{k_i}(t_i)
-      \;-\; \underbrace{\int_{0}^{T} \lambda(t)\, dt}_{\Lambda}
+      \;-\; \underbrace{\int_{0}^{T} \bar{\lambda}(t)\, dt}_{\Lambda},
+    \qquad \bar{\lambda}(t) = \sum_{k=1}^{K} \lambda_k(t)
   \]
   \begin{itemize}
     \item First term: rewards a \textbf{high intensity} at the moments where
@@ -221,8 +234,8 @@
     \item Training minimizes the \textbf{negative} log-likelihood (NLL), our main
           evaluation metric.
   \end{itemize}
-  In practice, the integral is estimated by Monte Carlo, the same way for every
-  model we compare.
+  In practice, the integral is estimated numerically, in exactly the same way for
+  every model we compare.
 \end{frame}
 
 % Slide 10: Hawkes process
@@ -252,7 +265,7 @@
 
 % Slide 11: Cox process (NEW)
 \begin{frame}{The Cox process, and where Hawkes sits}
-  A progression of increasingly flexible intensity models:
+  Increasingly rich ways of specifying the intensity:
   \vspace{0.4em}
   \begin{enumerate}
     \item \textbf{Homogeneous Poisson:} intensity $\lambda$ is constant.
@@ -260,15 +273,17 @@
           deterministically.
     \item \textbf{Cox process} (doubly stochastic Poisson): $\lambda(t)$ is itself
           a \emph{random} process, driven by factors external to the events.
-    \item \textbf{Hawkes process:} the randomness of $\lambda(t)$ comes from the
-          \emph{past events themselves}, each one temporarily raising the
-          intensity.
+    \item \textbf{Hawkes process:} $\lambda(t)$ is random
+          because it depends on the \emph{past events of the process itself}, each
+          one temporarily raising the intensity.
   \end{enumerate}
   \vspace{0.5em}
   \begin{block}{Why this matters here}
-    Hawkes is doubly stochastic like a Cox process, but its stochasticity is
-    history-driven. It is exactly this dependence on history, with exponential
-    decay, that motivates the recency bias of our model.
+    Hawkes also has a stochastic intensity, but unlike Cox its randomness is
+    \textbf{endogenous}: $\lambda(t)$ is a functional of the process's own past (a
+    \emph{self-exciting} process, not a doubly stochastic one). It is exactly this
+    dependence on history, with exponential decay, that motivates the recency bias
+    of our model.
   \end{block}
 \end{frame}
 
@@ -318,20 +333,30 @@
 
 % Slide 14: positional encoding
 \begin{frame}{Positional encoding: attention has no order}
-  Attention is \textbf{permutation invariant}: on its own it does not know the
-  order or timing of events. Position must be injected.
-  \vspace{0.4em}
-  \begin{itemize}
-    \item \textbf{Original Transformer:} add a sinusoidal encoding of the
-          \emph{discrete position} to each token embedding.
-    \item \textbf{For TPPs} we need the actual \emph{timestamp}, not just the
-          order, since the moment of the event matters.
-  \end{itemize}
-  \vspace{0.5em}
-  \begin{block}{Key question of this work}
-    How we encode time (absolute vs. relative, additive vs. inside the kernel) is
-    exactly what decides whether the model can extrapolate to longer sequences.
-  \end{block}
+  Attention is \textbf{permutation equivariant}: reordering the inputs merely
+  reorders the outputs, so on its own it does not know the order or timing of
+  events. Position must be injected.
+  \vspace{0.3em}
+  \begin{columns}[T]
+    \begin{column}{0.54\textwidth}
+      \small
+      \begin{itemize}
+        \item \textbf{Original Transformer:} add a sinusoidal encoding of the
+              \emph{discrete position} to each token embedding.
+        \item Each dimension is a sine/cosine of a different frequency: fast on
+              the left, slow on the right, giving every position a unique
+              signature.
+        \item \textbf{For TPPs} we need the actual \emph{timestamp}, not just the
+              order, since the moment of the event matters.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \includegraphics[width=\textwidth,height=0.62\textheight,keepaspectratio]{fig_positional_encoding}
+
+      {\scriptsize Sinusoidal encoding: position (rows) vs. dimension (columns).}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % Slide 15: THP
@@ -346,6 +371,7 @@
       \sin\!\left(t_j / 10000^{i/M}\right), & i \text{ even}.
     \end{cases}
   \]
+  \vspace{-0.8em}
   \begin{columns}[T]
     \begin{column}{0.54\textwidth}
       The encoding is added to the type embedding, then passed through
@@ -356,12 +382,12 @@
           \underbrace{\alpha_k \tfrac{t-t_j}{t_j}}_{\text{current}}
           + \underbrace{\mathbf{w}_k^\top \mathbf{h}(t_j)}_{\text{history}}
           + \underbrace{b_k}_{\text{base}}\Big)
-        $}.
+        $.}
       \]
     \end{column}
     \begin{column}{0.44\textwidth}
       \centering
-      \includegraphics[width=0.82\textwidth,height=0.6\textheight,keepaspectratio]{figura-thp}
+      \includegraphics[width=0.82\textwidth,height=0.55\textheight,keepaspectratio]{figura-thp}
     \end{column}
   \end{columns}
 \end{frame}
@@ -374,20 +400,23 @@
 \begin{frame}{Length extrapolation in language models}
   A model trained on sequences of length $L_{\text{train}}$ should stay stable when
   tested on $L_{\text{test}} > L_{\text{train}}$ \cite{press2022train}.
-  \vspace{0.4em}
-  \begin{itemize}
-    \item The main cause of failure is the \textbf{positional encoding}.
-    \item Absolute sinusoidal positions become \emph{out of distribution} for
-          indices never seen in training: perplexity explodes.
-    \item Rotary encodings (RoPE) help by using \emph{relative} positions, but
-          Press et al. \cite{press2022train} showed they still fail for much longer
-          sequences.
-  \end{itemize}
-  \vspace{0.4em}
-  \begin{block}{Takeaway}
-    Extrapolation is decided by how position enters attention. A structural decay
-    with distance is what makes it stable.
-  \end{block}
+  \vspace{0.3em}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \begin{itemize}
+        \item Absolute sinusoidal positions produce encoding patterns never seen in training for larger indices: perplexity explodes.
+        \item Rotary encodings (RoPE) help by using \emph{relative} positions, but
+              Press et al. \cite{press2022train} showed they still fail for much
+              longer sequences.
+        \item Only \textbf{ALiBi}, with a linear distance penalty, stays flat far
+              beyond the training length.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \centering
+      \includegraphics[width=\textwidth,height=0.56\textheight,keepaspectratio]{fig_alibi_extrapolation}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % Slide 17: same problem in TPPs
@@ -427,7 +456,7 @@
     \end{column}
     \begin{column}{0.5\textwidth}
       \centering
-      \includegraphics[width=\textwidth,height=0.58\textheight,keepaspectratio]{figura-rope}
+      \includegraphics[width=\textwidth,height=0.58\textheight,keepaspectratio]{fig_rope_to_hope}
     \end{column}
   \end{columns}
 \end{frame}
@@ -478,31 +507,34 @@
 
 % Slide 21: RoTHP oscillation limitation
 \begin{frame}{The oscillatory limitation of RoTHP}
-  The RoTHP score between events $i$ and $j$ depends only on
-  $\Delta t = t_i - t_j$, but the kernel is built from $\cos$ and $\sin$, which are
-  \textbf{not monotonic}.
-  \vspace{0.4em}
-  \begin{itemize}
-    \item The score can \emph{grow} for more distant events and \emph{shrink} for
-          nearby ones, depending on the phase.
-    \item This contradicts the Hawkes kernel $\varphi(\Delta t) = \alpha
-          e^{-\beta \Delta t}$, which is strictly decreasing.
-    \item In extrapolation the model meets $\Delta t$ values it never saw: the
-          cosine phase may land on a \textbf{peak}, giving a very distant event a
-          high score. Nothing forces the score to decay.
-  \end{itemize}
-  \begin{block}{Diagnosis}
-    The missing ingredient is a structural recency bias. That is what stops RoTHP
-    from extrapolating.
-  \end{block}
+  RoTHP's score depends only on $\Delta t = t_i - t_j$, but its kernel is built
+  from $\cos$ and $\sin$, so it \textbf{oscillates} instead of decaying.
+  \begin{columns}[T]
+    \begin{column}{0.44\textwidth}
+      \begin{itemize}
+        \item \textbf{RoPE} (blue) decays only \emph{on average}: noisy,
+              non-monotonic, and it never dies out.
+        \item A Hawkes kernel $\varphi(\Delta t)=\alpha e^{-\beta\Delta t}$ is
+              \emph{strictly} decreasing. RoPE violates this.
+        \item In extrapolation the phase may land on a \textbf{peak}: a distant
+              event outscores a nearby one.
+      \end{itemize}
+      \vspace{0.2em}
+
+    \end{column}
+    \begin{column}{0.56\textwidth}
+      \centering
+      \includegraphics[width=\textwidth,height=0.72\textheight,keepaspectratio]{figura-oscilacao}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % Slide 22: trig -> hyperbolic
 \begin{frame}{From the trigonometric kernel to the hyperbolic kernel}
-  Following HoPE \cite{dai2025hope}, replace the rotation block by a
-  \textbf{hyperbolic} block:
+  Following HoPE \cite{dai2025hope}, replace the rotation block $\mathbf{R}_j$ by a
+  \textbf{hyperbolic boost} $\mathbf{B}_j$:
   \[
-    \resizebox{0.92\textwidth}{!}{$
+    \resizebox{0.78\textwidth}{!}{$
     \mathbf{R}_j(\Delta t) =
       \begin{bmatrix} \cos & \sin \\ -\sin & \cos \end{bmatrix}
     \;\longrightarrow\;
@@ -511,20 +543,14 @@
                       \sinh(\theta_j \Delta t) & \cosh(\theta_j \Delta t) \end{bmatrix}
     $}
   \]
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \begin{itemize}
-        \item $\cosh, \sinh$ are \textbf{monotonic} for $\Delta t > 0$: no
-              oscillation.
-        \item But they \textbf{grow} exponentially, so distant events would get
-              \emph{larger} scores. We need to tame this growth.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \centering
-      \includegraphics[width=\textwidth]{fig_trig_vs_hyp}
-    \end{column}
-  \end{columns}
+  \vspace{-0.4em}
+  \begin{center}
+    \includegraphics[width=0.92\textwidth,height=0.5\textheight,keepaspectratio]{fig_rope_vs_hothp_geom}
+  \end{center}
+  \vspace{-0.4em}
+  {\footnotesize The rotation preserves the \textbf{circle} ($\cos,\sin$ oscillate); the
+  Lorentz boost preserves the \textbf{hyperbola} ($\cosh,\sinh$ are monotonic). We control this growth  with the decay envelope
+  $e^{-|\Delta t|\theta'}$.}
 \end{frame}
 
 % Slide 23: exponential decay + theta prime
@@ -532,14 +558,14 @@
   HoPE \cite{dai2025hope} adds a learnable $\theta'$ and damps $\mathbf{q}, \mathbf{k}$
   so the score decays. In continuous time:
   \[
-    g(\Delta t) = e^{-\Delta t\,\theta'}\; \mathbf{q}^\top \mathbf{B}(\theta, \Delta t)\, \mathbf{k}
+    g(\Delta t) = e^{-|\Delta t|\,\theta'}\; \mathbf{q}^\top \mathbf{B}(\theta, \Delta t)\, \mathbf{k}
   \]
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
       \begin{itemize}
         \item If $\theta' > \max_j \theta_j$, the decay dominates the hyperbolic
-              growth and the score decreases \textbf{monotonically} with
-              $|\Delta t|$.
+              growth: the score \textbf{decays exponentially to zero} with
+              $|\Delta t|$, without oscillation.
         \item This is a \textbf{structural} recency bias: it holds even for
               $\Delta t$ never seen in training. This is what enables
               extrapolation.
@@ -552,29 +578,52 @@
   \end{columns}
 \end{frame}
 
-% Slide 24: theta prime parametrization + score + numerical stability
-\begin{frame}{HoTHP attention score (and keeping it stable)}
-  We guarantee $\theta' > \max_p \theta_p$ \emph{by construction}:
-  \[
-    \theta' = \mathrm{softplus}(\theta'_{\mathrm{raw}}) + \max_p(\theta_p) + \epsilon .
-  \]
-  The full score sums over the $d/2$ dimension pairs (index $p$), with
-  $\Delta t = t_i - t_j$:
-  \[
-    \resizebox{\textwidth}{!}{$
-    s_{ij} = \frac{1}{\sqrt{d}} \sum_{p=1}^{d/2}
-      e^{-|\Delta t|\theta'} \Big[
-        \big(q_1^{(p)} k_1^{(p)} + q_2^{(p)} k_2^{(p)}\big)\cosh(\theta_p \Delta t)
-        + \big(q_1^{(p)} k_2^{(p)} + q_2^{(p)} k_1^{(p)}\big)\sinh(\theta_p \Delta t)
-      \Big]
-    $}.
-  \]
-  \begin{block}{Numerical stability}
-    $\cosh, \sinh$ can overflow. We rewrite the product as pure exponentials, e.g.
-    $e^{-|\Delta t|\theta'}\cosh(\theta_p\Delta t) =
-      \tfrac{1}{2}\big(e^{-|\Delta t|(\theta'-\theta_p)} + e^{-|\Delta t|(\theta'+\theta_p)}\big)$.
-    Both exponents are negative, so no overflow occurs.
+% Slide 24a: the score, one pair at a time
+\begin{frame}{HoTHP score: one dimension-pair at a time}
+  Each head splits into $d/2$ \textbf{pairs}. Pair $p$ has frequency $\theta_p$
+  and components $(q_1^{(p)}, q_2^{(p)})$ and $(k_1^{(p)}, k_2^{(p)})$.
+  \vspace{0.3em}
+  \begin{block}{Score of one pair $=$ hyperbolic rotation by $\Delta t$}
+    \[
+      s^{(p)} = (q_1 k_1 + q_2 k_2)\,\cosh(\theta_p \Delta t)
+              + (q_1 k_2 + q_2 k_1)\,\sinh(\theta_p \Delta t)
+    \]
   \end{block}
+  Full score $=$ sum over pairs, with the recency envelope $e^{-|\Delta t|\theta'}$
+  and the usual $1/\sqrt{d}$ scaling ($\Delta t = t_i - t_j$):
+  \[
+    s_{ij} = \frac{1}{\sqrt{d}} \sum_{p=1}^{d/2}
+      e^{-|\Delta t|\theta'}\; s^{(p)} .
+  \]
+
+\end{frame}
+
+% Slide 24b: from cosh/sinh definitions down to the stable form
+\begin{frame}{We never evaluate $\cosh/\sinh$, only exponentials}
+  \textbf{Step 1.} Replace each by its definition ($\cosh$ is even, so
+  $\theta_p\Delta t \to \theta_p|\Delta t|$):
+  \[
+    \cosh(\theta_p \Delta t) = \tfrac{1}{2}\big(e^{\theta_p|\Delta t|} + e^{-\theta_p|\Delta t|}\big),
+    \qquad
+    \sinh(\theta_p \Delta t) = \tfrac{\mathrm{sign}(\Delta t)}{2}\big(e^{\theta_p|\Delta t|} - e^{-\theta_p|\Delta t|}\big).
+  \]
+  \textbf{Step 2.} Multiply the $\cosh$ term by the envelope and \emph{merge the
+  exponents} (this is the whole trick):
+  \begin{align*}
+    e^{-|\Delta t|\theta'}\cosh(\theta_p \Delta t)
+      &= \tfrac{1}{2}\Big(
+          e^{-|\Delta t|\theta'}\, e^{+\theta_p|\Delta t|}
+        + e^{-|\Delta t|\theta'}\, e^{-\theta_p|\Delta t|}\Big) \\[0.3em]
+      &= \tfrac{1}{2}\Big(
+          e^{-|\Delta t|(\theta' - \theta_p)}
+        + e^{-|\Delta t|(\theta' + \theta_p)}\Big).
+  \end{align*}
+  \textbf{Step 3.} Since $\theta' > \max_p \theta_p$ by construction, both
+  $\theta'-\theta_p>0$ and $\theta'+\theta_p>0$: \alert{every exponent is
+  negative}, so each term lands in $(0,1]$, no overflow, no \texttt{NaN}.
+  \vspace{0.2em}
+  {\small (The $\sinh$ term merges the same way, giving
+  $\tfrac{\mathrm{sign}(\Delta t)}{2}\big(e^{-|\Delta t|(\theta'-\theta_p)} - e^{-|\Delta t|(\theta'+\theta_p)}\big)$.)}
 \end{frame}
 
 % Slide 25: architecture + where the bias acts
@@ -588,8 +637,9 @@
           \emph{which past events} shape the hidden state. Recent events get more
           weight.
     \item \textbf{Intensity} $\lambda_k(t) = \mathrm{softplus}\!\big(
-          \alpha_k \tfrac{t-t_j}{t_j+\epsilon} + \mathbf{w}_k^\top \mathbf{h}(t_j) + b_k\big)$:
-          here $\alpha_k$ is free (can rise or fall after an event).
+          \alpha_k (t-t_j) + \mathbf{w}_k^\top \mathbf{h}(t_j) + b_k\big)$:
+          linear in the \emph{elapsed} time $t-t_j$, so shifting all timestamps
+          changes nothing; $\alpha_k$ is free (can rise or fall after an event).
   \end{enumerate}
   \begin{block}{Consequence}
     The recency bias does \textbf{not} require the process to be self-exciting. It
@@ -607,8 +657,8 @@
   \vspace{-0.3em}
   {\small In the \textbf{training zone}, both models fit the data. In the
   \textbf{extrapolation zone}, the RoTHP trigonometric kernel keeps oscillating in
-  unseen phases, while the HoTHP hyperbolic kernel decays monotonically to zero,
-  like the classical Hawkes kernel (dashed).}
+  unseen phases, while the HoTHP hyperbolic kernel decays exponentially to zero,
+  without oscillation, like the classical Hawkes kernel (dashed).}
 \end{frame}
 
 % ============================================================
@@ -626,8 +676,8 @@
     \item \textbf{Protocol:} train short, test long, factors
           $\alpha \in \{1,2,5,10\}$ (synthetic) and $\{1,2,5\}$ (real).
     \item \textbf{Models:} NHP, THP, RoTHP, HoTHP. THP/RoTHP/HoTHP share the same
-          architecture and intensity, differing \textbf{only in the positional
-          kernel} (a controlled comparison).
+          architecture and intensity, differing \textbf{only in how time enters
+          the attention} (a controlled comparison).
     \item \textbf{Metrics:} NLL (main), RMSE, type accuracy. Synthetic: 10 seeds +
           Wilcoxon signed-rank test. Real: 3 seeds (no Wilcoxon).
   \end{itemize}
@@ -740,8 +790,8 @@
   sequence grows.}
 \end{frame}
 
-% Slide 32: accuracy + NHP framing
-\begin{frame}{Real data: accuracy, and the NHP baseline}
+% Slide 32: accuracy - HoTHP leads on the datasets where recency helps
+\begin{frame}{Real data: type-prediction accuracy}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
       {\scriptsize
@@ -749,34 +799,40 @@
         \toprule
         Dataset & Model & $1\times$ & $2\times$ & $5\times$ \\
         \midrule
-        \multirow{2}{*}{Amazon}
-          & HoTHP & $\mathbf{.312}$ & $\mathbf{.331}$ & $\mathbf{.340}$ \\
+        \multirow{4}{*}{Amazon}
           & NHP   & $.293$ & $.306$ & $.315$ \\
+          & THP   & $.308$ & $.317$ & $.314$ \\
+          & RoTHP & $.308$ & $.323$ & $.320$ \\
+          & HoTHP & $\mathbf{.312}$ & $\mathbf{.331}$ & $\mathbf{.340}$ \\
         \midrule
-        \multirow{2}{*}{StackOv.}
-          & HoTHP & $\mathbf{.474}$ & $\mathbf{.466}$ & $\mathbf{.451}$ \\
+        \multirow{4}{*}{StackOv.}
           & NHP   & $.469$ & $.462$ & $.445$ \\
+          & THP   & $.473$ & $.466$ & $.450$ \\
+          & RoTHP & $.473$ & $.464$ & $.448$ \\
+          & HoTHP & $\mathbf{.474}$ & $\mathbf{.466}$ & $\mathbf{.451}$ \\
+        \midrule
+        \multirow{4}{*}{Retweet\textsuperscript{$\dagger$}}
+          & NHP   & --- & --- & --- \\
+          & THP   & $.590$ & $.596$ & $.597$ \\
+          & RoTHP & $.590$ & $.594$ & $.589$ \\
+          & HoTHP & $\mathbf{.595}$ & $\mathbf{.601}$ & $\mathbf{.600}$ \\
         \bottomrule
       \end{tabular}}
-      \vspace{0.5em}
-
-      {\small Type-prediction accuracy: HoTHP \textbf{beats NHP} on Amazon and
-      StackOverflow.}
     \end{column}
-    \begin{column}{0.5\textwidth}
-      \begin{block}{On NHP winning NLL}
-        \small NHP has the lowest NLL on Taxi and Amazon. This is \textbf{expected}
-        and does not contradict our contribution:
-        \begin{itemize}
-          \item It matches the unified EasyTPP benchmark, where recurrent NHP is
-                strongest on several datasets.
-          \item Our research question is \textbf{within-family}: does changing the
-                positional kernel improve extrapolation? There, HoTHP is
-                consistently the best of the three.
-        \end{itemize}
-      \end{block}
+    \begin{column}{0.48\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{fig_real_acc}
+
+      \vspace{0.4em}
+      {\scriptsize $\dagger$ Retweet normalized (raw timestamps overflow all
+      Transformers); NHP not run there.}
     \end{column}
   \end{columns}
+  \vspace{0.1em}
+  {\small HoTHP has the \textbf{best accuracy at every factor, on every dataset
+  where recency helps}. It beats the Transformer family and also NHP, whose lead
+  was confined to NLL. On Amazon the margin \emph{grows} with the sequence length
+  ($+0.020$ over the best baseline at $5\times$).}
 \end{frame}
 
 % Slide 33: learned intensities
@@ -784,7 +840,7 @@
   \begin{columns}[T]
     \begin{column}{0.46\textwidth}
       \centering
-      \includegraphics[height=0.68\textheight]{fig_model_intensity}
+      \includegraphics[height=0.66\textheight]{fig_model_intensity}
     \end{column}
     \begin{column}{0.52\textwidth}
       \small
@@ -799,6 +855,7 @@
         \item \textbf{Retweet:} models react only to the initial burst, then
               collapse to $\lambda^* \approx 0$ (extreme temporal scale).
       \end{itemize}
+      \vspace{-0.3em}
       \begin{block}{Confirms the two-step view}
         \small The recency bias acts on \textbf{attention} (which past events
         matter), not on the intensity sign. That is why it helps even on a
@@ -861,8 +918,8 @@
           rotary kernel, combining time-invariance with a structural exponential
           recency bias in a single attention mechanism.
     \item A learnable $\theta'$, parametrized so that $\theta' > \max_j \theta_j$
-          \textbf{by construction}, guaranteeing monotonic decay and numerical
-          stability.
+          \textbf{by construction}, guaranteeing exponential decay of the score
+          and numerical stability.
     \item Under \emph{train short, test long}, HoTHP keeps the NLL stable up to
           $10\times$ on synthetic data (significant by Wilcoxon), and is the best
           of the Transformer family on Amazon and Taxi.
@@ -885,7 +942,7 @@
       Activity & 2nd & 1st & 2nd & 1st & 2nd \\
       \midrule
       Prepare qualification talk        & X & X &   &   &   \\
-      Qualification (Jul 10)            &   & X &   &   &   \\
+      Defense (Jul 10)            &   & X &   &   &   \\
       Incorporate committee feedback    &   &   & X & X &   \\
       Additional experiments            & X &   & X & X &   \\
       Finish writing (conclusion, abstract) & X &   & X & X & X \\
@@ -909,15 +966,16 @@
           (as on raw Retweet).
     \item $\theta'$ is a \textbf{single global} decay rate; processes with multiple
           temporal scales may require multiple rates.
-    \item The $O(L^2)$ kernel is more expensive than RoTHP's per-event rotation.
   \end{itemize}
   \vspace{0.3em}
   \textbf{Future work}
   \begin{itemize}
     \item More seeds on real data to enable the Wilcoxon test there.
+    \item Replicate the original THP benchmark (where THP outperforms NHP)
+          and apply HoTHP on top of that implementation, to check whether
+          the NHP advantage observed here comes from the EasyTPP
+          reimplementation.
     \item Multiple decay rates (per head or per dimension pair).
-    \item Low-rank approximations to reduce the $O(L^2)$ cost.
-    \item Theoretical analysis of the learned $\theta'$ and convergence.
   \end{itemize}
 \end{frame}
 
@@ -927,23 +985,13 @@
     \large \textbf{Hugo Ramos Soares} \\
     \normalsize
     Universidade Federal do Ceará \\
-    Advisors: César Lincoln C. Mattos and João Paulo Pordeus \\[1.2em]
-    \textbf{Main references}
+    Orientador: César Lincoln C. Mattos \\
+    Coorientador: João Paulo Pordeus \\
   \end{center}
-  \begin{itemize}
-    \small
-    \item Hawkes (1971) -- self-exciting point processes
-    \item Vaswani et al. (2017) -- Transformer / attention
-    \item Mei and Eisner (2017) -- Neural Hawkes Process
-    \item Zuo et al. (2020) -- Transformer Hawkes Process
-    \item Su et al. (2024) -- RoFormer / RoPE
-    \item Dai et al. (2026) -- RoTHP \quad Dai et al. (2025) -- HoPE
-    \item Press et al. (2022) -- Train Short, Test Long / ALiBi
-  \end{itemize}
 \end{frame}
 
 % References (real frame so BibTeX runs and \cite{} resolves)
-\begin{frame}[noframenumbering]{References}
+\begin{frame}[noframenumbering,allowframebreaks]{References}
   \setbeamertemplate{bibliography item}{\insertbiblabel}
   \scriptsize
   \bibliographystyle{plain}
