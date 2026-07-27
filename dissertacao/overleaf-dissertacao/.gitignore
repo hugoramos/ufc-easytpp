@@ -1,0 +1,28 @@
+# LaTeX build artifacts (local tectonic/pdflatex compiles; Overleaf builds remotely)
+documento.pdf
+*.aux
+*.log
+*.toc
+*.lof
+*.lot
+*.out
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+# glossaries / acronyms / index
+*.glo
+*.gls
+*.glg
+*.glsdefs
+*.ist
+*.acn
+*.acr
+*.alg
+*.ist
+*.idx
+*.ind
+*.ilg
