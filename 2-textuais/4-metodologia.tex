@@ -55,13 +55,13 @@ To correct the hyperbolic growth, the HoPE \cite{dai_hope_2025} introduces a lea
 In the HoTHP, the discrete positions $m, n$ are replaced by the continuous instants $t_i, t_j$ and the difference $m - n$ by the temporal difference $\Delta t = t_i - t_j$:
 %
 \begin{equation}
-    g(\Delta t) = e^{-\Delta t \cdot \theta'} \; \mathbf{q}^\top \, \mathbf{B}(\theta, \Delta t) \; \mathbf{k}.
+    g(\Delta t) = e^{-|\Delta t| \, \theta'} \; \mathbf{q}^\top \, \mathbf{B}(\theta, \Delta t) \; \mathbf{k}.
     \label{eq:kernel-hothp-completo}
 \end{equation}
 %
 For the decay to dominate the hyperbolic growth, it is necessary that $\theta' > \max_j \theta_j$. Under this condition, the score decreases monotonically with $|\Delta t|$, which introduces an exponential recency bias into the attention mechanism. This bias reflects the same structure as the Hawkes kernel ($\alpha e^{-\beta \Delta t}$) and, because it is structural and not learned from the data, it holds even for values of $\Delta t$ that the model never saw during training. It is this bias that gives the HoTHP the ability to extrapolate to longer sequences without degradation.
 
-Figure~\ref{fig:decay-hiperbolico} illustrates the recency bias in practice. The left image shows the separate components: $\cosh$ and $\sinh$ grow exponentially while the decay factor $e^{-\theta'\Delta t}$ falls quickly to zero. The center image shows the product of the hyperbolic functions by the decay factor, ensuring that $\theta' > \theta$, the decay dominates the growth, and both $e^{-\theta'\Delta t}\cosh(\theta\Delta t)$ and $e^{-\theta'\Delta t}\sinh(\theta\Delta t)$ decay monotonically. The right image shows the decomposition into pure exponentials used in the implementation (Section~\ref{sec:estabilidade-numerica}): since both exponents $(\theta' - \theta)$ and $(\theta' + \theta)$ are positive, all the exponentials have a negative argument and no overflow occurs.
+Figure~\ref{fig:decay-hiperbolico} illustrates the recency bias in practice. The left image shows the separate components: $\cosh$ and $\sinh$ grow exponentially while the decay factor $e^{-\theta'|\Delta t|}$ falls quickly to zero. The center image shows the product of the hyperbolic functions by the decay factor, ensuring that $\theta' > \theta$, the decay dominates the growth, and both $e^{-\theta'|\Delta t|}\cosh(\theta\Delta t)$ and $e^{-\theta'|\Delta t|}\sinh(\theta\Delta t)$ decay monotonically. The right image shows the decomposition into pure exponentials used in the implementation (Section~\ref{sec:estabilidade-numerica}): since both exponents $(\theta' - \theta)$ and $(\theta' + \theta)$ are positive, all the exponentials have a negative argument and no overflow occurs.
 
 \begin{figure}[h!]
     \centering

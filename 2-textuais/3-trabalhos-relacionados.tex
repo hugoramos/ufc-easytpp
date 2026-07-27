@@ -35,7 +35,7 @@ This chapter reviews the Transformer-based point process models that precede and
         \caption{\label{fig:thp}Architecture of the Transformer Hawkes Process} \UFCfig{}{
         \includegraphics[width=10cm]{figuras/figura-thp.png}
         }{
-            }
+            \fonte{\citeonline{zuo_transformer_2021}.}}
     \end{figure}
 
     Figure \ref{fig:thp} shows the architecture of the Transformer Hawkes Process. Each event sequence passes through two embedding layers and several times through multi-head self attention modules.
@@ -87,7 +87,7 @@ This chapter reviews the Transformer-based point process models that precede and
 		\UFCfig{}{
 			\includegraphics[width=14cm]{figuras/figura-rope.png}
 		}{
-			}
+			\fonte{\citeonline{su_roformer_2023}.}}
 	\end{figure}
 
     \citeonline{dai_rotary_2026} adapted RoPE to point processes, presenting the \gls{RoTHP}. This consisted of no longer using the index position of the token of a language model, but the timestamp. A great benefit of this approach was making the likelihood time-invariant, since it deals only with the relative times (deltas). This means that if we have a time series $\{t_1 + \sigma, t_2+\sigma, \dots, t_n+\sigma\}$ it will produce the same result as $\{t_1, t_2, \dots, t_n\}$, and this solves a consistency problem inherent to models that use absolute times, allowing a time shift.
@@ -159,6 +159,7 @@ The main cause of this failure has been attributed to the \textit{positional enc
     \includegraphics[width=1\linewidth]{figuras/fig_extrapolation_perplexity.png}
     \caption[Perplexity degradation under length extrapolation]{As the extrapolation increases, we clearly see that the degradation shown by RoPE is smaller than that of traditional sinusoidal methods, but still much sharper than the model proposed by \citeonline{press_train_2021}}
     \label{fig:extrapolation-perplexity}
+    \fonte{\citeonline{press_train_2021}.}
 \end{figure}
 
 \subsection{Attention with Linear Biases (ALiBi)}\label{subsec:alibi}
