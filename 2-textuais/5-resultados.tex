@@ -184,6 +184,39 @@ Figure~\ref{fig:extrapolacao-real-acc} shows the type-prediction accuracy under 
     }
 \end{figure}
 
+Table~\ref{tab:rmse-reais} completes the picture with the RMSE of the next-event time prediction. Unlike the NLL, the RMSE stays close across the models. On Amazon the four models are essentially tied around $0{,}48$, and the value barely changes with the extrapolation factor. On Stackoverflow the RMSE actually decreases as the sequences get longer (from about $1{,}8$ at $1\times$ to about $1{,}46$ at $5\times$). On Taxi the NHP has the lowest RMSE at every factor, and among the Transformer models the HoTHP is the best at $2\times$ and $5\times$. As on the synthetic data, the RMSE does not separate the models the way the NLL does, and no positional kernel is consistently ahead across the datasets. On the real data, then, the strongest result for the HoTHP is not the RMSE, and not the NLL, where the recurrent NHP is the hardest baseline to beat, but the type-prediction accuracy: the HoTHP is the best model on Amazon and Stackoverflow (Table~\ref{tab:acc-reais}), ahead even of the NHP, and within the Transformer family it remains the most consistent of the three across the metrics.
+
+\begin{table}[h!]
+\centering
+\caption{RMSE of the next-event time prediction on the real datasets (mean $\pm$ standard deviation, 3 seeds), for the extrapolation factors $1\times$, $2\times$, and $5\times$. Lower is better. The best value in each column is in bold and the second best is underlined.}
+\label{tab:rmse-reais}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llccc}
+\toprule
+Dataset & Model & RMSE $1\times$ & RMSE $2\times$ & RMSE $5\times$ \\
+\midrule
+\multirow{4}{*}{Taxi}
+    & THP    & $0,419 \pm 0,027$ & $0,452 \pm 0,055$ & $0,452 \pm 0,043$ \\
+    & RoTHP  & $\underline{0,399 \pm 0,019}$ & $0,405 \pm 0,014$ & $0,457 \pm 0,052$ \\
+    & HoTHP  & $0,414 \pm 0,027$ & $\underline{0,402 \pm 0,030}$ & $\underline{0,431 \pm 0,040}$ \\
+    & NHP    & $\mathbf{0,374 \pm 0,004}$ & $\mathbf{0,380 \pm 0,013}$ & $\mathbf{0,426 \pm 0,013}$ \\
+\midrule
+\multirow{4}{*}{Amazon}
+    & THP    & $0,487 \pm 0,005$ & $0,488 \pm 0,006$ & $0,485 \pm 0,005$ \\
+    & RoTHP  & $\underline{0,486 \pm 0,002}$ & $\underline{0,484 \pm 0,001}$ & $\underline{0,480 \pm 0,001}$ \\
+    & HoTHP  & $0,489 \pm 0,001$ & $0,487 \pm 0,001$ & $0,484 \pm 0,001$ \\
+    & NHP    & $\mathbf{0,486 \pm 0,011}$ & $\mathbf{0,482 \pm 0,013}$ & $\mathbf{0,474 \pm 0,014}$ \\
+\midrule
+\multirow{4}{*}{Stackoverflow}
+    & THP    & $1,799 \pm 0,026$ & $\underline{1,586 \pm 0,030}$ & $\mathbf{1,428 \pm 0,039}$ \\
+    & RoTHP  & $1,808 \pm 0,017$ & $1,614 \pm 0,028$ & $1,481 \pm 0,041$ \\
+    & HoTHP  & $\underline{1,783 \pm 0,010}$ & $1,593 \pm 0,012$ & $1,463 \pm 0,009$ \\
+    & NHP    & $\mathbf{1,772 \pm 0,025}$ & $\mathbf{1,580 \pm 0,025}$ & $\underline{1,460 \pm 0,035}$ \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
 \subsection{Training convergence}
 \label{subsec:convergencia}
 
@@ -240,7 +273,7 @@ We trained the THP, the RoTHP, and the HoTHP on the normalized Retweet with the 
 Version & Model & NLL $1\times$ & NLL $2\times$ & NLL $5\times$ & Acc $5\times$ \\
 \midrule
 \multirow{3}{*}{Original (raw)}
-    & THP    & $15{,}94$ & $3{,}6 \times 10^{3}$ & $2{,}3 \times 10^{4}$ & $0{,}491$ \\
+    & THP    & $15{,}94$ & $3{,}6 \times 10^{3}$ & $2{,}7 \times 10^{3}$ & $0{,}491$ \\
     & RoTHP  & $15{,}94$ & $6{,}7 \times 10^{5}$ & $7{,}0 \times 10^{5}$ & $0{,}491$ \\
     & HoTHP  & $15{,}94$ & $1{,}2 \times 10^{5}$ & $1{,}4 \times 10^{5}$ & $0{,}491$ \\
 \midrule

@@ -127,6 +127,24 @@ Understanding the behavior of event sequences over time and how events influence
         &= \sum_{i:t_i \leq T} \log \lambda_{k_i}(t_i) - \int_{t=0}^{T} \lambda(t)dt \label{eq:log_likelihood_final_3}
     \end{align}
 
+    The same log-likelihood connects all the processes we have seen. Equation~\ref{eq:log_likelihood_final_3} is not written for one particular process. It works for any temporal point process, and the only thing that changes from one process to another is the intensity $\lambda_k(t)$ that we put inside it.
+
+    Let us look at the easiest case first: a homogeneous Poisson process with a single event type and a constant rate $\lambda$. Since $\lambda$ is the same everywhere, two things become easy. The sum of $\log \lambda$ over the $n$ events is simply $n \log \lambda$ (we add the same number $n$ times), and the integral of $\lambda$ from $0$ to $T$ is simply $\lambda T$ (the area of a rectangle of height $\lambda$ and width $T$). Substituting these two results into Equation~\ref{eq:log_likelihood_final_3} leaves the log-likelihood as
+%
+\[
+    \log L = n \log \lambda - \lambda T ,
+\]
+%
+and taking the exponential of both sides recovers the likelihood itself,
+%
+\[
+    L = \lambda^{n} e^{-\lambda T} .
+\]
+%
+This looks just like the Poisson formula of Equation~\ref{eq:poisson} (with $\Lambda = \lambda T$), which is $(\lambda T)^{n} e^{-\lambda T} / n!$: both are a rate raised to the number of events, times $e$ to the minus the expected count. The two differ only by a constant, because our likelihood describes the exact times of the events, while Equation~\ref{eq:poisson} only describes how many events happened.
+
+    The Hawkes process uses this same equation, but now the constant $\lambda$ is replaced by the history-dependent intensity $\lambda(t \mid \mathcal{H}_t)$ of Equation~\ref{eq:hawkes}. Training a Hawkes model just means looking for the parameters that make this likelihood as large as possible, which is the same as making the negative log-likelihood (\gls{NLL}) as small as possible. In the end, the parametric kernel, the neural networks, and the attention mechanisms in this work are all just different ways of computing $\lambda(t \mid \mathcal{H}_t)$. The way we compare them is always the same log-likelihood of Equation~\ref{eq:log_likelihood_final_3}.
+
 \section{Hawkes processes}\label{sec:processos-de-hawkes}
 
     Poisson processes are a basic way of working with sequences of discrete events; however, they start from the assumption that such events are independent of one another. Even in a multivariate and non-homogeneous Poisson process, where the variation in the probability of an event occurring at $t$ varies as a function of $t$, the events are still independent of one another. It assumes that an event of type $k$ happens in the infinitesimal interval $[t,t+\mathrm{d}t]$ with probability $\lambda_k(t)\mathrm{d}t$. The total intensity of all events is given by $\lambda(t)=\sum_{k=1}^{K}\lambda_k(t)$.
@@ -160,6 +178,26 @@ Understanding the behavior of event sequences over time and how events influence
     It is worth placing the Hawkes process within a progression of increasingly flexible intensity models. In the homogeneous Poisson process, the intensity $\lambda$ is constant. In the non-homogeneous Poisson process, it now varies in time in a deterministic way, $\lambda(t)$. One step further is the \textbf{Cox process}, also called the doubly stochastic Poisson process, in which the intensity $\lambda(t)$ itself is a random process, governed by factors external to the event history.
 
     The Hawkes process can be seen as a particular case of this idea of stochastic intensity: the randomness of $\lambda(t)$ does not come from an external source, but from the past events themselves, each one temporarily raising the probability of new events (Equation~\ref{eq:hawkes}). It is in this sense that the Hawkes process is described as doubly stochastic, as mentioned earlier. In this work, it is exactly this dependence on the history (and the exponential decay of the influence of past events) that motivates the recency bias of the proposed model.
+
+    Table~\ref{tab:taxonomia} organizes this progression. It contrasts the four models by the form of their intensity, by whether the intensity depends on the past events, by whether the counts in disjoint intervals are independent, and by whether the process keeps memory of earlier events. The three Poisson-based models share the assumption of independent increments and differ only in how the rate varies. The Hawkes process breaks this assumption: its intensity is a function of the history $\mathcal{H}_t$, so an event raises the probability of future events, and the counts in disjoint intervals are no longer independent. This move from independent increments to history dependence is what makes the Hawkes process able to represent self-excitation, and it is the property that the models in this work try to capture.
+
+    \begin{table}[h!]
+    \centering
+    \caption{Taxonomy of point processes, from the Poisson process to the Hawkes process.}
+    \label{tab:taxonomia}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{lcccc}
+    \toprule
+    Process & Intensity & Depends on history & Memory of past events \\
+    \midrule
+    Homogeneous Poisson     & $\lambda$ (constant)              & No  & No \\
+    Non-homogeneous Poisson & $\lambda(t)$ (deterministic)      & No  & No \\
+    Cox (doubly stochastic) & $\lambda(t)$ (random, external)   & No  & External source \\
+    Hawkes                  & $\lambda(t \mid \mathcal{H}_t)$   & Yes & Yes (decay kernel) \\
+    \bottomrule
+    \end{tabular}%
+    }
+    \end{table}
 
 \section{Neural temporal point processes}\label{sec:processos-pontuais-temporais-neurais}
 
