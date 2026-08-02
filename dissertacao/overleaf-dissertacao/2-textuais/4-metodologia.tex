@@ -10,7 +10,18 @@ As we saw in Section \ref{sec:rothp}, the RoTHP represents the position of each 
 
 The problem is that the resulting kernel is oscillatory. Sine and cosine are not monotonic functions. As a result, the attention score can grow for events more distant in time, depending on the phase of the oscillation, and shrink for nearby events. This directly contradicts the kernel of the Hawkes process, $\varphi(\Delta t) = \alpha e^{-\beta \Delta t}$, which is strictly decreasing.
 
-In practice, the most serious consequence of this oscillation appears in length extrapolation. When tested on sequences longer than the training ones, the model encounters temporal differences $\Delta t$ that it never observed during training. A kernel with exponential decay would have a predictable behavior in this region, with the influence continuing to fall. The trigonometric kernel, on the other hand, keeps oscillating with the same amplitude, and a very distant event can receive a high score simply because the phase of the cosine fell on a peak at that $\Delta t$. The model did not learn to handle these phases because it never saw them during training, and the kernel has nothing that forces the score to decay. It is this absence of a recency bias that prevents the RoTHP from extrapolating in a stable way.
+In practice, the most serious consequence of this oscillation appears in length extrapolation. When tested on sequences longer than the training ones, the model encounters temporal differences $\Delta t$ that it never observed during training. A kernel with exponential decay would have a predictable behavior in this region, with the influence continuing to fall. The trigonometric kernel, on the other hand, keeps oscillating, and a very distant event can receive a high score simply because the phase of the cosine fell on a peak at that $\Delta t$. The model did not learn to handle these phases because it never saw them during training, and the kernel has nothing that forces the score to decay. It is this absence of a recency bias that prevents the RoTHP from extrapolating in a stable way. Figure~\ref{fig:rope-hope-decay} makes this contrast concrete: the attention score of the RoPE decays only partially and keeps oscillating around a plateau, so distant keys are never fully suppressed, while the hyperbolic kernel of the HoPE decays smoothly and monotonically toward zero.
+
+\begin{figure}[h!]
+    \centering
+    \captionsetup{width=14cm}
+    \caption[Attention score decay of RoPE, HoPE, and ALiBi]{\label{fig:rope-hope-decay} Attention score as a function of the relative distance between tokens (key index), for the RoPE, the HoPE, and the ALiBi.}
+    \UFCfig{}{
+        \includegraphics[width=12cm]{figuras/fig_hope_rope_alibi_decay.png}
+    }{
+        \fonte{\citeonline{dai_hope_2025}.}
+    }
+\end{figure}
 
 A natural question is whether we could just use a longer period to remove the oscillation. It helps to look at the actual numbers. The frequencies of the trigonometric kernel come from the RoPE formula $\theta_j = 10000^{-2(j-1)/d}$ (Equation~\ref{eq:frequencias-theta}), and the one that oscillates fastest is $\theta_1$, whose period is $2\pi/\theta_1$. For $j = 1$ the exponent is zero, so $\theta_1 = 10000^{0} = 1$ no matter which base we use, and the shortest period is always $2\pi \approx 6{,}28$ in units of $\Delta t$. After the normalization of Equation~\ref{eq:normalizacao-temporal}, the average gap between events is about $1$, so $\Delta t$ inside a sequence goes from a few units up to the sequence length: tens of events in training and up to a few hundred in extrapolation. This is many times the period $2\pi$, so the cosine goes through many full cycles, and the oscillation shows up strongly in the attention scores instead of being a small detail.
 
