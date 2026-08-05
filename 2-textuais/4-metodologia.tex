@@ -23,9 +23,9 @@ In practice, the most serious consequence of this oscillation appears in length 
     }
 \end{figure}
 
-A natural question is whether we could just use a longer period to remove the oscillation. It helps to look at the actual numbers. The frequencies of the trigonometric kernel come from the RoPE formula $\theta_j = 10000^{-2(j-1)/d}$ (Equation~\ref{eq:frequencias-theta}), and the one that oscillates fastest is $\theta_1$, whose period is $2\pi/\theta_1$. For $j = 1$ the exponent is zero, so $\theta_1 = 10000^{0} = 1$ no matter which base we use, and the shortest period is always $2\pi \approx 6{,}28$ in units of $\Delta t$. After the normalization of Equation~\ref{eq:normalizacao-temporal}, the average gap between events is about $1$, so $\Delta t$ inside a sequence goes from a few units up to the sequence length: tens of events in training and up to a few hundred in extrapolation. This is many times the period $2\pi$, so the cosine goes through many full cycles, and the oscillation shows up strongly in the attention scores instead of being a small detail.
+A natural question is whether a longer period would remove the oscillation. It would not, and it is easy to see why. In the RoPE formula $\theta_j = 10000^{-2(j-1)/d}$ (Equation~\ref{eq:frequencias-theta}), the fastest component is $\theta_1 = 1$, so its period is $2\pi \approx 6{,}28$. This value never changes, because the exponent for $j = 1$ is zero and $\theta_1$ does not depend on the base $10000$. After the normalization of Equation~\ref{eq:normalizacao-temporal}, the average gap between events is about $1$, so a sequence covers tens of events in training and a few hundred in extrapolation, far more than $6{,}28$. The cosine then completes many cycles over a single sequence, so the oscillation is strong, not a small detail.
 
-This also shows why a longer period is not a free fix. Raising the base of the RoPE formula only makes the other frequencies $\theta_2, \theta_3, \ldots$ smaller; it does not change $\theta_1$, which stays at $1$ and keeps the shortest period at $2\pi$. To make even this shortest period longer than the largest $\Delta t$ in extrapolation (about $500$ at the $10\times$ factor), we would need $\theta_1 < 2\pi/500 \approx 0{,}013$. But with such a small frequency the kernel becomes almost flat over the training range $\Delta t \in [0, 50]$, where it covers less than a quarter of a cycle, so it can no longer tell nearby events from distant ones exactly where the model learns. In short, a longer period removes the oscillation but throws away the temporal resolution. The HoTHP does not face this trade-off: its decay is monotonic by construction ($\theta' > \max_j \theta_j$, Section~\ref{sec:decaimento-theta-prime}), so it does not depend on tuning any period.
+Changing the base does not help either. A larger base only shrinks the other frequencies and leaves $\theta_1 = 1$ untouched, so the shortest period stays at $2\pi$. And if we forced $\theta_1$ to be small enough to stretch the period past the longest distance seen in extrapolation (about $500$), the kernel would become almost flat over the training sequences and could no longer tell nearby events from distant ones. In short, a longer period removes the oscillation but throws away the temporal resolution. The HoTHP avoids this trade-off: its decay is monotonic by construction ($\theta' > \max_j \theta_j$, Section~\ref{sec:decaimento-theta-prime}), with no period to tune.
 
 \section{From the trigonometric kernel to the hyperbolic kernel}
 \label{sec:trig-to-hyp}
@@ -195,14 +195,14 @@ The encoder output $\mathbf{h}(t_j) \in \mathbb{R}^d$ for event $j$ is used to c
 \begin{equation}
     \lambda_k(t \mid \mathcal{H}_t)
     = \mathrm{softplus}\!\left(
-        \alpha_k \frac{t - t_j}{t_j + \epsilon}
+        \gamma_k \, (t - t_j)
         + \mathbf{w}_k^\top \mathbf{h}(t_j)
         + b_k
     \right),
     \label{eq:intensidade-hothp}
 \end{equation}
 %
-where $\alpha_k$, $\mathbf{w}_k$, and $b_k$ are learnable parameters and $\mathrm{softplus}$ ensures that the intensity is positive. The term $\alpha_k (t - t_j) / t_j$ captures the variation with the time since the last event, and $\mathbf{w}_k^\top \mathbf{h}(t_j)$ brings the historical context from the encoder. This form follows the THP \cite{zuo_transformer_2021}.
+where $\gamma_k$, $\mathbf{w}_k$, and $b_k$ are learnable parameters. Each term has a clear role. The baseline $b_k$ is the level that remains for type $k$ when there is no contribution from the history or from the elapsed time, analogous to the $\mu$ of the classical Hawkes process (Equation~\ref{eq:hawkes}). The history term $\mathbf{w}_k^\top \mathbf{h}(t_j)$ reads the hidden state $\mathbf{h}(t_j)$ that the hyperbolic attention built from all the past events, and $\mathbf{w}_k$ projects it onto type $k$. The current term $\gamma_k (t - t_j)$ controls how the intensity changes with the time elapsed since the last event $t_j$, with $\gamma_k$ a learnable scalar for each type. Finally, $\mathrm{softplus}$ keeps the intensity positive. Following the implementation in the EasyTPP framework \cite{xue_easytpp_2024}, this current term is linear in $t - t_j$; the original THP \cite{zuo_transformer_2021} instead normalizes it by $t_j$ (Equation~\ref{eq:htp-thp-lambdak}), a division we do not use here.
 
 \section{Where the exponential bias acts}
 \label{sec:onde-atua-vies}
@@ -212,7 +212,7 @@ An important distinction needs to be made about the role of the exponential deca
 \begin{enumerate}
     \item \textbf{Hyperbolic attention} (Equation~\ref{eq:score-hothp-completo}): determines the weights with which each past event contributes to the hidden state. The exponential decay makes recent events receive larger weights and distant events receive weights close to zero. The result is the vector $\mathbf{h}(t_j)$, which encodes the historical context of the sequence.
 
-    \item \textbf{Intensity function} (Equation~\ref{eq:intensidade-hothp}): uses the hidden state $\mathbf{h}(t_j)$ and the time elapsed since the last event to compute $\lambda_k(t)$. The parameter $\alpha_k$ in this equation is learnable and can take positive or negative values. If $\alpha_k > 0$, the intensity grows with the time since the last event, characterizing a self-inhibiting process. If $\alpha_k < 0$, the intensity decreases, as in a classical self-exciting Hawkes process.
+    \item \textbf{Intensity function} (Equation~\ref{eq:intensidade-hothp}): uses the hidden state $\mathbf{h}(t_j)$ and the time elapsed since the last event to compute $\lambda_k(t)$. The sign of the learnable parameter $\gamma_k$ decides whether type $k$ is self-exciting or self-inhibiting, as explained just after Equation~\ref{eq:intensidade-hothp}. What matters here is that this decision is made in the intensity layer, and not by the exponential decay of the attention.
 \end{enumerate}
 
 This separation has an important consequence, which is that the exponential bias of the HoTHP does not require the modeled process to be self-exciting. The hyperbolic kernel only requires that the relevance of past events for the construction of the hidden state decay exponentially with the temporal distance. The dynamics of the intensity itself (whether it rises or falls after an event) is determined by the learnable parameters of the intensity layer, which are free to adapt to the data.
@@ -252,7 +252,7 @@ For each scenario, we generate 400 training sequences, 100 validation sequences,
 
 The \textit{train short, test long} protocol, proposed by \citeonline{press_train_2021} for language models, trains the model on short sequences and tests it on longer sequences. We adapted the protocol to point processes using the number of events as the measure of length.
 
-We fix the training length at $L = 50$ events and vary the extrapolation factor over $\{1\times, 2\times, 5\times, 10\times\}$, where the factor indicates how many times longer the test sequence is than the training one. With a factor of $10\times$, for example, we train with sequences of 50 events and test with sequences of 500. Each factor is evaluated in the two decay scenarios.
+We fix the training length at $L = 50$ events and vary the extrapolation factor $\rho$ over $\{1\times, 2\times, 5\times, 10\times\}$, where $\rho$ indicates how many times longer the test sequence is than the training one. With $\rho = 10\times$, for example, we train with sequences of 50 events and test with sequences of 500. Each factor is evaluated in the two decay scenarios.
 
 \subsection{Compared models and implementation}
 \label{subsec:modelos-comparados}

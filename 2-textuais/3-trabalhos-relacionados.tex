@@ -49,14 +49,14 @@ This chapter reviews the Transformer-based point process models that precede and
     As we saw earlier, after the whole process of embedding, attention, and feed-forward network, $\mathbf{H}$ is finally produced, which lets us compute $\lambda_k$, needed in Equation \ref{eq:thp-lambda}. The intensity computation for each event type is given by:
     \begin{equation}
         \lambda_k(t \mid \mathcal{H}_t) = f_k \left(
-        \underbrace{\alpha_k \frac{t - t_j}{t_j}}_{\text{current}}
+        \underbrace{\gamma_k \frac{t - t_j}{t_j}}_{\text{current}}
         + \underbrace{\mathbf{w}_k^\top \mathbf{h}(t_j)}_{\text{history}}
         + \underbrace{b_k}_{\text{inertia}}
         \right)
         \label{eq:htp-thp-lambdak}
     \end{equation}
 
-    In Equation \ref{eq:htp-thp-lambdak}, the first "current" part is an interpolation between $t_j$ and $t_{j+1}$ where $\alpha$, which is a learned element, modulates the importance of this interpolation. The second part uses the history $\mathbf{h}(t)$ of the events, and the last element $\beta_k$ represents the stationary state, where the probability of the next event is not influenced by the event history.
+    In Equation \ref{eq:htp-thp-lambdak}, the first "current" part is an interpolation between $t_j$ and $t_{j+1}$ where $\gamma_k$, a learned element, modulates the importance of this interpolation. We write this coefficient as $\gamma_k$, which the original THP denotes $\alpha_k$, to avoid confusion with the $\alpha$ of the Hawkes process (Equation~\ref{eq:hawkes}), which plays a different role. The second part uses the history $\mathbf{h}(t)$ of the events, and the last element $b_k$ represents the stationary state, where the probability of the next event is not influenced by the event history.
 
     \citeonline{zhang_self-attentive_2020}, with the \gls{SAHP}, proposed a different computation for the temporal encoding. Unlike the THP, which uses only the timestamp $t_i$, the SAHP shifts the event to a new position $i'$, using both the position $i$ and the timestamp $t_i$, which is computed with $\mathrm{sin}(\omega_k \times i + w_k \times t_i)$, where $\omega$ is the angular frequency and $w$ is a scale parameter, adjusted by the model, that converts the timestamp $t_i$ into a phase shift inside the sinusoidal function (as in other models, the Self-Attentive Hawkes Process uses sine for even events and cosine for odd events).
 
