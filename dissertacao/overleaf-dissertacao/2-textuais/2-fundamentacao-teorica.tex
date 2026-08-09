@@ -156,7 +156,6 @@ This looks just like the Poisson formula of Equation~\ref{eq:poisson} (with $\La
         \lambda(t \mid \mathcal{H}_t)= \mu+        \sum_{t_i < t}\alpha\, e^{-\beta (t - t_i)},
         \label{eq:hawkes}
     \end{equation}
-
     where $\alpha$ represents the instantaneous increase in the probability intensity caused by event $e$ and $\beta$ represents the speed at which this intensity decays over time.
 
     Figure \ref{fig:hawkes} illustrates the probability intensity $\lambda$ of an event where, from $t = 0$ to $t = 2$, this intensity stays at a baseline $\mu$. At time $t = 2$, event $e$ happens, raising the probability intensity instantaneously. Then, $\lambda$ decays exponentially, returning to the stationary state $\mu$, which represents the absence of influence from any event at time $t$.
@@ -209,7 +208,7 @@ This looks just like the Poisson formula of Equation~\ref{eq:poisson} (with $\La
 
     The first step was to relax the rule of keeping $\alpha$ and $\mu$ strictly positive, and this allowed the values to range over $\mathbb{R}$, addressing inhibition $(\alpha < 0)$ and inertia $(\mu < 0)$. However, the result can now be negative, which would not make sense for a probability intensity, so it is necessary to apply a transformation $f = \mathbb{R} \to \mathbb{R_+}$, with $\lambda_k(t) = f_k(\tilde \lambda_k(t))$, where $k$ is the event type. The ReLU function $f(x) = \mathrm{max}(x, 0)$ would be a natural choice for this conversion, but it takes the value 0 for negative numbers, and our intensity needs to take always positive values whenever there is a possibility of an event occurring.
 
-    The function then chosen by the authors was the softplus $f(x) = s\mathrm{log}(1 + exp(x/s))$, where $s$ is a learned scale parameter introduced by the model to bring numerical stability, because when the unit of $x$ varies, for example, from seconds to milliseconds, the base intensity $f(\mu_k)$ becomes a thousand times smaller, forcing $\mu_k$ to take negative values and thus creating a strong inertia effect.
+    The function then chosen by the authors was the softplus $f(x) = s \cdot \mathrm{log}(1 + exp(x/s))$, where $s$ is a learned scale parameter introduced by the model to bring numerical stability, because when the unit of $x$ varies, for example, from seconds to milliseconds, the base intensity $f(\mu_k)$ becomes a thousand times smaller, forcing $\mu_k$ to take negative values and thus creating a strong inertia effect.
 
     The second step was to remove the restriction that past events have independence and additive influence on $\lambda(t)$. Instead of predicting $\lambda(t)$ using the summation of the traditional parametric Hawkes model (Equation \ref{eq:hawkes}), \citeonline{mei_neural_2017} used a recurrent neural network, which allowed them to capture complex patterns that were previously hard to perceive in parametric versions of the model.
 
@@ -267,8 +266,8 @@ This looks just like the Poisson formula of Equation~\ref{eq:poisson} (with $\La
     Instead of performing a single Attention function with Queries, Keys, and Values of dimension $d_{model}$, \citeonline{vaswani_attention_2017} decided to linearly project the Q, K, and V vectors a number $h$ of times with different, learned linear projections to $d_k$, $d_k$, and $d_v$ dimensions, respectively. For each of the projected versions of Q, K, and V the Attention function is run in parallel, producing outputs of $d_v$ dimensions. The outputs are then concatenated and projected again, producing the final values, as shown in the equation below:
     \begin{equation}
     \begin{split}
-        \text{MultiHead}(Q,K,V) &= \text{Concat}(\text{head}_1, \dots, \text{head}_h)W^O \\
-        &\quad \text{where } \text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V)
+        \text{MultiHead}(Q,K,V) &= \text{Concat}(\text{head}_1, \dots, \text{head}_h)W^O, \\
+        &\quad \text{where } \text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V).
     \end{split}
     \label{eq:multi-head-attention}
     \end{equation}

@@ -12,7 +12,7 @@ The synthetic experiments follow the protocol described in Section~\ref{sec:conf
 \centering
 \caption{NLL (mean $\pm$ standard deviation, 10 seeds) on the synthetic data. Lower values indicate better performance. The best result for each configuration is in bold and the second best is underlined.}
 \label{tab:resultados-sinteticos}
-\resizebox{\textwidth}{!}{%
+%\resizebox{\textwidth}{!}{%
 \begin{tabular}{llcccc}
 \toprule
 Scenario & Model & $1\times$ & $2\times$ & $5\times$ & $10\times$ \\
@@ -30,7 +30,7 @@ Scenario & Model & $1\times$ & $2\times$ & $5\times$ & $10\times$ \\
     & HoTHP  & $1{,}689 \pm 0{,}008$ & $\mathbf{1{,}701 \pm 0{,}012}$ & $\mathbf{1{,}740 \pm 0{,}050}$ & $\mathbf{1{,}774 \pm 0{,}092}$ \\
 \bottomrule
 \end{tabular}
-}
+%}
 \end{table}
 
 \begin{figure}[h!]
@@ -86,15 +86,13 @@ Retweet        &  3 & 20.000 & 50 & 250 & Retweet cascades \\
 
 We follow the same \textit{train short, test long} protocol: we train each model with sequences truncated at $L_{\text{train}}$ events and evaluate at the training length ($1\times$) and at two extrapolation factors ($2\times$ and $5\times$). We use three seeds (42, 142, 242), 100 epochs, and the same hyperparameters as in Section~\ref{subsec:modelos-comparados}. On Taxi, Amazon, and Stackoverflow we compare the four models (THP, RoTHP, HoTHP, and NHP); on Retweet we compare the three Transformer models (THP, RoTHP, and HoTHP), since this dataset is used mainly to study numerical stability (Section~\ref{sec:ablacao-retweet}).
 
-It is important to note how the NLL is computed. In our implementation, all four models share the same routine for the log-likelihood: the integral of the total intensity (the compensator) is estimated by the same Monte Carlo rule, with the same number of sample points per interval, defined once in the base class. The NHP only changes the way the intensity itself is produced (a continuous-time recurrent network instead of attention). The differences in NLL reported below therefore come from the models, not from different ways of approximating the integral. With only three seeds we report the mean and the standard deviation, but we do not apply the Wilcoxon test on the real data: with $N = 3$ the smallest attainable one-sided $p$-value is $1/2^3 = 0{,}125$, above the level $\alpha = 0{,}05$, so the significance test is reserved for the synthetic experiments with $N = 10$ seeds.
-
-Table~\ref{tab:resultados-reais} presents the NLL and Table~\ref{tab:acc-reais} the type-prediction accuracy.
+It is important to note how the NLL is computed. In our implementation, all four models share the same routine for the log-likelihood: the integral of the total intensity (the compensator) is estimated by the same Monte Carlo rule, with the same number of sample points per interval, defined once in the base class. The NHP only changes the way the intensity itself is produced (a continuous-time recurrent network instead of attention). The differences in NLL reported below therefore come from the models, not from different ways of approximating the integral. With only three seeds we report the mean and the standard deviation, but we do not apply the Wilcoxon test on the real data: with $N = 3$ the smallest attainable one-sided $p$-value is $1/2^3 = 0{,}125$, above the level $\alpha = 0{,}05$, so the significance test is reserved for the synthetic experiments with $N = 10$ seeds. Table~\ref{tab:resultados-reais} presents the NLL and Table~\ref{tab:acc-reais} the type-prediction accuracy.
 
 \begin{table}[h!]
 \centering
 \caption{NLL on the real datasets (mean $\pm$ standard deviation, 3 seeds), for the extrapolation factors $1\times$, $2\times$, and $5\times$. Lower is better. The best value in each column is in bold and the second best is underlined. NHP is a recurrent baseline (CT-LSTM); the other three share the same Transformer architecture and intensity function and differ only in the positional kernel.}
 \label{tab:resultados-reais}
-\resizebox{\textwidth}{!}{%
+%\resizebox{\textwidth}{!}{%
 \begin{tabular}{llccc}
 \toprule
 Dataset & Model & NLL $1\times$ & NLL $2\times$ & NLL $5\times$ \\
@@ -118,14 +116,14 @@ Dataset & Model & NLL $1\times$ & NLL $2\times$ & NLL $5\times$ \\
     & NHP    & $\mathbf{2{,}742 \pm 0{,}012}$ & $\mathbf{2{,}633 \pm 0{,}013}$ & $\underline{2{,}524 \pm 0{,}020}$ \\
 \bottomrule
 \end{tabular}
-}
+%}
 \end{table}
 
 \begin{table}[h!]
 \centering
 \caption{Type-prediction accuracy on the real datasets (mean $\pm$ standard deviation, 3 seeds), for the factors $1\times$, $2\times$, and $5\times$. Higher is better. The best value in each column is in bold and the second best is underlined.}
 \label{tab:acc-reais}
-\resizebox{\textwidth}{!}{%
+%\resizebox{\textwidth}{!}{%
 \begin{tabular}{llccc}
 \toprule
 Dataset & Model & Acc $1\times$ & Acc $2\times$ & Acc $5\times$ \\
@@ -149,7 +147,7 @@ Dataset & Model & Acc $1\times$ & Acc $2\times$ & Acc $5\times$ \\
     & NHP    & $0{,}469 \pm 0{,}003$ & $0{,}462 \pm 0{,}002$ & $0{,}445 \pm 0{,}002$ \\
 \bottomrule
 \end{tabular}
-}
+%}
 \end{table}
 
 Two layers of comparison appear in these tables. The first is the comparison \textit{within the Transformer family} (THP, RoTHP, and HoTHP), which share the same architecture and the same intensity function and differ only in the positional kernel. This is the controlled comparison that isolates the effect of our contribution. The second is the comparison against the NHP, a recurrent model of a different family, included to situate the behavior across architectures.
@@ -190,7 +188,7 @@ Table~\ref{tab:rmse-reais} completes the picture with the RMSE of the next-event
 \centering
 \caption{RMSE of the next-event time prediction on the real datasets (mean $\pm$ standard deviation, 3 seeds), for the extrapolation factors $1\times$, $2\times$, and $5\times$. Lower is better. The best value in each column is in bold and the second best is underlined.}
 \label{tab:rmse-reais}
-\resizebox{\textwidth}{!}{%
+%\resizebox{\textwidth}{!}{%
 \begin{tabular}{llccc}
 \toprule
 Dataset & Model & RMSE $1\times$ & RMSE $2\times$ & RMSE $5\times$ \\
@@ -214,7 +212,7 @@ Dataset & Model & RMSE $1\times$ & RMSE $2\times$ & RMSE $5\times$ \\
     & NHP    & $\mathbf{1,772 \pm 0,025}$ & $\mathbf{1,580 \pm 0,025}$ & $\underline{1,460 \pm 0,035}$ \\
 \bottomrule
 \end{tabular}
-}
+%}
 \end{table}
 
 \subsection{Training convergence}
