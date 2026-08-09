@@ -32,7 +32,7 @@ This chapter reviews the Transformer-based point process models that precede and
     \begin{figure}[h!]
         \centering
         \captionsetup{width=10cm}%Da mesma largura que a figura
-        \caption{\label{fig:thp}Architecture of the Transformer Hawkes Process} \UFCfig{}{
+        \caption{\label{fig:thp}Architecture of the Transformer Hawkes Process.} \UFCfig{}{
         \includegraphics[width=10cm]{figuras/figura-thp.png}
         }{
             \fonte{\citeonline{zuo_transformer_2021}.}}
@@ -42,7 +42,7 @@ This chapter reviews the Transformer-based point process models that precede and
 
     Since it models a multivariate process, the total intensity at a time $t$ is the sum of the intensities of all $K$ event types:
     \begin{equation}
-        \lambda(t \mid \mathcal{H}_t) = \sum_{k=1}^K \lambda_k (t \mid \mathcal{H}_t)
+        \lambda(t \mid \mathcal{H}_t) = \sum_{k=1}^K \lambda_k (t \mid \mathcal{H}_t).
         \label{eq:thp-lambda}
     \end{equation}
 
@@ -52,11 +52,11 @@ This chapter reviews the Transformer-based point process models that precede and
         \underbrace{\gamma_k \frac{t - t_j}{t_j}}_{\text{current}}
         + \underbrace{\mathbf{w}_k^\top \mathbf{h}(t_j)}_{\text{history}}
         + \underbrace{b_k}_{\text{inertia}}
-        \right)
+        \right).
         \label{eq:htp-thp-lambdak}
     \end{equation}
 
-    In Equation \ref{eq:htp-thp-lambdak}, the first "current" part is an interpolation between $t_j$ and $t_{j+1}$ where $\gamma_k$, a learned element, modulates the importance of this interpolation. We write this coefficient as $\gamma_k$, which the original THP denotes $\alpha_k$, to avoid confusion with the $\alpha$ of the Hawkes process (Equation~\ref{eq:hawkes}), which plays a different role. The second part uses the history $\mathbf{h}(t)$ of the events, and the last element $b_k$ represents the stationary state, where the probability of the next event is not influenced by the event history.
+    In Equation \ref{eq:htp-thp-lambdak}, the first ``current'' part is an interpolation between $t_j$ and $t_{j+1}$ where $\gamma_k$, a learned element, modulates the importance of this interpolation. We write this coefficient as $\gamma_k$, which the original THP denotes $\alpha_k$, to avoid confusion with the $\alpha$ of the Hawkes process (Equation~\ref{eq:hawkes}), which plays a different role. The second part uses the history $\mathbf{h}(t)$ of the events, and the last element $b_k$ represents the stationary state, where the probability of the next event is not influenced by the event history.
 
     \citeonline{zhang_self-attentive_2020}, with the \gls{SAHP}, proposed a different computation for the temporal encoding. Unlike the THP, which uses only the timestamp $t_i$, the SAHP shifts the event to a new position $i'$, using both the position $i$ and the timestamp $t_i$, which is computed with $\mathrm{sin}(\omega_k \times i + w_k \times t_i)$, where $\omega$ is the angular frequency and $w$ is a scale parameter, adjusted by the model, that converts the timestamp $t_i$ into a phase shift inside the sinusoidal function (as in other models, the Self-Attentive Hawkes Process uses sine for even events and cosine for odd events).
 
@@ -98,7 +98,7 @@ This chapter reviews the Transformer-based point process models that precede and
 
     \begin{table}[h]
         \centering
-        \caption{Model log-likelihood by dataset}
+        \caption{Model log-likelihood by dataset.}
         \label{tab:rothp_nll}
         \begin{tabular}{lcccccc}
             \toprule
@@ -115,7 +115,7 @@ This chapter reviews the Transformer-based point process models that precede and
 
     \begin{table}[h]
         \centering
-        \caption{Accuracy Comparison}
+        \caption{Accuracy comparison (in \%).}
         \label{tab:rothp_accuracy}
         \begin{tabular}{lccc}
             \toprule
@@ -131,7 +131,7 @@ This chapter reviews the Transformer-based point process models that precede and
 
     \begin{table}[h]
         \centering
-        \caption{RMSE Comparison}
+        \caption{RMSE comparison.}
         \label{tab:rothp_rmse}
         \begin{tabular}{lccc}
             \toprule
@@ -164,7 +164,7 @@ The main cause of this failure has been attributed to the \textit{positional enc
 
 \subsection{Attention with Linear Biases (ALiBi)}\label{subsec:alibi}
 
-\citeonline{press_train_2021} proposed a fundamentally different approach to positional encoding. Instead of adding or rotating embeddings, they introduced a static, non-learnable penalty directly into the attention score. This method, called \textit{Attention with Linear Biases (ALiBi)}, replaces the positional embedding step completely. The main motivation of the model is that it should give less importance to tokens as they move away from the current index, which the authors call \textit{inductive bias towards recency}. Instead of learning this property from the data, ALiBi computes this decay of "importance" in its own architecture.
+\citeonline{press_train_2021} proposed a fundamentally different approach to positional encoding. Instead of adding or rotating embeddings, they introduced a static, non-learnable penalty directly into the attention score. This method, called \textit{Attention with Linear Biases (ALiBi)}, replaces the positional embedding step completely. The main motivation of the model is that it should give less importance to tokens as they move away from the current index, which the authors call \textit{inductive bias towards recency}. Instead of learning this property from the data, ALiBi computes this decay of ``importance'' in its own architecture.
 
 In traditional Transformer models, position embeddings are added to the embeddings of the words (tokens). The dot product of the Q and K vectors is computed as follows:
 \begin{equation}
