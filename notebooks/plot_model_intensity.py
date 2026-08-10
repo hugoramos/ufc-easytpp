@@ -271,21 +271,16 @@ for row, ds_name in enumerate(ds_names):
     if any_key:
         t_ev = results[any_key[0]]['t_events']
         ax.vlines(t_ev, 0, max_lam * 0.08, colors='black', alpha=0.4,
-                  linewidth=0.6, label='eventos')
+                  linewidth=0.6, label='events')
 
-    ax.set_xlabel('Tempo (absoluto)', fontsize=10)
+    ax.set_xlabel('Time (absolute)', fontsize=10)
     ax.set_ylabel('λ*(t) = Σₖ λₖ*(t)', fontsize=10)
-    ax.set_title(f'{ds_name} — Intensidade condicional λ*(t) aprendida por cada modelo',
-                 fontsize=12, fontweight='bold')
+    ax.set_title(f'{ds_name.capitalize()}', fontsize=12, fontweight='bold')
     ax.legend(fontsize=10, loc='upper right')
     ax.grid(True, alpha=0.2)
     ax.set_ylim(bottom=0, top=max_lam * 1.15 if max_lam > 0 else 1)
 
-fig.suptitle(
-    'Intensidade Condicional λ*(t) dos Modelos Treinados\n'
-    f'Sequência de teste #{SEQ_IDX}, seed={SEED}',
-    fontsize=14, fontweight='bold', y=1.01
-)
+# No overall title: the description is written in the LaTeX caption.
 plt.tight_layout()
 out = 'notebooks/fig_model_intensity.png'
 plt.savefig(out, dpi=150, bbox_inches='tight')
@@ -326,19 +321,14 @@ for row, ds_name in enumerate(ds_names):
         ymax = ax.get_ylim()[1] if ax.get_ylim()[1] > 0 else 1
         ax.vlines(t_ev_norm, 0, ymax * 0.08, colors='black', alpha=0.4, linewidth=0.6)
 
-    ax.set_xlabel('Tempo normalizado (t / mean_gap)', fontsize=10)
+    ax.set_xlabel('Normalized time (t / mean gap)', fontsize=10)
     ax.set_ylabel('λ*(t)', fontsize=10)
-    ax.set_title(f'{ds_name} — λ*(t) em escala normalizada',
-                 fontsize=12, fontweight='bold')
+    ax.set_title(f'{ds_name.capitalize()}', fontsize=12, fontweight='bold')
     ax.legend(fontsize=10, loc='upper right')
     ax.grid(True, alpha=0.2)
     ax.set_ylim(bottom=0)
 
-fig2.suptitle(
-    'Intensidade Condicional — Escala Temporal Normalizada\n'
-    'Permite comparar a FORMA do decaimento entre datasets',
-    fontsize=14, fontweight='bold', y=1.01
-)
+# No overall title: the description is written in the LaTeX caption.
 plt.tight_layout()
 out2 = 'notebooks/fig_model_intensity_normalized.png'
 plt.savefig(out2, dpi=150, bbox_inches='tight')
