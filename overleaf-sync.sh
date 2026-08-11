@@ -46,13 +46,33 @@ case "${1:-}" in
       || echo "(não foi possível comparar; rode 'bootstrap' se ainda não sincronizou)"
     ;;
   bootstrap)
+    # Vincula o repo ao Overleaf SEM force-push (o Overleaf proíbe force).
+    # Estratégia: monta um histórico que descende do head atual do Overleaf,
+    # mas com o CONTEÚDO do repositório (merge -s ours), e faz push normal.
     require_clean
-    echo "Isto vai SOBRESCREVER o projeto Overleaf com o estado atual do repositório."
-    echo "(As edições feitas no Overleaf já foram reconciliadas para o repo.)"
+    echo "Bootstrap: vincula o repositório ao Overleaf (push normal, sem force)."
+    echo ">> IMPORTANTE: NÃO edite o projeto no Overleaf enquanto isto roda."
+    echo "   (Cada edição no editor vira um commit e faz o push falhar.)"
     read -r -p "Digite 'sim' para continuar: " ans
     [ "$ans" = "sim" ] || { echo "Cancelado."; exit 1; }
-    git push "$REMOTE" "$(git subtree split --prefix="$PREFIX")":"$BRANCH" --force
-    echo "OK. Overleaf sincronizado com o repositório."
+    git fetch "$REMOTE" "$BRANCH"
+    git branch -D _ovl_tmp >/dev/null 2>&1 || true
+    git subtree split --prefix="$PREFIX" -b _ovl_tmp
+    git checkout _ovl_tmp
+    git merge --allow-unrelated-histories -s ours "$REMOTE/$BRANCH" \
+      -m "join: histórico do Overleaf (conteúdo reconciliado do repositório)"
+    if ! git push "$REMOTE" "_ovl_tmp:$BRANCH"; then
+      git checkout main
+      git branch -D _ovl_tmp >/dev/null 2>&1 || true
+      echo "ERRO: push rejeitado (o Overleaf mudou durante o processo)."
+      echo "Feche o editor do Overleaf, espere alguns segundos e rode o bootstrap de novo."
+      exit 1
+    fi
+    git checkout main
+    git subtree pull --prefix="$PREFIX" "$REMOTE" "$BRANCH" -m "sync: join inicial com o Overleaf"
+    git branch -D _ovl_tmp >/dev/null 2>&1 || true
+    echo "OK. Repositório vinculado ao Overleaf."
+    echo "Rode 'git push origin main' para levar o join ao GitHub."
     ;;
   *)
     echo "uso: $0 {pull|push|status|bootstrap}" >&2
