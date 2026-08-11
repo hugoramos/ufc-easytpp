@@ -41,3 +41,17 @@ The work has some limitations that should be considered:
 \end{enumerate}
 
 \section{Future work}
+
+The limitations listed above point to natural extensions of the HoTHP. In addition, the recent literature on point processes and on positional encodings offers alternatives that were not explored in this work and that we consider promising directions. We organize the future work in five points:
+
+\begin{enumerate}
+    \item \textbf{Multiple decay scales.} The parameter $\theta'$ imposes a single global decay rate. A direct extension is to learn one decay rate per attention head, in the spirit of the per-head slopes of ALiBi \cite{press_train_2021}, so that each head can specialize in a different temporal scale.
+
+    \item \textbf{Alternative decay shapes.} The hyperbolic kernel imposes an exponential decay, but many real processes exhibit power-law decay, as in seismic aftershocks and social cascades. Attention biases with a power-law shape have already shown good results in other domains \cite{shen_power_2025}. 
+
+    \item \textbf{Broader evaluation.} The evaluation could be extended to domains such as seismology, finance, and computer networks, and to standardized long-horizon benchmarks such as HoTPP \cite{karpukhin_hotpp_2024}, which measures exactly the regime that motivates this work: prediction far beyond the observed history.
+
+    \item \textbf{State space models.} A recent line of work replaces attention entirely with selective state space models. The Mamba Hawkes Process \cite{gao_mamba_2024}, proposed by the same authors of the RoTHP, encodes the event history with a cost that is linear in the length of the sequence, against the quadratic cost of attention. Since the recency bias of the HoTHP is a property of the kernel and not of the Transformer itself, an open question is whether this bias transfers to these architectures, and how the HoTHP compares against them under extrapolation.
+
+    \item \textbf{Large language models.} Another recent direction uses pretrained language models as the backbone for event sequence modeling. In this approach, the event types are represented as text, so the model can use the semantic content of the events instead of treating them as opaque categories, while the timestamps are injected through temporal embeddings \cite{liu_tpp-llm_2025}. These models inherit the positional encoding of the language model, which was designed for discrete text positions and not for continuous time. Studying how a temporal bias such as the hyperbolic kernel could be adapted to this setting is a natural continuation of this work.
+\end{enumerate}
