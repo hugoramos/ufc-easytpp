@@ -11,7 +11,15 @@ This work proposes the \gls{HoTHP}, which replaces the trigonometric kernel of t
 
 \section{Objectives}
 
-The general objective of this work is to investigate whether replacing the oscillatory kernel with a kernel that has exponential decay in the attention mechanism improves the length extrapolation ability of neural models for temporal point processes. To do this, we propose and implement the HoTHP, adapting the HoPE \cite{dai_hope_2025} from discrete positions to continuous instants. We evaluate the model with the \textit{train short, test long} technique on synthetic data, where the generating process is known, and on real data from varied domains. Finally, we analyze under which conditions the recency bias is beneficial and under which it is neutral or harmful, through the visualization of the learned intensities, accuracy, \gls{RMSE}, and ablations on the temporal scale of the data.
+The general objective of this work is to investigate whether replacing the oscillatory kernel with a kernel that has exponential decay in the attention mechanism improves the length extrapolation ability of neural models for temporal point processes.
+
+To reach this general objective, the following specific objectives are defined:
+
+\begin{itemize}
+    \item Propose and implement the HoTHP, adapting the HoPE \cite{dai_hope_2025} from discrete positions to continuous instants.
+    \item Evaluate the model with the \textit{train short, test long} technique on synthetic data, where the generating process is known, and on real data from varied domains.
+    \item Analyze under which conditions the recency bias is beneficial and under which it is neutral or harmful, through the visualization of the learned intensities, accuracy, \gls{RMSE}, and ablations on the temporal scale of the data.
+\end{itemize}
 
 \section{Contributions}
 
