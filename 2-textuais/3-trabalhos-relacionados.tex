@@ -1,0 +1,189 @@
+\chapter{Related Work}
+\label{cap:trabalhos-relacionados}
+
+This chapter reviews the Transformer-based point process models that precede and provide the basis for the HoTHP, along with the length extrapolation techniques that motivate its proposal. Here we start from the Transformer Hawkes Process (THP) and the RoTHP, which replaces the absolute temporal \textit{encoding} with \textit{rotary position embeddings}. Finally, we discuss the problem of \textit{length extrapolation} and the notion of a recency inductive bias, which connects these models to the Hawkes kernel and gives rise to the approach proposed in this dissertation.
+
+\section{Transformer Hawkes Process (THP)}\label{sec:thp}
+
+    The Transformer architecture \cite{vaswani_attention_2017} showed that using Attention can offer good advances over the use of recurrent neural networks; however, like traditional RNNs, Transformers were also designed for discrete events, such as the words of a sentence. \citeonline{zuo_transformer_2021} had to modify the architecture, turning it into a continuous one, just as \citeonline{mei_neural_2017} had to do when turning the traditional LSTM into a Continuous Time-LSTM.
+
+    In translation problems, which were originally the first application of Transformers, the order of the words is enough, with no need for precision beyond that. However, in the analysis of point processes we need to know the moment at which each event occurs. To solve this problem, \citeonline{zuo_transformer_2021} proposed a temporal encoding, represented by Equation~\ref{eq:temporal-encoding-thp}, where the argument is not the (discrete) position, as proposed by \citeonline{vaswani_attention_2017}, but the timestamp $t_j$:
+    \begin{equation}
+        [z(t_j)]_i =
+        \begin{cases}
+            \cos \left( \frac{t_j}{10000^{\frac{i-1}{M}}} \right), & \text{if } i \text{ is odd,} \\
+            \sin \left( \frac{t_j}{10000^{\frac{i}{M}}} \right), & \text{if } i \text{ is even.}
+        \end{cases}
+        \label{eq:temporal-encoding-thp}
+    \end{equation}
+
+    Equation \ref{eq:temporal-encoding-thp} uses trigonometric functions to determine a temporal encoding for each timestamp, that is, for each $t_j$ a deterministic $\mathbf{z}(t_j) \in \mathrm{R}^M$ is computed, where $M$ is the size of the encoding dimension. Besides the temporal encoding, an embedding layer, the matrix $\mathbf{U}$, is also used for the different event types. The embeddings are then represented by $\mathbf{X=(UY+Z)}^T$, where $\mathbf{Y}$ is the one-hot encoding collection of event types and $\mathbf{Z}$ the matrix with the $\mathbf{z}$ vectors concatenated. After the embedding layers, $\mathbf{X}$ is passed through a self-attention mechanism as shown below:
+    \begin{equation}
+        \mathbf{S} = \text{Softmax} \left( \frac{\mathbf{Q} \mathbf{K}^{\top}}{\sqrt{d_k}} \right) \mathbf{V}, \quad \text{where } \mathbf{Q} = \mathbf{X} \mathbf{W}^Q, \mathbf{K} = \mathbf{X} \mathbf{W}^K, \mathbf{V} = \mathbf{X} \mathbf{W}^V.
+        \label{eq:scaled-dot-product-attention-full}
+    \end{equation}
+
+    $\mathbf{Q}$, $\mathbf{K}$, and $\mathbf{V}$ are the Query, Key, and Value matrices obtained through transformations on $\mathbf{X}$, and $\mathbf{W}^Q$, $\mathbf{W}^K$, and $\mathbf{W}^V$ are the weights of linear transformations. Then, $\mathbf{S}$ passes through a feed forward network producing $\mathbf{h}(t)$:
+    \begin{equation}
+        \mathbf{H} = \text{ReLU}(\mathbf{SW}_1^{FC} + \mathbf{b}_1)\mathbf{W}_2^{FC}+\mathbf{b}_2, \quad \mathbf{h}(t_j)=\mathbf{H}(j,:).
+        \label{eq:scaled-dot-product-attention-full}
+    \end{equation}
+
+    \begin{figure}[h!]
+        \centering
+        \captionsetup{width=10cm}%Da mesma largura que a figura
+        \caption{\label{fig:thp}Architecture of the Transformer Hawkes Process.} \UFCfig{}{
+        \includegraphics[width=10cm]{figuras/figura-thp.png}
+        }{
+            \fonte{\citeonline{zuo_transformer_2021}.}}
+    \end{figure}
+
+    Figure \ref{fig:thp} shows the architecture of the Transformer Hawkes Process. Each event sequence passes through two embedding layers and several times through multi-head self attention modules.
+
+    Since it models a multivariate process, the total intensity at a time $t$ is the sum of the intensities of all $K$ event types:
+    \begin{equation}
+        \lambda(t \mid \mathcal{H}_t) = \sum_{k=1}^K \lambda_k (t \mid \mathcal{H}_t).
+        \label{eq:thp-lambda}
+    \end{equation}
+
+    As we saw earlier, after the whole process of embedding, attention, and feed-forward network, $\mathbf{H}$ is finally produced, which lets us compute $\lambda_k$, needed in Equation \ref{eq:thp-lambda}. The intensity computation for each event type is given by:
+    \begin{equation}
+        \lambda_k(t \mid \mathcal{H}_t) = f_k \left(
+        \underbrace{\gamma_k \frac{t - t_j}{t_j}}_{\text{current}}
+        + \underbrace{\mathbf{w}_k^\top \mathbf{h}(t_j)}_{\text{history}}
+        + \underbrace{b_k}_{\text{inertia}}
+        \right).
+        \label{eq:htp-thp-lambdak}
+    \end{equation}
+
+    In Equation \ref{eq:htp-thp-lambdak}, the first ``current'' part is an interpolation between $t_j$ and $t_{j+1}$ where $\gamma_k$, a learned element, modulates the importance of this interpolation. We write this coefficient as $\gamma_k$, which the original THP denotes $\alpha_k$, to avoid confusion with the $\alpha$ of the Hawkes process (Equation~\ref{eq:hawkes}), which plays a different role. The second part uses the history $\mathbf{h}(t)$ of the events, and the last element $b_k$ represents the stationary state, where the probability of the next event is not influenced by the event history.
+
+    \citeonline{zhang_self-attentive_2020}, with the \gls{SAHP}, proposed a different computation for the temporal encoding. Unlike the THP, which uses only the timestamp $t_i$, the SAHP shifts the event to a new position $i'$, using both the position $i$ and the timestamp $t_i$, which is computed with $\mathrm{sin}(\omega_k \times i + w_k \times t_i)$, where $\omega$ is the angular frequency and $w$ is a scale parameter, adjusted by the model, that converts the timestamp $t_i$ into a phase shift inside the sinusoidal function (as in other models, the Self-Attentive Hawkes Process uses sine for even events and cosine for odd events).
+
+\section{Rotary Position Embeddings (RoPE) and the RoTHP}\label{sec:rothp}
+
+    We saw that the use of RNNs has limitations both for the memory of distant events and in the training of the network itself, because each event needs to be processed before the next event, since it carries the state of the previous event. Through the attention mechanism, models using Transformers solve these two problems; however, most implementations are not resilient to noise in the data (timestamps). In real datasets, the presence of such noise is very common, mainly due to physical delays in recording the timestamp. For example, in wireless networks, devices record events even without having their clocks perfectly synchronized with one another, which causes discrepancies in the final dataset. The THP and its most common variants adopt a sinusoidal temporal encoding, ignoring such characteristics of the data.
+
+    \citeonline{su_roformer_2023} showed that the likelihood computation uses only the difference between the event times and, in this way, proposed to use the relative distances between tokens in language models, replacing the temporal encoding of the traditional Transformer architecture with the relative time, inside the attention mechanism. To do this, we use the input vector (embedding) in pairs ($d_i$, $d_{j+1}$). Each pair passes through a 2D rotation matrix, producing a rotation matrix $\mathbf{R}$, where $\Theta = \{ \theta_j = 10000^{-2(i-1)/d}, i \in [1,2,..., d/2]\}$, with $f_{\{q,k\}}(\mathbf{x}_m, m)=\mathbf{R}_{\theta, m}^d\mathbf{W}_{\{q,k\}}\mathbf{x}_m$, where $q$ and $k$ are the Query and Key components of the attention mechanism:
+    \[
+        R_{\Theta,m}^d =
+        \begin{pmatrix}
+        \cos(t_i \theta_1) & \sin(t_i \theta_1) & 0 & 0 & \cdots & 0 & 0 \\
+        -\sin(t_i \theta_1) & \cos(t_i \theta_1) & 0 & 0 & \cdots & 0 & 0 \\
+        0 & 0 & \cos(t_i \theta_2) & \sin(t_i \theta_2) & \cdots & 0 & 0 \\
+        0 & 0 & -\sin(t_i \theta_2) & \cos(t_i \theta_2) & \cdots & 0 & 0 \\
+        \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+        0 & 0 & 0 & 0 & \cdots & \cos(t_i \theta_{d/2}) & \sin(t_i \theta_{d/2}) \\
+        0 & 0 & 0 & 0 & \cdots & -\sin(t_i \theta_{d/2}) & \cos(t_i \theta_{d/2})
+        \end{pmatrix}.
+    \]
+
+    Figure \ref{fig:rope} illustrates the tokens of a language model, the position vector, and how RoPE uses pairs of the embedding to apply rotation. The result of the matrix R (rotation) is then applied to the matrices $\mathbf{Q}$ and $\mathbf{K}$ of the attention mechanism.
+
+    \begin{figure}[h!]
+		\centering
+		\captionsetup{width=14cm}%Da mesma largura que a figura
+		\caption{\label{fig:rope}Rotary Position Embeddings (RoPE).}
+		\UFCfig{}{
+			\includegraphics[width=14cm]{figuras/figura-rope.png}
+		}{
+			\fonte{\citeonline{su_roformer_2023}.}}
+	\end{figure}
+
+    \citeonline{dai_rotary_2026} adapted RoPE to point processes, presenting the \gls{RoTHP}. This consisted of no longer using the index position of the token of a language model, but the timestamp. A great benefit of this approach was making the likelihood time-invariant, since it deals only with the relative times (deltas). This means that if we have a time series $\{t_1 + \sigma, t_2+\sigma, \dots, t_n+\sigma\}$ it will produce the same result as $\{t_1, t_2, \dots, t_n\}$, and this solves a consistency problem inherent to models that use absolute times, allowing a time shift.
+
+    The metrics presented in Tables \ref{tab:rothp_nll}, \ref{tab:rothp_accuracy}, and \ref{tab:rothp_rmse} show a clear superiority of the RoTHP over several traditional models on several datasets. Although the accuracy is competitive with the THP, the advance was significant in the log-likelihood computation (NLL) and in the RMSE. In the RMSE the improvement was substantial, especially on the Stack Overflow (SO) datasets, where the RoTHP surpassed the THP, which until then was the best model, by a significant margin. This suggests that the proposed embedding rotation model captures patterns more precisely than the traditional sinusoidal encoding.
+
+    In addition, part of the robustness of the RoTHP comes from its ability to remain time-invariant. By replacing absolute timestamps with time intervals through rotation in the 2D plane, the model effectively managed to mitigate the impact of noise, often caused by synchronization problems present in real datasets. This shows that adapting RoPE to point processes increased the generalization capability of current models that use Transformers. As a result, the RoTHP establishes a new state of the art for point process benchmarks, as far as we know.
+
+    \begin{table}[h]
+        \centering
+        \caption{Model log-likelihood by dataset.}
+        \label{tab:rothp_nll}
+        \begin{tabular}{lcccccc}
+            \toprule
+            \textbf{Models} & \textbf{Financial} & \textbf{SO} & \textbf{Synthetic} & \textbf{Retweet} & \textbf{MemeTrick} & \textbf{Mimic-II} \\
+            \midrule
+            RMTPP   & -3.89  & -2.6   & -1.33 & -5.99 & -6.04 & -1.35 \\
+            NHP     & -3.6   & -2.55  & --    & -5.6  & -6.23 & -1.38 \\
+            SAHP    & --     & -1.86  & 0.59  & -4.56 & --    & -0.52 \\
+            THP     & -1.11  & -0.039 & 0.791 & -2.04 & 0.68  & 0.48  \\
+            RoTHP   & 1.076  & 0.389  & 1.01  & 2.01  & 1.71  & 0.64  \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \begin{table}[h]
+        \centering
+        \caption{Accuracy comparison (in \%).}
+        \label{tab:rothp_accuracy}
+        \begin{tabular}{lccc}
+            \toprule
+            \textbf{Models} & \textbf{Financial} & \textbf{Mimic-II} & \textbf{SO} \\
+            \midrule
+            RMTPP & 61.95 & 81.2 & 45.9  \\
+            NHP   & 62.20 & 83.2 & 46.3  \\
+            THP   & 62.23 & 84.9 & 46.4  \\
+            RoTHP & 62.26 & 85.5 & 46.33 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \begin{table}[h]
+        \centering
+        \caption{RMSE comparison.}
+        \label{tab:rothp_rmse}
+        \begin{tabular}{lccc}
+            \toprule
+            \textbf{Models} & \textbf{Financial} & \textbf{Mimic-II} & \textbf{SO} \\
+            \midrule
+            RMTPP & 1.56 & 6.12 & 9.78 \\
+            NHP   & 1.56 & 6.13 & 9.83 \\
+            SAHP  & --   & 3.89 & 5.57 \\
+            THP   & 0.93 & 0.82 & 4.99 \\
+            RoTHP & 0.60 & 0.57 & 1.33 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+\section{Length Extrapolation and inductive bias}\label{sec:length-extrapolation}
+
+A common limitation shared by many Transformer-based sequence models is their inability to generalize to sequences longer than those used during training. This problem is known as $\textit{length extrapolation}$. Given a model trained on sequences of size $L_{train}$, we check whether it remains stable when tested with sequences of size $L_{test} > L_{train}$ \cite{press_train_2021}. The practical relevance of this limitation is significant. In many real-world scenarios, collecting long sequences is expensive or even impractical and, therefore, it is desirable to train on shorter sequences and run the model on arbitrarily longer sequences.
+
+The main cause of this failure has been attributed to the \textit{positional encoding} strategy applied in traditional Transformer models. The standard sinusoidal embedding, as introduced by \citeonline{vaswani_attention_2017}, produces absolute representations of the positions. When the model encounters a position index that was never presented during training, these representations are effectively considered \textit{out of distribution}, causing a rapid degradation in performance, as shown in the Results section.
+
+\citeonline{press_train_2021} showed empirically that sinusoidal models are unable to extrapolate to sequences larger than the ones used in training, with the perplexity metric increasing dramatically as $L_{test}$ grows, presenting a model called ALiBi. Rotational embeddings, such as RoPE \cite{su_roformer_2023}, present improvements over the sinusoidal encoding by using relative encoding instead of absolute positions, however, \citeonline{press_train_2021} showed that even RoPE fails to extrapolate to substantially larger sequences, as shown in Figure \ref{fig:extrapolation-perplexity}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{figuras/fig_extrapolation_perplexity.png}
+    \caption[Perplexity degradation under length extrapolation]{As the extrapolation increases, we clearly see that the degradation shown by RoPE is smaller than that of traditional sinusoidal methods, but still much sharper than the model proposed by \citeonline{press_train_2021}}
+    \label{fig:extrapolation-perplexity}
+    \fonte{\citeonline{press_train_2021}.}
+\end{figure}
+
+\subsection{Attention with Linear Biases (ALiBi)}\label{subsec:alibi}
+
+\citeonline{press_train_2021} proposed a fundamentally different approach to positional encoding. Instead of adding or rotating embeddings, they introduced a static, non-learnable penalty directly into the attention score. This method, called \textit{Attention with Linear Biases (ALiBi)}, replaces the positional embedding step completely. The main motivation of the model is that it should give less importance to tokens as they move away from the current index, which the authors call \textit{inductive bias towards recency}. Instead of learning this property from the data, ALiBi computes this decay of ``importance'' in its own architecture.
+
+In traditional Transformer models, position embeddings are added to the embeddings of the words (tokens). The dot product of the Q and K vectors is computed as follows:
+\begin{equation}
+    \text{softmax}\!\left(\mathbf{q}_i \mathbf{K}^\top\right),
+\end{equation}
+where the result is then multiplied by the values of $V$. ALiBi only modifies the step after the dot product, leaving everything else intact:
+\begin{equation}
+    \text{softmax}\!\left(\mathbf{q}_i \mathbf{K}^\top + m \cdot \left[-(i-1), \ldots, -2,-1,\; 0\right]\right),
+    \label{eq:alibi}
+\end{equation}
+where the vector $[-(i-1), \ldots, -2, -1, 0]$ represents the distances of each position K to the current Q position $i$, and the scalar $m$ is a slope coefficient specific to each attention head, fixed before training and never updated. The negative sign guarantees that the penalty lowers the attention score as the distance between Q and K increases, effectively suppressing the attention to distant tokens. For a model with $n$ attention heads, the slope $m$ forms a geometric progression with ratio and first term ${2^{\frac{-8}{n}}}$ \cite{press_train_2021}.
+
+\subsection{Inductive bias and its relevance to the Hawkes process}
+\label{subsec:inductive-bias-hawkes}
+
+An inductive bias is an assumption that guides the model, independently of the trained data. In the positional context of ALiBi, we can state that the inductive bias dictates that distant words/tokens are less relevant, linearly, than closer ones. The penalty is applied directly in the code, and not only in the learned data.
+
+The inductive bias is not arbitrary. In fact, it has been present in the Hawkes process since its proposal, in 1971. Looking at the Hawkes process equation, the influence of a past event $t_i$ decays as the interval $t - t_i$ increases, in proportion to $\beta$. The greater the distance, the smaller the contribution of the event to the process. This shows that the Hawkes process has at its core an inductive bias represented by the exponential decay parameter.
+
+The THP and the RoTHP replace the parametric Hawkes kernel with an attention mechanism. This brought enormous advantages to these models, such as the possibility of capturing more complex relationships, and even temporal invariance, in the case of the RoTHP, but the price paid was moving away from the formal equation of the original Hawkes process.
+
+The attention mechanism does not impose any constraint on how it should consider the distance between the tokens, in the case of a TPP, between the events. Any decay that emerges from the model is the result of the learning performed with the data and not a structural guarantee. In fact, due to the oscillatory nature of the sinusoidal computation, occasionally distant events may receive more relevance than close events.

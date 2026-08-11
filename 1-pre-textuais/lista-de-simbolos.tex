@@ -1,0 +1,34 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Atencao! A lista nao ordena automaticamente   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{simbolos} \itemsep -1pt
+	\item[$ b_k $] Baseline (inertia) term of the intensity of type $k$
+	\item[$ \mathbf{B}_j $] Hyperbolic rotation block of the HoTHP for the pair of dimensions $j$
+	\item[$ d $] Dimension of each attention head
+	\item[$ \mathcal{H}_t $] History of the events up to time $t$
+	\item[$ \mathbf{h}(t_j) $] Hidden state produced by the encoder for event $j$
+	\item[$ k $] Event type (mark)
+	\item[$ K $] Number of event types
+	\item[$ L $] Training sequence length
+	\item[$ N $] Number of events in a sequence
+	\item[$ \mathbf{q}, \mathbf{k}, \mathbf{v} $] Query, key, and value vectors of the attention
+	\item[$ \mathbf{R}_j $] Trigonometric rotation block of the RoTHP for the pair of dimensions $j$
+	\item[$ t_i, t_j $] Timestamps of events $i$ and $j$
+	\item[$ \mathbf{w}_k $] Weight vector of the intensity of type $k$
+	\item[$ \alpha $] Excitation parameter of the Hawkes process (size of the jump)
+	\item[$ \beta $] Decay rate of the Hawkes process
+	\item[$ \gamma_k $] Coefficient of the elapsed-time term in the intensity of type $k$ ($\alpha_k$ in the original THP)
+	\item[$ \Delta t $] Temporal difference between two events, $t_i - t_j$
+	\item[$ \delta $] Decay rate of the continuous-time LSTM (NHP)
+	\item[$ \epsilon $] Small positive constant (numerical safety margin)
+	\item[$ \theta_j $] Frequencies of the positional kernel (RoPE and HoPE)
+	\item[$ \theta' $] Learnable decay parameter of the hyperbolic kernel
+	\item[$ \lambda(t \mid \mathcal{H}_t) $] Conditional intensity function
+	\item[$ \lambda_k $] Conditional intensity of type $k$
+	\item[$ \Lambda $] Compensator, the integrated intensity $\int \lambda(t)\,dt$
+	\item[$ \mu $] Baseline intensity of the Hawkes process
+	\item[$ \rho $] Extrapolation factor (test length divided by training length)
+	\item[$ \sigma $] Sigmoid function
+	\item[$ \varphi(\Delta t) $] Hawkes kernel, $\alpha\, e^{-\beta \Delta t}$
+\end{simbolos}
