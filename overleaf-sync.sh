@@ -29,14 +29,43 @@ require_clean() {
 
 case "${1:-}" in
   pull)
+    # Traz as edições do Overleaf para o main, mapeando a raiz do projeto
+    # Overleaf para dentro do prefixo. Merge normal (não git-subtree-pull,
+    # que tropeça na metadata quando o Overleaf faz autosave).
     require_clean
     git fetch "$REMOTE" "$BRANCH"
-    git subtree pull --prefix="$PREFIX" "$REMOTE" "$BRANCH" -m "sync: pull do Overleaf"
+    if ! git merge --allow-unrelated-histories -X subtree="$PREFIX" --no-edit \
+           "$REMOTE/$BRANCH" -m "sync: pull do Overleaf"; then
+      echo "CONFLITO ao trazer as edições do Overleaf. Resolva os conflitos, então:"
+      echo "  git add <arquivos> && git commit"
+      exit 1
+    fi
     echo "OK. Lembre de 'git push origin main' para levar as mudanças ao GitHub."
     ;;
   push)
+    # O Overleaf proíbe force-push e o head dele pode estar à frente (autosave).
+    # Monta o conteúdo do repo EM CIMA do head atual do Overleaf e faz push normal.
     require_clean
-    git subtree push --prefix="$PREFIX" "$REMOTE" "$BRANCH"
+    git fetch "$REMOTE" "$BRANCH"
+    git branch -D _ovl_tmp >/dev/null 2>&1 || true
+    git subtree split --prefix="$PREFIX" -b _ovl_tmp
+    git checkout _ovl_tmp
+    if ! git merge --no-edit "$REMOTE/$BRANCH" \
+           -m "sync: incorpora head do Overleaf antes do push"; then
+      git merge --abort 2>/dev/null || true
+      git checkout main; git branch -D _ovl_tmp >/dev/null 2>&1 || true
+      echo "CONFLITO: o Overleaf tem edições que divergem do repo."
+      echo "Rode './overleaf-sync.sh pull', resolva os conflitos, commite, e tente o push de novo."
+      exit 1
+    fi
+    if ! git push "$REMOTE" "_ovl_tmp:$BRANCH"; then
+      git checkout main; git branch -D _ovl_tmp >/dev/null 2>&1 || true
+      echo "ERRO: push rejeitado (o Overleaf mudou durante o processo)."
+      echo "Feche o editor do Overleaf, espere alguns segundos e tente de novo."
+      exit 1
+    fi
+    git checkout main
+    git branch -D _ovl_tmp >/dev/null 2>&1 || true
     echo "OK. Overleaf atualizado com o estado do repositório."
     ;;
   status)
