@@ -58,17 +58,17 @@ This chapter reviews the Transformer-based point process models that precede and
 
     We saw that the use of RNNs has limitations both for the memory of distant events and in the training of the network itself, because each event needs to be processed before the next event, since it carries the state of the previous event. Through the attention mechanism, models using Transformers solve these two problems; however, most implementations are not resilient to noise in the data (timestamps). In real datasets, the presence of such noise is very common, mainly due to physical delays in recording the timestamp. For example, in wireless networks, devices record events even without having their clocks perfectly synchronized with one another, which causes discrepancies in the final dataset. The THP and its most common variants adopt a sinusoidal temporal encoding, ignoring such characteristics of the data.
 
-    \citeonline{su_roformer_2023} showed that the likelihood computation uses only the difference between the event times and, in this way, proposed to use the relative distances between tokens in language models, replacing the temporal encoding of the traditional Transformer architecture with the relative time, inside the attention mechanism. To do this, we use the input vector (embedding) in pairs ($d_i$, $d_{j+1}$). Each pair passes through a 2D rotation, producing the rotation matrix $\mathbf{R}_{\Theta,m}^d$, with angles $\Theta = \{ \theta_i = 10000^{-2(i-1)/d},\ i \in [1, 2, \ldots, d/2]\}$. The rotated Query and Key are given by $f_{q,k}(\mathbf{x}_m, m)=\mathbf{R}_{\Theta, m}^d\,\mathbf{W}_{q,k}\,\mathbf{x}_m$, where $q$ and $k$ denote the Query and Key components of the attention mechanism:
+    \citeonline{su_roformer_2023} showed that the likelihood computation uses only the difference between the event times and, in this way, proposed to use the relative distances between tokens in language models, replacing the temporal encoding of the traditional Transformer architecture with the relative time, inside the attention mechanism. To do this, we use the input vector (embedding) in pairs ($d_i$, $d_{j+1}$). For a token at position $m$ in the sequence, each pair passes through a 2D rotation, producing the rotation matrix $\mathbf{R}_{\Theta,m}^d$, with angles $\Theta = \{ \theta_i = 10000^{-2(i-1)/d},\ i \in [1, 2, \ldots, d/2]\}$. The rotated Query and Key are given by $f_{q,k}(\mathbf{x}_m, m)=\mathbf{R}_{\Theta, m}^d\,\mathbf{W}_{q,k}\,\mathbf{x}_m$, where $\mathbf{x}_m$ is the embedding of the token at position $m$, and $q$ and $k$ denote the Query and Key components of the attention mechanism:
     \[
         \mathbf{R}_{\Theta,m}^d =
         \begin{pmatrix}
-        \cos(t_i \theta_1) & \sin(t_i \theta_1) & 0 & 0 & \cdots & 0 & 0 \\
-        -\sin(t_i \theta_1) & \cos(t_i \theta_1) & 0 & 0 & \cdots & 0 & 0 \\
-        0 & 0 & \cos(t_i \theta_2) & \sin(t_i \theta_2) & \cdots & 0 & 0 \\
-        0 & 0 & -\sin(t_i \theta_2) & \cos(t_i \theta_2) & \cdots & 0 & 0 \\
+        \cos(m \theta_1) & \sin(m \theta_1) & 0 & 0 & \cdots & 0 & 0 \\
+        -\sin(m \theta_1) & \cos(m \theta_1) & 0 & 0 & \cdots & 0 & 0 \\
+        0 & 0 & \cos(m \theta_2) & \sin(m \theta_2) & \cdots & 0 & 0 \\
+        0 & 0 & -\sin(m \theta_2) & \cos(m \theta_2) & \cdots & 0 & 0 \\
         \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
-        0 & 0 & 0 & 0 & \cdots & \cos(t_i \theta_{d/2}) & \sin(t_i \theta_{d/2}) \\
-        0 & 0 & 0 & 0 & \cdots & -\sin(t_i \theta_{d/2}) & \cos(t_i \theta_{d/2})
+        0 & 0 & 0 & 0 & \cdots & \cos(m \theta_{d/2}) & \sin(m \theta_{d/2}) \\
+        0 & 0 & 0 & 0 & \cdots & -\sin(m \theta_{d/2}) & \cos(m \theta_{d/2})
         \end{pmatrix}.
     \]
 
