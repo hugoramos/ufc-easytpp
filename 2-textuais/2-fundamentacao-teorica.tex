@@ -109,14 +109,14 @@ Understanding the behavior of event sequences over time and how events influence
 
     In addition, given the past history $\mathcal{H}_i$ and the time of the next event $t_i$, the distribution of the event type $k_i$ (probability of being of type $k_i$) is given by:
     \begin{equation}
-        P(K_i = k_i \mid t_i) = \frac{\lambda_{k_i}(t_i)}{\lambda(t_i)} \label{eq:cond_type_prob}
+        P(K_i = k_i \mid t_i) = \frac{\lambda_{k_i}(t_i)}{\lambda(t_i)}. \label{eq:cond_type_prob}
     \end{equation}
 
     Therefore, we can derive the likelihood function $L$ as follows:
     \begin{align}
         L &= \prod_{i:t_i \leq T} L_i \\
         &= \prod_{i:t_i \leq T} \{ f(t_i) P(K_i = k_i \mid t_i) \} \label{eq:likelihood_prod_1} \\
-        &= \prod_{i:t_i \leq T} \left\{ \exp (\Lambda(t_{i-1}) - \Lambda(t_i)) \lambda_{k_i}(t_i) \right\} \label{eq:likelihood_prod_3}
+        &= \prod_{i:t_i \leq T} \left\{ \exp (\Lambda(t_{i-1}) - \Lambda(t_i)) \lambda_{k_i}(t_i) \right\}. \label{eq:likelihood_prod_3}
     \end{align}
 
     Finally, by applying the logarithm to the likelihood we turn the product into a sum:
@@ -124,7 +124,7 @@ Understanding the behavior of event sequences over time and how events influence
         \mathcal{L} &\overset{\text{def}}{=} \log L \\
         &= \sum_{i:t_i \leq T} \log\lambda_{k_i}(t_i)-\sum_{i:t_i \leq T}(\Lambda (t_i)-\Lambda(t_{i-1})) \\
         &= \sum_{i:t_i \leq T} \log \lambda_{k_i}(t_i) - \Lambda(T) \label{eq:log_likelihood_final_2} \\
-        &= \sum_{i:t_i \leq T} \log \lambda_{k_i}(t_i) - \int_{t=0}^{T} \lambda(t)dt \label{eq:log_likelihood_final_3}
+        &= \sum_{i:t_i \leq T} \log \lambda_{k_i}(t_i) - \int_{t=0}^{T} \lambda(t)dt. \label{eq:log_likelihood_final_3}
     \end{align}
 
     The same log-likelihood connects all the processes we have seen. Equation~\eqref{eq:log_likelihood_final_3} is not written for one particular process. It works for any temporal point process, and the only thing that changes from one process to another is the intensity $\lambda_k(t)$ that we put inside it.
