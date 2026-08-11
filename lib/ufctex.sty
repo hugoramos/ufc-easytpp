@@ -1046,8 +1046,10 @@
 }
 
 \newcommand{\imprimirresumo}[1]{ %
-	\begin{resumo} %
-		\input{#1} %
+	\begin{resumo}[Resumo] %
+		\begin{otherlanguage*}{brazil} %
+			\input{#1} %
+		\end{otherlanguage*} %
 	\end{resumo} %
 }
 
