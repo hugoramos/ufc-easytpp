@@ -175,7 +175,7 @@ where the result is then multiplied by the values of $\mathbf{V}$. ALiBi only mo
     \text{softmax}\!\left(\mathbf{q}_i \mathbf{K}^\top + m \cdot \left[-(i-1), \ldots, -2,-1,\; 0\right]\right),
     \label{eq:alibi}
 \end{equation}
-where the vector $[-(i-1), \ldots, -2, -1, 0]$ represents the distances of each position K to the current Q position $i$, and the scalar $m$ is a slope coefficient specific to each attention head, fixed before training and never updated. The negative sign guarantees that the penalty lowers the attention score as the distance between Q and K increases, effectively suppressing the attention to distant tokens. For a model with $n$ attention heads, the slope $m$ forms a geometric progression with ratio and first term ${2^{\frac{-8}{n}}}$ \cite{press_train_2021}.
+where the vector $[-(i-1), \ldots, -2, -1, 0]$ represents the distances of each position K to the current Q position $i$, and the scalar $m$ is a slope coefficient specific to each attention head, fixed before training and never updated. The negative sign guarantees that the penalty lowers the attention score as the distance between Q and K increases, effectively suppressing the attention to distant tokens. Here, $n$ is the number of attention heads, and the $n$ slopes (one for each head) form a geometric progression whose ratio and first term are both ${2^{\frac{-8}{n}}}$. For example, with $n = 8$ heads the slopes are $\frac{1}{2}, \frac{1}{4}, \ldots, \frac{1}{256}$ \cite{press_train_2021}.
 
 \subsection{Inductive bias and its relevance to the Hawkes process}
 \label{subsec:inductive-bias-hawkes}
