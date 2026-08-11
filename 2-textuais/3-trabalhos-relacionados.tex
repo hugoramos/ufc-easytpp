@@ -17,16 +17,10 @@ This chapter reviews the Transformer-based point process models that precede and
         \label{eq:temporal-encoding-thp}
     \end{equation}
 
-    Equation \ref{eq:temporal-encoding-thp} uses trigonometric functions to determine a temporal encoding for each timestamp, that is, for each $t_j$ a deterministic $\mathbf{z}(t_j) \in \mathrm{R}^M$ is computed, where $M$ is the size of the encoding dimension. Besides the temporal encoding, an embedding layer, the matrix $\mathbf{U}$, is also used for the different event types. The embeddings are then represented by $\mathbf{X=(UY+Z)}^T$, where $\mathbf{Y}$ is the one-hot encoding collection of event types and $\mathbf{Z}$ the matrix with the $\mathbf{z}$ vectors concatenated. After the embedding layers, $\mathbf{X}$ is passed through a self-attention mechanism as shown below:
-    \begin{equation}
-        \mathbf{S} = \text{Softmax} \left( \frac{\mathbf{Q} \mathbf{K}^{\top}}{\sqrt{d_k}} \right) \mathbf{V}, \quad \text{where } \mathbf{Q} = \mathbf{X} \mathbf{W}^Q, \mathbf{K} = \mathbf{X} \mathbf{W}^K, \mathbf{V} = \mathbf{X} \mathbf{W}^V.
-        \label{eq:scaled-dot-product-attention-full}
-    \end{equation}
-
-    $\mathbf{Q}$, $\mathbf{K}$, and $\mathbf{V}$ are the Query, Key, and Value matrices obtained through transformations on $\mathbf{X}$, and $\mathbf{W}^Q$, $\mathbf{W}^K$, and $\mathbf{W}^V$ are the weights of linear transformations. Then, $\mathbf{S}$ passes through a feed forward network producing $\mathbf{h}(t)$:
+    Equation \ref{eq:temporal-encoding-thp} uses trigonometric functions to determine a temporal encoding for each timestamp, that is, for each $t_j$ a deterministic $\mathbf{z}(t_j) \in \mathrm{R}^M$ is computed, where $M$ is the size of the encoding dimension. Besides the temporal encoding, an embedding layer, the matrix $\mathbf{U}$, is also used for the different event types. The embeddings are then represented by $\mathbf{X=(UY+Z)}^T$, where $\mathbf{Y}$ is the one-hot encoding collection of event types and $\mathbf{Z}$ the matrix with the $\mathbf{z}$ vectors concatenated. After the embedding layers, $\mathbf{X}$ is passed through the same self-attention mechanism of Equation~\ref{eq:attention}, now with $\mathbf{Q} = \mathbf{X}\mathbf{W}^Q$, $\mathbf{K} = \mathbf{X}\mathbf{W}^K$, and $\mathbf{V} = \mathbf{X}\mathbf{W}^V$, which produces an output $\mathbf{S}$. This output then passes through a feed forward network to produce $\mathbf{h}(t)$:
     \begin{equation}
         \mathbf{H} = \text{ReLU}(\mathbf{SW}_1^{FC} + \mathbf{b}_1)\mathbf{W}_2^{FC}+\mathbf{b}_2, \quad \mathbf{h}(t_j)=\mathbf{H}(j,:).
-        \label{eq:scaled-dot-product-attention-full}
+        \label{eq:thp-hidden}
     \end{equation}
 
     \begin{figure}[h!]
@@ -64,9 +58,9 @@ This chapter reviews the Transformer-based point process models that precede and
 
     We saw that the use of RNNs has limitations both for the memory of distant events and in the training of the network itself, because each event needs to be processed before the next event, since it carries the state of the previous event. Through the attention mechanism, models using Transformers solve these two problems; however, most implementations are not resilient to noise in the data (timestamps). In real datasets, the presence of such noise is very common, mainly due to physical delays in recording the timestamp. For example, in wireless networks, devices record events even without having their clocks perfectly synchronized with one another, which causes discrepancies in the final dataset. The THP and its most common variants adopt a sinusoidal temporal encoding, ignoring such characteristics of the data.
 
-    \citeonline{su_roformer_2023} showed that the likelihood computation uses only the difference between the event times and, in this way, proposed to use the relative distances between tokens in language models, replacing the temporal encoding of the traditional Transformer architecture with the relative time, inside the attention mechanism. To do this, we use the input vector (embedding) in pairs ($d_i$, $d_{j+1}$). Each pair passes through a 2D rotation matrix, producing a rotation matrix $\mathbf{R}$, where $\Theta = \{ \theta_j = 10000^{-2(i-1)/d}, i \in [1,2,..., d/2]\}$, with $f_{\{q,k\}}(\mathbf{x}_m, m)=\mathbf{R}_{\theta, m}^d\mathbf{W}_{\{q,k\}}\mathbf{x}_m$, where $q$ and $k$ are the Query and Key components of the attention mechanism:
+    \citeonline{su_roformer_2023} showed that the likelihood computation uses only the difference between the event times and, in this way, proposed to use the relative distances between tokens in language models, replacing the temporal encoding of the traditional Transformer architecture with the relative time, inside the attention mechanism. To do this, we use the input vector (embedding) in pairs ($d_i$, $d_{j+1}$). Each pair passes through a 2D rotation, producing the rotation matrix $\mathbf{R}_{\Theta,m}^d$, with angles $\Theta = \{ \theta_i = 10000^{-2(i-1)/d},\ i \in [1, 2, \ldots, d/2]\}$. The rotated Query and Key are given by $f_{q,k}(\mathbf{x}_m, m)=\mathbf{R}_{\Theta, m}^d\,\mathbf{W}_{q,k}\,\mathbf{x}_m$, where $q$ and $k$ denote the Query and Key components of the attention mechanism:
     \[
-        R_{\Theta,m}^d =
+        \mathbf{R}_{\Theta,m}^d =
         \begin{pmatrix}
         \cos(t_i \theta_1) & \sin(t_i \theta_1) & 0 & 0 & \cdots & 0 & 0 \\
         -\sin(t_i \theta_1) & \cos(t_i \theta_1) & 0 & 0 & \cdots & 0 & 0 \\
@@ -78,7 +72,7 @@ This chapter reviews the Transformer-based point process models that precede and
         \end{pmatrix}.
     \]
 
-    Figure \ref{fig:rope} illustrates the tokens of a language model, the position vector, and how RoPE uses pairs of the embedding to apply rotation. The result of the matrix R (rotation) is then applied to the matrices $\mathbf{Q}$ and $\mathbf{K}$ of the attention mechanism.
+    Figure \ref{fig:rope} illustrates the tokens of a language model, the position vector, and how RoPE uses pairs of the embedding to apply rotation. The rotation matrix $\mathbf{R}_{\Theta,m}^d$ is then applied to the Query and Key matrices $\mathbf{Q}$ and $\mathbf{K}$ of the attention mechanism, which is exactly the transformation $f_{q,k}$ defined above.
 
     \begin{figure}[h!]
 		\centering
