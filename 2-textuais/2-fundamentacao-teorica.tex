@@ -127,7 +127,7 @@ Understanding the behavior of event sequences over time and how events influence
         &= \sum_{i:t_i \leq T} \log \lambda_{k_i}(t_i) - \int_{t=0}^{T} \lambda(t)dt \label{eq:log_likelihood_final_3}
     \end{align}
 
-    The same log-likelihood connects all the processes we have seen. Equation~\ref{eq:log_likelihood_final_3} is not written for one particular process. It works for any temporal point process, and the only thing that changes from one process to another is the intensity $\lambda_k(t)$ that we put inside it.
+    The same log-likelihood connects all the processes we have seen. Equation~\eqref{eq:log_likelihood_final_3} is not written for one particular process. It works for any temporal point process, and the only thing that changes from one process to another is the intensity $\lambda_k(t)$ that we put inside it.
 
     Let us look at the easiest case first: a homogeneous Poisson process with a single event type and a constant rate $\lambda$. Since $\lambda$ is the same everywhere, two things become easy. The sum of $\log \lambda$ over the $n$ events is simply $n \log \lambda$ (we add the same number $n$ times), and the integral of $\lambda$ from $0$ to $T$ is simply $\lambda T$ (the area of a rectangle of height $\lambda$ and width $T$). Substituting these two results into Equation~\ref{eq:log_likelihood_final_3} leaves the log-likelihood as
 %
