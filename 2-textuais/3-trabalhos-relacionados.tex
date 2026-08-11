@@ -166,11 +166,11 @@ The main cause of this failure has been attributed to the \textit{positional enc
 
 \citeonline{press_train_2021} proposed a fundamentally different approach to positional encoding. Instead of adding or rotating embeddings, they introduced a static, non-learnable penalty directly into the attention score. This method, called \textit{Attention with Linear Biases (ALiBi)}, replaces the positional embedding step completely. The main motivation of the model is that it should give less importance to tokens as they move away from the current index, which the authors call \textit{inductive bias towards recency}. Instead of learning this property from the data, ALiBi computes this decay of ``importance'' in its own architecture.
 
-In traditional Transformer models, position embeddings are added to the embeddings of the words (tokens). The dot product of the Q and K vectors is computed as follows:
+In traditional Transformer models, position embeddings are added to the embeddings of the words (tokens). The dot product of the $\mathbf{Q}$ and $\mathbf{K}$ vectors is computed as follows:
 \begin{equation}
     \text{softmax}\!\left(\mathbf{q}_i \mathbf{K}^\top\right),
 \end{equation}
-where the result is then multiplied by the values of $V$. ALiBi only modifies the step after the dot product, leaving everything else intact:
+where the result is then multiplied by the values of $\mathbf{V}$. ALiBi only modifies the step after the dot product, leaving everything else intact:
 \begin{equation}
     \text{softmax}\!\left(\mathbf{q}_i \mathbf{K}^\top + m \cdot \left[-(i-1), \ldots, -2,-1,\; 0\right]\right),
     \label{eq:alibi}

@@ -255,7 +255,7 @@ This looks just like the Poisson formula of Equation~\eqref{eq:poisson} (with $\
 
     Unlike RNNs, which keep only a single hidden state vector $\mathbf{h}$, Transformer-based networks compute the influence of each event and compute $\mathbf{h}$ through a weighted sum, which in turn was computed based on the influence of each event, within the context of the list of events.
 
-    The input consists of query vectors $Q$ and key vectors $K$ of dimension $d_k$ and value vectors $V$ of dimension $d_v$. The product of the query with all the keys is then computed, each divided by $\sqrt{d_k}$, and then a softmax function is applied to obtain the weights of the values (of the key-value vectors). The output matrix is computed as
+    The input consists of query vectors $\mathbf{Q}$ and key vectors $\mathbf{K}$ of dimension $d_k$ and value vectors $\mathbf{V}$ of dimension $d_v$. The product of the query with all the keys is then computed, each divided by $\sqrt{d_k}$, and then a softmax function is applied to obtain the weights of the values (of the key-value vectors). The output matrix is computed as
     \begin{equation}
         \text{Attention}(\mathbf{Q},\mathbf{K},\mathbf{V}) = \text{softmax}(\frac{\mathbf{Q}\mathbf{K}^T}{\sqrt{d_k}})\mathbf{V}
         \label{eq:attention}.
@@ -263,7 +263,7 @@ This looks just like the Poisson formula of Equation~\eqref{eq:poisson} (with $\
 
 \subsection{Multi-Head Attention}\label{subsec:multi-head-attention}
 
-    Instead of performing a single Attention function with Queries, Keys, and Values of dimension $d_{model}$, \citeonline{vaswani_attention_2017} decided to linearly project the Q, K, and V vectors a number $h$ of times with different, learned linear projections to $d_k$, $d_k$, and $d_v$ dimensions, respectively. For each of the projected versions of Q, K, and V the Attention function is run in parallel, producing outputs of $d_v$ dimensions. The outputs are then concatenated and projected again, producing the final values, as shown in the equation below:
+    Instead of performing a single Attention function with Queries, Keys, and Values of dimension $d_{model}$, \citeonline{vaswani_attention_2017} decided to linearly project the $\mathbf{Q}$, $\mathbf{K}$, and $\mathbf{V}$ vectors a number $h$ of times with different, learned linear projections to $d_k$, $d_k$, and $d_v$ dimensions, respectively. For each of the projected versions of $\mathbf{Q}$, $\mathbf{K}$, and $\mathbf{V}$ the Attention function is run in parallel, producing outputs of $d_v$ dimensions. The outputs are then concatenated and projected again, producing the final values, as shown in the equation below:
     \begin{equation}
     \begin{split}
         \text{MultiHead}(Q,K,V) &= \text{Concat}(\text{head}_1, \dots, \text{head}_h)W^O, \\
