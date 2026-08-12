@@ -247,12 +247,12 @@ In the \textbf{slow decay scenario}, the parameter $\beta$ is small, so that the
 
 In the \textbf{fast decay scenario}, $\beta$ is large and only recent events have relevant influence.
 
-For each scenario, we generate 400 training sequences, 100 validation sequences, and 200 test sequences. All the sequences are preprocessed with the temporal normalization of Equation~\eqref{eq:normalizacao-temporal} before being fed to the models.
+For each scenario, we generate 400 training sequences, 100 validation sequences, and 200 test sequences. The validation sequences have the same length as the training ones and are used only for early stopping, so model selection never sees the extrapolation regime. Only the test sequences are extended to the longer lengths. All the sequences are preprocessed with the temporal normalization of Equation~\eqref{eq:normalizacao-temporal} before being fed to the models.
 
 \subsection{\textit{Train short, test long} protocol}
 \label{subsec:train-short-test-long}
 
-The \textit{train short, test long} protocol, proposed by \citeonline{press_train_2021} for language models, trains the model on short sequences and tests it on longer sequences. We adapted the protocol to point processes using the number of events as the measure of length.
+The \textit{train short, test long} protocol, proposed by \citeonline{press_train_2021} for language models and already discussed in Section~\ref{sec:length-extrapolation}, trains the model on short sequences and tests it on longer sequences. We adapted the protocol to point processes using the number of events as the measure of length.
 
 We fix the training length at $L = 50$ events and vary the extrapolation factor $\rho$ over $\{1\times, 2\times, 5\times, 10\times\}$, where $\rho$ indicates how many times longer the test sequence is than the training one. With $\rho = 10\times$, for example, we train with sequences of 50 events and test with sequences of 500. Each factor is evaluated in the two decay scenarios.
 
