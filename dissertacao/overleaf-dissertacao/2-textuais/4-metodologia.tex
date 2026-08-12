@@ -62,14 +62,14 @@ Figure~\ref{fig:trig-vs-hyp} illustrates this difference. In the left panel, $\c
 \section{Exponential decay and the parameter \texorpdfstring{$\theta'$}{theta'}}
 \label{sec:decaimento-theta-prime}
 
-To correct the hyperbolic growth, the HoPE \cite{dai_hope_2025} introduces a learnable parameter $\theta'$ and applies damping factors to the $\mathbf{q}$ and $\mathbf{k}$ vectors. The vector $\mathbf{q}$ at position $m$ is multiplied by $e^{-m\theta'}$ and the vector $\mathbf{k}$ at position $n$ is multiplied by $e^{+n\theta'}$. When computing the score between positions $m$ and $n$, these factors combine:
+To correct the hyperbolic growth, the HoPE \cite{dai_hope_2025} introduces a learnable parameter $\theta'$ and applies damping factors to the $\mathbf{q}$ and $\mathbf{k}$ vectors. The HoPE, like RoPE, was designed for language models, so $m$ and $n$ here are discrete token positions (the $m$-th and $n$-th tokens in the sequence). The vector $\mathbf{q}$ at position $m$ is multiplied by $e^{-m\theta'}$ and the vector $\mathbf{k}$ at position $n$ is multiplied by $e^{+n\theta'}$. When computing the score between positions $m$ and $n$, these factors combine:
 %
 \begin{equation}
     g(\mathbf{x}_m, \mathbf{x}_n, n{-}m) = e^{-(m-n)\theta'} \; \mathbf{q}^\top \mathbf{B}(\theta, m{-}n) \; \mathbf{k}.
     \label{eq:hope-score-discreto}
 \end{equation}
 %
-In the HoTHP, the discrete positions $m, n$ are replaced by the continuous instants $t_i, t_j$ and the difference $m - n$ by the temporal difference $\Delta t = t_i - t_j$:
+The contribution of this work is to adapt this mechanism, conceived for discrete token positions, to continuous time: in the HoTHP, we replace the discrete positions $m, n$ by the continuous instants $t_i, t_j$ and the difference $m - n$ by the temporal difference $\Delta t = t_i - t_j$:
 %
 \begin{equation}
     g(\Delta t) = e^{-|\Delta t| \, \theta'} \; \mathbf{q}^\top \, \mathbf{B}(\theta, \Delta t) \; \mathbf{k}.
