@@ -146,7 +146,7 @@ A common limitation shared by many Transformer-based sequence models is their in
 
 The main cause of this failure has been attributed to the \textit{positional encoding} strategy applied in traditional Transformer models. The standard sinusoidal embedding, as introduced by \citeonline{vaswani_attention_2017}, produces absolute representations of the positions. When the model encounters a position index that was never presented during training, these representations are effectively considered \textit{out of distribution}, causing a rapid degradation in performance, as we show in Chapter~\ref{chap:resultados}.
 
-\citeonline{press_train_2021}, in the setting of language models, showed empirically that sinusoidal models are unable to extrapolate to sequences larger than the ones used in training, with the perplexity metric (a measure specific to language modeling) increasing dramatically as $L_{test}$ grows, presenting a model called \gls{ALiBi}. Rotational embeddings, such as RoPE \cite{su_roformer_2023}, present improvements over the sinusoidal encoding by using relative encoding instead of absolute positions, however, \citeonline{press_train_2021} showed that even RoPE fails to extrapolate to substantially larger sequences, as shown in Figure \ref{fig:extrapolation-perplexity}.
+\citeonline{press_train_2021}, in the setting of language models, showed empirically that sinusoidal models are unable to extrapolate to sequences larger than the ones used in training, with the perplexity metric (a measure specific to language modeling) increasing dramatically as $L_{test}$ grows, presenting a model called \gls{ALiBi}, which we detail in Section~\ref{subsec:alibi}. Rotational embeddings, such as RoPE \cite{su_roformer_2023}, present improvements over the sinusoidal encoding by using relative encoding instead of absolute positions, however, \citeonline{press_train_2021} showed that even RoPE fails to extrapolate to substantially larger sequences, as shown in Figure \ref{fig:extrapolation-perplexity}.
 
 \begin{figure}
     \centering
@@ -160,13 +160,13 @@ The main cause of this failure has been attributed to the \textit{positional enc
 
 \citeonline{press_train_2021} proposed a fundamentally different approach to positional encoding. Instead of adding or rotating embeddings, they introduced a static, non-learnable penalty directly into the attention score. This method, called \textit{Attention with Linear Biases (ALiBi)}, replaces the positional embedding step completely. The main motivation of the model is that it should give less importance to tokens as they move away from the current index, which the authors call \textit{inductive bias towards recency}. Instead of learning this property from the data, ALiBi computes this decay of ``importance'' in its own architecture.
 
-In traditional Transformer models, position embeddings are added to the embeddings of the words (tokens). The dot product of the $\mathbf{Q}$ and $\mathbf{K}$ vectors is computed as follows:
+In traditional Transformer models, position embeddings are added to the embeddings of the words (tokens). The attention weights $\mathbf{a}_i$ of a query $i$ are obtained by applying the softmax to the dot products between $\mathbf{q}_i$ and all the keys $\mathbf{K}$:
 \begin{equation}
-    \text{softmax}\!\left(\mathbf{q}_i \mathbf{K}^\top\right),
+    \mathbf{a}_i = \text{softmax}\!\left(\mathbf{q}_i \mathbf{K}^\top\right),
 \end{equation}
-where the result is then multiplied by the values of $\mathbf{V}$. ALiBi only modifies the step after the dot product, leaving everything else intact:
+where these weights are then multiplied by the values $\mathbf{V}$. ALiBi only modifies the step after the dot product, leaving everything else intact:
 \begin{equation}
-    \text{softmax}\!\left(\mathbf{q}_i \mathbf{K}^\top + m \cdot \left[-(i-1), \ldots, -2,-1,\; 0\right]\right),
+    \mathbf{a}_i = \text{softmax}\!\left(\mathbf{q}_i \mathbf{K}^\top + m \cdot \left[-(i-1), \ldots, -2,-1,\; 0\right]\right),
     \label{eq:alibi}
 \end{equation}
 where the vector $[-(i-1), \ldots, -2, -1, 0]$ represents the distances of each position K to the current Q position $i$, and the scalar $m$ is a slope coefficient specific to each attention head, fixed before training and never updated. The negative sign guarantees that the penalty lowers the attention score as the distance between Q and K increases, effectively suppressing the attention to distant tokens. Here, $n$ is the number of attention heads, and the $n$ slopes (one for each head) form a geometric progression whose ratio and first term are both ${2^{\frac{-8}{n}}}$. For example, with $n = 8$ heads the slopes are $\frac{1}{2}, \frac{1}{4}, \ldots, \frac{1}{256}$ \cite{press_train_2021}.
