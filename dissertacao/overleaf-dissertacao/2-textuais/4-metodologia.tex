@@ -107,7 +107,7 @@ where $d$ is the dimension of each attention head. Each pair of dimensions recei
     \label{eq:theta-prime-parametrizacao}
 \end{equation}
 %
-where $\theta'_{\mathrm{raw}}$ is the trainable parameter, $\mathrm{softplus}(x) = \ln(1 + e^x)$ ensures that the first term is positive, and $\epsilon = 10^{-4}$ is a safety margin. Thus, $\theta'$ is always larger than any $\theta_j$ and the exponential decay is structurally guaranteed, regardless of what the gradient does.
+where $\theta'_{\mathrm{raw}}$ is the trainable parameter, $\mathrm{softplus}(x) = \log(1 + e^x)$ ensures that the first term is positive, and $\epsilon = 10^{-4}$ is a safety margin. Thus, $\theta'$ is always larger than any $\theta_j$ and the exponential decay is structurally guaranteed, regardless of what the gradient does.
 
 \section{Attention score of the HoTHP}
 \label{sec:score-atencao-hothp}
@@ -159,7 +159,7 @@ Since $\theta' > \max_j \theta_j$, we have $\theta' - \theta_j > 0$ and $\theta'
 
 Different datasets have very distinct temporal scales. In social networks, the intervals between events can be on the order of milliseconds, while in seismic data they are on the order of days. If we used the raw instants in the hyperbolic kernel, the values of $\theta_j \Delta t$ would be on incompatible scales and the model would need specific hyperparameters for each dataset.
 
-It is important to make clear where this normalization is used. We apply it in the synthetic experiments and in the Retweet ablation (Section~\ref{sec:ablacao-retweet}), where controlling the temporal scale is part of the study. The other real datasets (Taxi, StackOverflow, and Amazon) are used with raw timestamps, only shifted so that each sequence starts at zero, without dividing by the mean. Their scales do not cause the numerical saturation that appears on Retweet, so the raw timestamps are kept in order to evaluate the models under the original conditions of each dataset.
+It is important to make clear where this normalization, the division by the mean inter-event interval defined below, is used. We apply it in the synthetic experiments and, among the real datasets, only in the Retweet ablation (Section~\ref{sec:ablacao-retweet}), where controlling the temporal scale is part of the study. The other real datasets (Taxi, StackOverflow, and Amazon) are used with raw timestamps, only shifted so that each sequence starts at zero, without dividing by the mean. Their scales do not cause the numerical saturation that appears on Retweet, so the raw timestamps are kept in order to evaluate the models under the original conditions of each dataset.
 
 The normalization applies two transformations to each sequence. First, we shift the instants so that the sequence starts at zero and, next, we divide all the instants by the mean of the inter-event intervals of that sequence:
 %
