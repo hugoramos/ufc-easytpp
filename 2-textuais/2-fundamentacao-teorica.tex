@@ -5,7 +5,7 @@ Understanding the behavior of event sequences over time and how events influence
 
 \section{Poisson distribution}\label{sec:distribuicao-de-poisson}
 
-    Before dealing with the Poisson process, it is worth recalling the Poisson distribution, from which it takes its name. The Poisson distribution is a discrete probability distribution that models the number of events that occur in a fixed interval of time or space, under the assumptions that the events are independent and occur at a constant average rate $\lambda$. The probability of observing exactly $k$ events is given by:
+    Before dealing with the Poisson process, we first recall the Poisson distribution, from which it takes its name. The Poisson distribution is a discrete probability distribution that models the number of events that occur in a fixed interval of time or space, under the assumptions that the events are independent and occur at a constant average rate $\lambda$. The probability of observing exactly $k$ events is given by:
     \begin{equation}
         \Pr(X = k) = \frac{\lambda^{k} e^{-\lambda}}{k!}, \quad k = 0, 1, 2, \ldots,
         \label{eq:distribuicao-poisson}
@@ -72,7 +72,7 @@ Understanding the behavior of event sequences over time and how events influence
 
     One variation of TPPs is the existence of \textit{marks}, that is, event types, where the sequence is now described as $X = \{(t_1, m_1), \ldots, (t_N, m_N)\}$, where $N$ represents the number of events and each $m_i$ is the mark (type) associated with event $i$.
 
-    It is worth noting that the term \textit{mark} is not used in the same way by every author. Part of the literature treats the mark as the event type, that is, a category from a finite set. This is the view of \citeonline{du_recurrent_2016}, who represent the mark as a one-hot vector and predict it as one class among $K$. Another part of the literature treats the mark in a broader sense, as any extra information attached to an event, which may be continuous. \citeonline{rasmussen_lecture_2018}, for example, describes the mark as the additional information associated with an event, such as the magnitude of an earthquake, and lets the mark space be a subset of $\mathbb{R}$ or of $\mathbb{N}$. In this work we adopt the first convention: the mark is always the event type, a categorical value, which is the discrete case ($\mathbb{N}$) of the broader definition. We therefore use the words \textit{mark} and \textit{type} interchangeably throughout the text.
+    The term \textit{mark} is not used in the same way by every author. Part of the literature treats the mark as the event type, that is, a category from a finite set. This is the view of \citeonline{du_recurrent_2016}, who represent the mark as a one-hot vector and predict it as one class among $K$. Another part of the literature treats the mark in a broader sense, as any extra information attached to an event, which may be continuous. \citeonline{rasmussen_lecture_2018}, for example, describes the mark as the additional information associated with an event, such as the magnitude of an earthquake, and lets the mark space be a subset of $\mathbb{R}$ or of $\mathbb{N}$. In this work we adopt the first convention: the mark is always the event type, a categorical value, which is the discrete case ($\mathbb{N}$) of the broader definition. We therefore use the words \textit{mark} and \textit{type} interchangeably throughout the text.
 
     The distribution of a TPP with $K$ marks can be characterized by $K$ conditional intensity functions $\lambda_k(t \mid \mathcal{H}_t)$ (one for each mark $k$) and is defined as
     \begin{equation}
@@ -172,7 +172,7 @@ This looks just like the Poisson formula of Equation~\eqref{eq:poisson} (with $\
 
     \subsection{Relationship with the Cox process}\label{subsec:processo-de-cox}
 
-    It is worth placing the Hawkes process within a progression of increasingly flexible intensity models. In the homogeneous Poisson process, the intensity $\lambda$ is constant. In the non-homogeneous Poisson process, it now varies in time in a deterministic way, $\lambda(t)$. One step further is the \textbf{Cox process}, also called the doubly stochastic Poisson process, in which the intensity $\lambda(t)$ itself is a random process, governed by factors external to the event history.
+    We can place the Hawkes process within a progression of increasingly flexible intensity models. In the homogeneous Poisson process, the intensity $\lambda$ is constant. In the non-homogeneous Poisson process, it now varies in time in a deterministic way, $\lambda(t)$. One step further is the \textbf{Cox process}, also called the doubly stochastic Poisson process, in which the intensity $\lambda(t)$ itself is a random process, governed by factors external to the event history.
 
     The Hawkes process can be seen as a particular case of this idea of stochastic intensity: the randomness of $\lambda(t)$ does not come from an external source, but from the past events themselves, each one temporarily raising the probability of new events (Equation~\eqref{eq:hawkes}). It is in this sense that the Hawkes process is described as doubly stochastic, as mentioned earlier. In this work, it is exactly this dependence on the history (and the exponential decay of the influence of past events) that motivates the recency bias of the proposed model.
 
@@ -206,7 +206,7 @@ This looks just like the Poisson formula of Equation~\eqref{eq:poisson} (with $\
 
     The first step was to relax the rule of keeping $\alpha$ and $\mu$ strictly positive, and this allowed the values to range over $\mathbb{R}$, addressing inhibition $(\alpha < 0)$ and inertia $(\mu < 0)$. However, the result can now be negative, which would not make sense for a probability intensity, so it is necessary to apply a transformation $f = \mathbb{R} \to \mathbb{R_+}$, with $\lambda_k(t) = f_k(\tilde \lambda_k(t))$, where $k$ is the event type. The ReLU function $f(x) = \mathrm{max}(x, 0)$ would be a natural choice for this conversion, but it takes the value 0 for negative numbers, and our intensity needs to take always positive values whenever there is a possibility of an event occurring.
 
-    The function then chosen by the authors was the softplus $f(x) = s \cdot \mathrm{log}(1 + exp(x/s))$, where $s$ is a learned scale parameter introduced by the model to bring numerical stability, because when the unit of $x$ varies, for example, from seconds to milliseconds, the base intensity $f(\mu_k)$ becomes a thousand times smaller, forcing $\mu_k$ to take negative values and thus creating a strong inertia effect.
+    The function then chosen by the authors was the softplus $f(x) = s \cdot \mathrm{log}(1 + exp(x/s))$, where $s$ is a learned scale parameter that brings numerical stability. Without it, when the unit of $x$ varies, for example from seconds to milliseconds, the base intensity $f(\mu_k)$ becomes a thousand times smaller. This forces $\mu_k$ to take negative values and creates a strong inertia effect.
 
     The second step was to remove the restriction that past events have independence and additive influence on $\lambda(t)$. Instead of predicting $\lambda(t)$ using the summation of the traditional parametric Hawkes model (Equation \ref{eq:hawkes}), \citeonline{mei_neural_2017} used a recurrent neural network, which allowed them to capture complex patterns that were previously hard to perceive in parametric versions of the model.
 
@@ -233,7 +233,7 @@ This looks just like the Poisson formula of Equation~\eqref{eq:poisson} (with $\
         \label{eq:neural-ct}
     \end{equation}
 
-    It is important to remember that $\mathbf{c}(t)$ is used in the function $\mathbf{h}(t)$, which is analogous to the LSTM hidden state vector $\mathbf{h}_i$, which in turn is used in the computation of $\lambda_k(t)$, for a given event type $k$.
+    Recall that $\mathbf{c}(t)$ is used in the function $\mathbf{h}(t)$, which is analogous to the LSTM hidden state vector $\mathbf{h}_i$, which in turn is used in the computation of $\lambda_k(t)$, for a given event type $k$.
 
     The approach of \citeonline{mei_neural_2017} was simple but quite clever, achieving excellent results on both synthetic and real datasets, often still being the best benchmark, despite being a 2017 algorithm.
 
