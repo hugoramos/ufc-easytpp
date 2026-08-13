@@ -359,6 +359,8 @@ A specific case where a purely decaying kernel is a poor fit is a periodic proce
 
 This is exactly the situation the recency bias of the HoTHP cannot represent. The hyperbolic kernel is built from decaying exponentials, so the weight it assigns to a past event only falls as the temporal distance grows. It has no way to raise the weight again at a specific distance, which is what a periodic pattern would require: a peak of attention at one period, another at two periods, and so on. No value of $\theta'$ produces such a peak, because $\theta'$ only controls how fast the single decay falls, not where it rises. A model with a monotonic recency bias will always prefer the most recent event, even when the useful signal is one full cycle behind.
 
+A natural fix, and a direction for future work, is to add a periodic term to the kernel, so that the attention weight is the sum of the hyperbolic decay and a periodic component. The period would be a learnable parameter, aligned with the real cycle of the process. Note that the trigonometric kernel of the RoTHP is already periodic, but it does not solve this on its own, because its period is not tied to the real cycle and, in extrapolation, it falls on phases not seen in training.
+
 \subsection{Computational cost versus benefit in extrapolation}
 \label{subsec:custo-beneficio}
 
@@ -382,4 +384,38 @@ Retweet (norm) & 34,1 & 34,4 & 83,2 & --- \\
 
 Compared with the THP and the RoTHP, the HoTHP is between $1{,}07\times$ (Taxi) and $2{,}44\times$ (normalized Retweet) slower, the overhead being more pronounced on datasets with long sequences, where the computation of the hyperbolic kernel dominates the time per batch. For datasets of moderate length (Taxi, Stackoverflow, Amazon), the additional cost stays around $30\%$ or below. It is worth noting that the NHP, the strongest baseline in NLL on these datasets, is the most expensive model of all: it is $1{,}3\times$ to $1{,}5\times$ slower than the HoTHP (for example, 17,7 against 12,2 minutes on Amazon). The recency-bias kernel therefore adds a moderate cost over the other Transformers while remaining cheaper than the recurrent alternative.
 
-This cost, however, is paid only once during training. At inference time, the trained model is applied to sequences that are potentially much longer than the ones seen in training, exactly the extrapolation scenario. In this context, what matters is not the training speed, but whether the model produces valid results. The results in Table~\ref{tab:ablacao-retweet} illustrate the point clearly: on the normalized Retweet with $5\times$ extrapolation, the RoTHP obtains NLL $= 47{,}6 \pm 8{,}7$, while the HoTHP obtains NLL $= -0{,}651 \pm 0{,}013$. Training the RoTHP $2{,}4\times$ faster only to then obtain unusable results in extrapolation does not constitute a practical advantage.
+This cost, however, is paid only once during training. At inference time, the trained model is applied to sequences that are potentially much longer than the ones seen in training, exactly the extrapolation scenario. In this context, what matters is not the training speed, but whether the model produces valid results. Table~\ref{tab:tempo-inferencia} reports this inference time. The results in Table~\ref{tab:ablacao-retweet} illustrate the point clearly: on the normalized Retweet with $5\times$ extrapolation, the RoTHP obtains NLL $= 47{,}6 \pm 8{,}7$, while the HoTHP obtains NLL $= -0{,}651 \pm 0{,}013$. Training the RoTHP $2{,}4\times$ faster only to then obtain unusable results in extrapolation does not constitute a practical advantage.
+
+\begin{table}[h!]
+\centering
+\caption{Inference time in milliseconds (mean $\pm$ standard deviation, 3 seeds). Time of a single forward pass over the test set. Lower is better.}
+\label{tab:tempo-inferencia}
+\begin{tabular}{llccc}
+\toprule
+Dataset & Model & $1\times$ & $2\times$ & $5\times$ \\
+\midrule
+\multirow{4}{*}{Taxi}
+    & THP    & $246{,}9 \pm 61{,}0$ & $205{,}2 \pm 7{,}9$ & $239{,}5 \pm 53{,}8$ \\
+    & RoTHP  & $206{,}2 \pm 11{,}1$ & $258{,}0 \pm 71{,}9$ & $244{,}3 \pm 66{,}6$ \\
+    & HoTHP  & $256{,}7 \pm 55{,}5$ & $252{,}1 \pm 56{,}0$ & $214{,}4 \pm 6{,}8$ \\
+    & NHP    & $272{,}1 \pm 56{,}2$ & $296{,}4 \pm 66{,}9$ & $230{,}5 \pm 15{,}5$ \\
+\midrule
+\multirow{4}{*}{Stackoverflow}
+    & THP    & $276{,}8 \pm 62{,}0$ & $306{,}2 \pm 80{,}1$ & $231{,}8 \pm 7{,}5$ \\
+    & RoTHP  & $257{,}9 \pm 44{,}1$ & $244{,}8 \pm 13{,}5$ & $281{,}8 \pm 61{,}6$ \\
+    & HoTHP  & $500{,}6 \pm 16{,}7$ & $377{,}3 \pm 10{,}0$ & $374{,}2 \pm 9{,}1$ \\
+    & NHP    & $440{,}5 \pm 85{,}8$ & $318{,}9 \pm 8{,}7$ & $321{,}4 \pm 11{,}2$ \\
+\midrule
+\multirow{4}{*}{Amazon}
+    & THP    & $1260{,}6 \pm 255{,}5$ & $1177{,}6 \pm 230{,}4$ & $1018{,}4 \pm 17{,}8$ \\
+    & RoTHP  & $1033{,}8 \pm 29{,}3$ & $1156{,}6 \pm 224{,}0$ & $1281{,}9 \pm 242{,}9$ \\
+    & HoTHP  & $1675{,}7 \pm 217{,}4$ & $1637{,}7 \pm 206{,}4$ & $1636{,}9 \pm 192{,}1$ \\
+    & NHP    & $1392{,}7 \pm 236{,}4$ & $1418{,}8 \pm 236{,}9$ & $1489{,}3 \pm 283{,}2$ \\
+\midrule
+\multirow{3}{*}{Retweet (norm)}
+    & THP    & $1806{,}7 \pm 280{,}0$ & $1804{,}2 \pm 290{,}1$ & $1821{,}9 \pm 311{,}2$ \\
+    & RoTHP  & $1825{,}5 \pm 272{,}1$ & $1834{,}9 \pm 294{,}9$ & $1817{,}9 \pm 276{,}6$ \\
+    & HoTHP  & $6504{,}9 \pm 197{,}1$ & $6479{,}6 \pm 211{,}9$ & $6484{,}9 \pm 125{,}1$ \\
+\bottomrule
+\end{tabular}
+\end{table}
