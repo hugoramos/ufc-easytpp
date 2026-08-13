@@ -23,7 +23,7 @@ To reach this, the following specific objectives are defined:
 
 \section{Contributions}
 
-This work contributes the proposal of the HoTHP, which introduces an exponential recency bias directly into the temporal attention kernel, with a decay parameter $\theta'$ that is learnable and structurally constrained to guarantee monotonic decay. The experimental analysis reveals that this bias acts on the construction of the hidden state (through attention) and not on the intensity function, which allows the model to learn both self-exciting and self-inhibiting processes, as long as recent events are more informative than distant ones. The evaluation on synthetic data and four real datasets identifies the conditions that determine when the bias is beneficial and when it is not (processes without memory or with an extreme temporal scale).
+This work proposes the HoTHP, which introduces an exponential recency bias directly into the temporal attention kernel. The kernel uses a decay parameter $\theta'$ that is learnable and structurally constrained to guarantee monotonic decay. The experimental analysis shows that this bias acts on the construction of the hidden state (through attention) and not on the intensity function, which allows the model to learn both self-exciting and self-inhibiting processes, as long as recent events are more informative than distant ones. The evaluation on synthetic data and four real datasets identifies the conditions that determine when the bias is beneficial and when it is not (processes without memory or with an extreme temporal scale).
 
 \section{Text organization}
 
