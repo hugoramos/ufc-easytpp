@@ -17,7 +17,7 @@ This chapter reviews the Transformer-based point process models that precede and
         \label{eq:temporal-encoding-thp}
     \end{equation}
 
-    Equation \ref{eq:temporal-encoding-thp} uses trigonometric functions to determine a temporal encoding for each timestamp, that is, for each $t_j$ a deterministic $\mathbf{z}(t_j) \in \mathrm{R}^M$ is computed, where $M$ is the size of the encoding dimension. Besides the temporal encoding, an embedding layer, the matrix $\mathbf{U}$, is also used for the different event types. The embeddings are then represented by $\mathbf{X=(UY+Z)}^T$, where $\mathbf{Y}$ is the one-hot encoding collection of event types and $\mathbf{Z}$ the matrix with the $\mathbf{z}$ vectors concatenated. After the embedding layers, $\mathbf{X}$ is passed through the same self-attention mechanism of Equation~\ref{eq:attention}, now with $\mathbf{Q} = \mathbf{X}\mathbf{W}^Q$, $\mathbf{K} = \mathbf{X}\mathbf{W}^K$, and $\mathbf{V} = \mathbf{X}\mathbf{W}^V$, which produces an output $\mathbf{S}$. This output then passes through a feed forward network to produce $\mathbf{h}(t)$:
+    Equation \eqref{eq:temporal-encoding-thp} uses trigonometric functions to determine a temporal encoding for each timestamp, that is, for each $t_j$ a deterministic $\mathbf{z}(t_j) \in \mathrm{R}^M$ is computed, where $M$ is the size of the encoding dimension. Besides the temporal encoding, an embedding layer, the matrix $\mathbf{U}$, is also used for the different event types. The embeddings are then represented by $\mathbf{X=(UY+Z)}^T$, where $\mathbf{Y}$ is the one-hot encoding collection of event types and $\mathbf{Z}$ the matrix with the $\mathbf{z}$ vectors concatenated. After the embedding layers, $\mathbf{X}$ is passed through the same self-attention mechanism of Equation~\eqref{eq:attention}, now with $\mathbf{Q} = \mathbf{X}\mathbf{W}^Q$, $\mathbf{K} = \mathbf{X}\mathbf{W}^K$, and $\mathbf{V} = \mathbf{X}\mathbf{W}^V$, which produces an output $\mathbf{S}$. This output then passes through a feed forward network to produce $\mathbf{h}(t)$:
     \begin{equation}
         \mathbf{H} = \text{ReLU}(\mathbf{SW}_1^{FC} + \mathbf{b}_1)\mathbf{W}_2^{FC}+\mathbf{b}_2, \quad \mathbf{h}(t_j)=\mathbf{H}(j,:).
         \label{eq:thp-hidden}
@@ -40,7 +40,7 @@ This chapter reviews the Transformer-based point process models that precede and
         \label{eq:thp-lambda}
     \end{equation}
 
-    As we saw earlier, after the whole process of embedding, attention, and feed-forward network, $\mathbf{H}$ is finally produced, which lets us compute $\lambda_k$, needed in Equation \ref{eq:thp-lambda}. The intensity computation for each event type is given by:
+    As we saw earlier, after the whole process of embedding, attention, and feed-forward network, $\mathbf{H}$ is finally produced, which lets us compute $\lambda_k$, needed in Equation \eqref{eq:thp-lambda}. The intensity computation for each event type is given by:
     \begin{equation}
         \lambda_k(t \mid \mathcal{H}_t) = f_k \left(
         \underbrace{\gamma_k \frac{t - t_j}{t_j}}_{\text{current}}
@@ -50,7 +50,7 @@ This chapter reviews the Transformer-based point process models that precede and
         \label{eq:htp-thp-lambdak}
     \end{equation}
 
-    In Equation \ref{eq:htp-thp-lambdak}, the first ``current'' part is an interpolation between $t_j$ and $t_{j+1}$ where $\gamma_k$, a learned element, modulates the importance of this interpolation. We write this coefficient as $\gamma_k$, which the original THP denotes $\alpha_k$, to avoid confusion with the $\alpha$ of the Hawkes process (Equation~\eqref{eq:hawkes}), which plays a different role. The second part uses the history $\mathbf{h}(t)$ of the events, and the last element $b_k$ represents the stationary state, where the probability of the next event is not influenced by the event history.
+    In Equation \eqref{eq:htp-thp-lambdak}, the first ``current'' part is an interpolation between $t_j$ and $t_{j+1}$ where $\gamma_k$, a learned element, modulates the importance of this interpolation. We write this coefficient as $\gamma_k$, which the original THP denotes $\alpha_k$, to avoid confusion with the $\alpha$ of the Hawkes process (Equation~\eqref{eq:hawkes}), which plays a different role. The second part uses the history $\mathbf{h}(t)$ of the events, and the last element $b_k$ represents the stationary state, where the probability of the next event is not influenced by the event history.
 
     \citeonline{zhang_self-attentive_2020}, with the \gls{SAHP}, proposed a different computation for the temporal encoding. Unlike the THP, which uses only the timestamp $t_i$, the SAHP shifts the event to a new position $i'$ using both the position $i$ and the timestamp $t_i$. This is computed with $\mathrm{sin}(\omega_k \times i + w_k \times t_i)$, where $\omega$ is the angular frequency and $w$ is a scale parameter, adjusted by the model, that converts the timestamp $t_i$ into a phase shift inside the sinusoidal function. As in other models, the Self-Attentive Hawkes Process uses sine for even events and cosine for odd events.
 
