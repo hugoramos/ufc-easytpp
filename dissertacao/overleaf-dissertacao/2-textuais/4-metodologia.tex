@@ -112,7 +112,7 @@ where $\theta'_{\mathrm{raw}}$ is the trainable parameter, $\mathrm{softplus}(x)
 \section{Attention score of the HoTHP}
 \label{sec:score-atencao-hothp}
 
-Expanding the matrix multiplication of $\mathbf{B}_j$ (Equation \ref{eq:bloco-hiperbolico}) over the even-dimension vectors $\mathbf{q}_1, \mathbf{k}_1$ and the odd-dimension vectors $\mathbf{q}_2, \mathbf{k}_2$, we obtain:
+Expanding the matrix multiplication of $\mathbf{B}_j$ (Equation \eqref{eq:bloco-hiperbolico}) over the even-dimension vectors $\mathbf{q}_1, \mathbf{k}_1$ and the odd-dimension vectors $\mathbf{q}_2, \mathbf{k}_2$, we obtain:
 %
 \begin{equation}
     \mathbf{q}^\top \mathbf{B}_j(\Delta t) \mathbf{k}
@@ -182,7 +182,7 @@ The second alternative evaluated was a temporal scale factor learned as a parame
 
 The HoTHP architecture follows the Transformer encoder \cite{vaswani_attention_2017}. Each event $(t_i, k_i)$ is a pair of a time $t_i$ and a type $k_i$ (the category, or mark, of the event). The type $k_i$ is represented by a learnable embedding $\mathbf{e}_{k_i} \in \mathbb{R}^d$. Unlike the THP \cite{zuo_transformer_2021}, which adds a sinusoidal encoding of the absolute time to the embedding, the HoTHP does not include any temporal information in the embedding. The instants $t_i$ enter the model only through the hyperbolic kernel.
 
-The model stacks $N$ hyperbolic encoder layers, each one with a hyperbolic multi-head attention block followed by a \textit{feed-forward} network. The attention computes the scores via Equation \ref{eq:score-hothp-completo}, using the normalized differences $\Delta\tilde{t}_{ij} = \tilde{t}_i - \tilde{t}_j$. A causal mask ensures that each event attends only to previous events.
+The model stacks $N$ hyperbolic encoder layers, each one with a hyperbolic multi-head attention block followed by a \textit{feed-forward} network. The attention computes the scores via Equation \eqref{eq:score-hothp-completo}, using the normalized differences $\Delta\tilde{t}_{ij} = \tilde{t}_i - \tilde{t}_j$. A causal mask ensures that each event attends only to previous events.
 
 The \textit{feed-forward} network in each layer has two linear projections with a ReLU between them:
 %
