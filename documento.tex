@@ -240,8 +240,12 @@
 	% \imprimirfichacatalografica{1-pre-textuais/ficha-catalografica}
 	%\imprimirerrata{elementos-pre-textuais/errata}
 	\imprimirfolhadeaprovacao
+	\begin{otherlanguage}{brazil}
+	\renewcommand{\dedicatorianame}{Dedicat\'oria}%
 	\imprimirdedicatoria{1-pre-textuais/dedicatoria}
+	\renewcommand{\agradecimentosname}{Agradecimentos}%
 	\imprimiragradecimentos{1-pre-textuais/agradecimentos}
+	\end{otherlanguage}
 	\imprimirepigrafe{1-pre-textuais/epigrafe}
 	\imprimirresumo{1-pre-textuais/resumo}
 	\imprimirabstract{1-pre-textuais/abstract}
