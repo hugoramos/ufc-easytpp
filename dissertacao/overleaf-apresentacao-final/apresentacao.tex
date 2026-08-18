@@ -4,7 +4,7 @@
 \usepackage{lmodern}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[english]{babel}
+\usepackage[brazilian]{babel}
 \usepackage{amsmath,amssymb,bm}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -18,7 +18,7 @@
 \graphicspath{{figures/}}
 
 \title[HoTHP]{HoTHP: Hyperbolic Rotary Position Embedding-based Transformer Hawkes Process}
-\subtitle{Length extrapolation in Temporal Point Processes}
+\subtitle{Extrapolação de comprimento em Processos Pontuais Temporais}
 \author[H. R. Soares]{Hugo Ramos Soares}
 \institute[UFC]{Universidade Federal do Ceará \\[1em]
     {\small Orientador: César Lincoln C. Mattos (UFC)} \\
@@ -41,40 +41,40 @@
 % ============================================================
 
 % Hook slide 1: everything happens in time
-\begin{frame}{Everything happens in time}
+\begin{frame}{Tudo acontece no tempo}
   \begin{columns}[T]
     \begin{column}{0.32\textwidth}
       \centering
       \includegraphics[height=0.34\textheight,keepaspectratio]{hook_phone}\\[0.5em]
-      {\small A message arrives.\\ Then another.}
+      {\small Uma mensagem chega.\\ Depois outra.}
     \end{column}
     \begin{column}{0.32\textwidth}
       \centering
       \includegraphics[height=0.34\textheight,keepaspectratio]{hook_hospital}\\[0.5em]
-      {\small A patient is seen,\\ and returns months later.}
+      {\small Um paciente é atendido,\\ e volta meses depois.}
     \end{column}
     \begin{column}{0.32\textwidth}
       \centering
       \includegraphics[height=0.34\textheight,keepaspectratio]{hook_seismogram}\\[0.5em]
-      {\small The ground shakes.\\ When will it shake again?}
+      {\small A terra treme.\\ Quando vai tremer de novo?}
     \end{column}
   \end{columns}
   \vspace{0.8em}
   \begin{center}
-    \large The question behind all of them:\\[0.25em]
-    {\Large \textbf{when does the next one happen?}}
+    \large A pergunta por trás de todos eles:\\[0.25em]
+    {\Large \textbf{quando acontece o próximo?}}
   \end{center}
   \vspace{0.3em}
-  {\scriptsize\color{gray} Images: Wikimedia Commons.}
+  {\scriptsize\color{gray} Imagens: Wikimedia Commons.}
 \end{frame}
 
 % Hook slide 2: learn from little, predict far ahead
-\begin{frame}{Learn from little, predict far ahead}
+\begin{frame}{Aprender com pouco, prever muito à frente}
   \centering
   \vspace{0.6em}
   \begin{tikzpicture}[scale=0.9,every node/.style={font=\small}]
     % baseline
-    \draw[->,thick] (0,0) -- (12.2,0) node[right]{time};
+    \draw[->,thick] (0,0) -- (12.2,0) node[right]{tempo};
     % observed events (short history), close together
     \foreach \x in {0.5,1.2,1.7,2.4,3.0} \filldraw (\x,0) circle (2.4pt);
     % divider between seen and unseen
@@ -84,171 +84,172 @@
       \node[above=3pt] at (\x,0.15) {\textbf{?}};}
     % braces
     \draw[decorate,decoration={brace,amplitude=6pt},thick] (0.3,0.55) -- (3.2,0.55)
-      node[midway,above=7pt]{seen (\textbf{training})};
+      node[midway,above=7pt]{visto (\textbf{treino})};
     \draw[decorate,decoration={brace,amplitude=6pt},thick] (4.6,0.9) -- (10.9,0.9)
-      node[midway,above=7pt]{unseen (\textbf{much longer})};
+      node[midway,above=7pt]{não visto (\textbf{muito mais longo})};
     % bottom labels
-    \node[align=center] at (1.75,-0.75) {we only see a\\ \textbf{short history}};
-    \node[align=center] at (7.8,-0.75) {we want to anticipate\\ what comes \textbf{far ahead}};
+    \node[align=center] at (1.75,-0.75) {só vemos um\\ \textbf{histórico curto}};
+    \node[align=center] at (7.8,-0.75) {queremos antecipar\\ o que vem \textbf{muito à frente}};
   \end{tikzpicture}
 
   \vspace{1.0em}
-  \begin{block}{The challenge of this work}
+  \begin{block}{O desafio deste trabalho}
     \centering
-    Train on \textbf{short} sequences of events, and stay reliable on
-    \textbf{much longer} ones.
+    Treinar em sequências \textbf{curtas} de eventos e continuar confiável em
+    sequências \textbf{muito mais longas}.
   \end{block}
 \end{frame}
 
 % Slide 2: outline
-\begin{frame}{Outline}
+\begin{frame}{Roteiro}
   \tableofcontents
 \end{frame}
 
 % ============================================================
-\section{Introduction}
+\section{Introdução}
 % ============================================================
 
 % Slide 3: real-world event sequences
-\begin{frame}{Real-world event sequences}
-  Many phenomena happen in continuous time and we need to model them:
+\begin{frame}{Sequências de eventos do mundo real}
+  Muitos fenômenos acontecem em tempo contínuo e precisamos modelá-los:
   \vspace{0.4em}
   \begin{columns}[T]
     \begin{column}{0.25\textwidth}
       \centering
-      \textbf{Telemetry} \\
-      \small system failures, infrastructure alerts
+      \textbf{Telemetria} \\
+      \small falhas de sistema, alertas de infraestrutura
     \end{column}
     \begin{column}{0.25\textwidth}
       \centering
-      \textbf{Social networks} \\
-      \small retweets, likes, reply cascades
+      \textbf{Redes sociais} \\
+      \small retweets, curtidas, cascatas de respostas
     \end{column}
     \begin{column}{0.25\textwidth}
       \centering
-      \textbf{Health} \\
-      \small admissions, exams, prescriptions of a patient
+      \textbf{Saúde} \\
+      \small internações, exames, prescrições de um paciente
     \end{column}
     \begin{column}{0.25\textwidth}
       \centering
-      \textbf{Maintenance} \\
-      \small failures in industrial equipment
+      \textbf{Manutenção} \\
+      \small falhas em equipamentos industriais
     \end{column}
   \end{columns}
   \vspace{0.8em}
-  \begin{block}{What do they have in common?}
-    Each domain produces an ordered sequence of events with timestamps:
+  \begin{block}{O que eles têm em comum?}
+    Cada domínio produz uma sequência ordenada de eventos com instantes de tempo:
     \[
       \mathcal{S} = \{(t_1, k_1), (t_2, k_2), \ldots, (t_N, k_N)\}
     \]
-    where $t_i$ is the time and $k_i$ is the type (mark) of event $i$.
+    onde $t_i$ é o tempo e $k_i$ é o tipo (marca) do evento $i$.
   \end{block}
 \end{frame}
 
 % Slide 4: what we want to model
-\begin{frame}{What do we want to model?}
-  Given the past events, we want to answer:
+\begin{frame}{O que queremos modelar?}
+  Dados os eventos passados, queremos responder:
   \begin{itemize}
-    \item \textbf{When} will the next event happen?
-    \item \textbf{Of which type} will it be?
+    \item \textbf{Quando} o próximo evento vai acontecer?
+    \item \textbf{De qual tipo} ele será?
   \end{itemize}
   \vspace{0.5em}
-  The central tool is the \textbf{conditional intensity}:
+  A ferramenta central é a \textbf{intensidade condicional}:
   \[
     \lambda(t \mid \mathcal{H}_t) = \lim_{\Delta t \to 0}
-      \frac{P(\text{event in } [t, t+\Delta t) \mid \mathcal{H}_t)}{\Delta t}
+      \frac{P(\text{evento em } [t, t+\Delta t) \mid \mathcal{H}_t)}{\Delta t}
   \]
-  where $\mathcal{H}_t$ is the history of all events before $t$.
+  onde $\mathcal{H}_t$ é o histórico de todos os eventos antes de $t$.
   \vspace{0.5em}
-  \begin{block}{Learning objective}
-    Learn $\lambda(t)$ from data so that the model generalizes to sequences
-    with lengths different from those seen during training.
+  \begin{block}{Objetivo de aprendizado}
+    Aprender $\lambda(t)$ a partir dos dados de modo que o modelo generalize para
+    sequências com comprimentos diferentes dos vistos no treino.
   \end{block}
 \end{frame}
 
 % Slide 5: the practical problem + contribution
-\begin{frame}{The practical problem: train short, test long}
+\begin{frame}{O problema prático: treinar curto, testar longo}
   \begin{itemize}
-    \item Collecting long event sequences is often expensive or impractical.
-    \item We would like to \textbf{train on short sequences} and run the model on
-          \textbf{arbitrarily longer} ones \cite{press2022train}.
-    \item Transformer-based point process models degrade sharply when the test
-          sequence is longer than the training one. The ability to remain stable
-          in this regime is called \emph{length extrapolation}.
+    \item Coletar sequências longas de eventos costuma ser caro ou inviável.
+    \item Queremos \textbf{treinar em sequências curtas} e rodar o modelo em
+          sequências \textbf{arbitrariamente mais longas} \cite{press2022train}.
+    \item Modelos de processos pontuais baseados em Transformer degradam bastante
+          quando a sequência de teste é mais longa que a de treino. A capacidade
+          de se manter estável nesse regime é chamada de
+          \emph{extrapolação de comprimento}.
   \end{itemize}
   \vspace{0.6em}
-  \begin{block}{Contribution of this work: HoTHP}
-    A Transformer Hawkes Process whose attention kernel is \textbf{hyperbolic}
-    instead of trigonometric. It embeds an \textbf{exponential recency bias}
-    directly in the attention, mirroring the structure of the Hawkes process, and
-    keeps the likelihood stable under length extrapolation.
+  \begin{block}{Contribuição deste trabalho: HoTHP}
+    Um Transformer Hawkes Process cujo kernel de atenção é \textbf{hiperbólico}
+    em vez de trigonométrico. Ele embute um \textbf{viés de recência exponencial}
+    diretamente na atenção, espelhando a estrutura do processo de Hawkes, e
+    mantém a verossimilhança estável sob extrapolação de comprimento.
   \end{block}
 \end{frame}
 
 % Slide: objective and research question
-\begin{frame}{Objective and research question}
-  \begin{block}{Research question}
-    Does replacing the \textbf{oscillatory} kernel with a kernel that has
-    \textbf{exponential decay} in the attention mechanism improve the length
-    extrapolation ability of neural temporal point processes?
+\begin{frame}{Objetivo e pergunta de pesquisa}
+  \begin{block}{Pergunta de pesquisa}
+    Substituir o kernel \textbf{oscilatório} por um kernel com
+    \textbf{decaimento exponencial} no mecanismo de atenção melhora a capacidade
+    de extrapolação de comprimento dos processos pontuais temporais neurais?
   \end{block}
   \vspace{0.5em}
-  To answer it, we:
+  Para responder, nós:
   \begin{itemize}
-    \item propose and implement the \textbf{HoTHP}, adapting HoPE from discrete
-          positions to continuous time instants;
-    \item evaluate it under \emph{train short, test long} on \textbf{synthetic}
-          data (known generating process) and \textbf{real} data from varied
-          domains;
-    \item analyze \emph{under which conditions} the recency bias is beneficial,
-          neutral, or harmful (learned intensities, accuracy, RMSE, and a
-          temporal-scale ablation).
+    \item propomos e implementamos o \textbf{HoTHP}, adaptando o HoPE de posições
+          discretas para instantes de tempo contínuos;
+    \item avaliamos sob \emph{treinar curto, testar longo} em dados
+          \textbf{sintéticos} (processo gerador conhecido) e dados \textbf{reais}
+          de domínios variados;
+    \item analisamos \emph{sob quais condições} o viés de recência é benéfico,
+          neutro ou prejudicial (intensidades aprendidas, acurácia, RMSE e uma
+          ablação de escala temporal).
   \end{itemize}
 \end{frame}
 
 % ============================================================
-\section{Foundations: Temporal Point Processes}
+\section{Fundamentação: Processos Pontuais Temporais}
 % ============================================================
 
 % Slide 6: Poisson distribution (NEW)
-\begin{frame}{The Poisson distribution}
-  \textbf{The question it answers:} how many events will we see in a fixed
-  window, if they happen independently at a constant average rate?
+\begin{frame}{A distribuição de Poisson}
+  \textbf{A pergunta que ela responde:} quantos eventos veremos em uma janela
+  fixa, se eles acontecem de forma independente a uma taxa média constante?
   \vspace{0.3em}
-  \begin{block}{Definition \cite{ross_first_2019}}
-    If the \emph{expected number} of events in the window is $\lambda > 0$, the
-    probability of observing exactly $k$ events is
+  \begin{block}{Definição \cite{ross_first_2019}}
+    Se o \emph{número esperado} de eventos na janela é $\lambda > 0$, a
+    probabilidade de observar exatamente $k$ eventos é
     \[
       \Pr(X = k) = \frac{\lambda^{k} e^{-\lambda}}{k!}, \qquad k = 0, 1, 2, \ldots
     \]
     \vspace{-0.6em}
     {\footnotesize
     \begin{itemize}
-      \item $X$: a \textbf{random variable}, the count of events in the window
-            (unknown before we observe it);
-      \item $k$: a \textbf{concrete value} that count may take ($0, 1, 2, \ldots$);
-      \item $\Pr(X = k)$: the \textbf{probability} that the observed count $X$
-            equals exactly $k$.
+      \item $X$: uma \textbf{variável aleatória}, a contagem de eventos na janela
+            (desconhecida antes de observarmos);
+      \item $k$: um \textbf{valor concreto} que essa contagem pode assumir ($0, 1, 2, \ldots$);
+      \item $\Pr(X = k)$: a \textbf{probabilidade} de a contagem observada $X$
+            ser exatamente $k$.
     \end{itemize}}
   \end{block}
   {\small
   \begin{itemize}
-    \item $\lambda$ is both the \textbf{mean} and the \textbf{variance} of the count.
+    \item $\lambda$ é ao mesmo tempo a \textbf{média} e a \textbf{variância} da contagem.
   \end{itemize}}
 \end{frame}
 
 % Slide 7: Poisson process
-\begin{frame}{The Poisson process}
-  Now let events keep happening over time, at a constant \textbf{rate}
-  $\lambda$ (events per unit time), and let $N(T)$ count them up to time $T$
-  \cite{ross_first_2019}. Roughly:
+\begin{frame}{O processo de Poisson}
+  Agora deixe os eventos acontecerem ao longo do tempo, a uma \textbf{taxa}
+  constante $\lambda$ (eventos por unidade de tempo), e seja $N(T)$ a contagem
+  deles até o tempo $T$ \cite{ross_first_2019}. De forma resumida:
   \begin{itemize}
-    \item events in short, \textbf{non-overlapping} intervals happen
-          \textbf{independently};
-    \item each short interval gets \textbf{at most one} event, with chance
-          proportional to $\lambda$.
+    \item eventos em intervalos curtos e \textbf{sem sobreposição} acontecem de
+          forma \textbf{independente};
+    \item cada intervalo curto recebe \textbf{no máximo um} evento, com chance
+          proporcional a $\lambda$.
   \end{itemize}
-  Then $N(T)$ is Poisson with mean $\lambda T$ (rate times time):
+  Então $N(T)$ é Poisson com média $\lambda T$ (taxa vezes tempo):
   \[
     \Pr\{N(T) = n\} = \frac{(\lambda T)^{n}}{n!}\, e^{-\lambda T}
   \]
@@ -259,64 +260,65 @@
 \end{frame}
 
 % Slide 8: Temporal Point Processes
-\begin{frame}{Temporal Point Processes (TPP)}
-  Probabilistic models for sequences of discrete events in \textbf{continuous
-  time} \cite{zuo2020transformer}. They handle events at irregular, arbitrary
-  times.
+\begin{frame}{Processos Pontuais Temporais (TPP)}
+  Modelos probabilísticos para sequências de eventos discretos em
+  \textbf{tempo contínuo} \cite{zuo2020transformer}. Eles lidam com eventos em
+  tempos irregulares e arbitrários.
   \vspace{0.3em}
   \begin{itemize}
-    \item Fully described by the conditional intensity $\lambda(t \mid \mathcal{H}_t)$.
-    \item With \textbf{marks} (event types), the sequence is
-          $X = \{(t_1, m_1), \ldots, (t_N, m_N)\}$ and we use $K$ intensities:
+    \item Totalmente descritos pela intensidade condicional $\lambda(t \mid \mathcal{H}_t)$.
+    \item Com \textbf{marcas} (tipos de evento), a sequência é
+          $X = \{(t_1, m_1), \ldots, (t_N, m_N)\}$ e usamos $K$ intensidades:
   \end{itemize}
   \[
     \lambda_k(t \mid \mathcal{H}_t) = \lim_{\Delta t \to 0}
-    \frac{\Pr(\text{event of type } k \text{ in } [t, t+\Delta t) \mid \mathcal{H}_t)}{\Delta t}
+    \frac{\Pr(\text{evento do tipo } k \text{ em } [t, t+\Delta t) \mid \mathcal{H}_t)}{\Delta t}
   \]
-  \begin{block}{Note on the word ``mark''}
-    We use \emph{mark} and \emph{type} interchangeably: the mark is a categorical
-    event type, one of $K$ classes.
+  \begin{block}{Sobre a palavra ``marca''}
+    Usamos \emph{marca} e \emph{tipo} como sinônimos: a marca é um tipo de evento
+    categórico, uma dentre $K$ classes.
   \end{block}
 \end{frame}
 
 % Slide 9: Loss function (NEW own slide)
-\begin{frame}{Loss function: the log-likelihood}
-  Given all events observed in $[0,T]$, TPPs are trained by maximizing the
-  log-likelihood \cite{mei2017neural}:
+\begin{frame}{Função de perda: a log-verossimilhança}
+  Dados todos os eventos observados em $[0,T]$, os TPPs são treinados maximizando
+  a log-verossimilhança \cite{mei2017neural}:
   \[
     \mathcal{L} = \sum_{i:\, t_i \leq T} \log \lambda_{k_i}(t_i)
       \;-\; \underbrace{\int_{0}^{T} \bar{\lambda}(t)\, dt}_{\Lambda},
     \qquad \bar{\lambda}(t) = \sum_{k=1}^{K} \lambda_k(t)
   \]
   \begin{itemize}
-    \item First term: rewards a \textbf{high intensity} at the moments where
-          events actually occurred (and for the right type $k_i$).
-    \item Second term (the \emph{compensator} $\Lambda$): penalizes intensity mass
-          where no event occurred.
-    \item Training minimizes the \textbf{negative} log-likelihood (NLL), our main
-          evaluation metric.
+    \item Primeiro termo: recompensa uma \textbf{intensidade alta} nos momentos em
+          que os eventos realmente ocorreram (e para o tipo correto $k_i$).
+    \item Segundo termo (o \emph{compensador} $\Lambda$): penaliza massa de
+          intensidade onde nenhum evento ocorreu.
+    \item O treino minimiza a log-verossimilhança \textbf{negativa} (NLL), nossa
+          principal métrica de avaliação.
   \end{itemize}
-  In practice, the integral is estimated numerically, in exactly the same way for
-  every model we compare.
+  Na prática, a integral é estimada numericamente, exatamente da mesma forma para
+  todos os modelos que comparamos.
 \end{frame}
 
 % Slide 10: Hawkes process
-\begin{frame}{The Hawkes process}
-  Poisson assumes independent events. The \textbf{Hawkes process} assumes that
-  \textbf{past events raise the probability of future events}, with an influence
-  that decays exponentially \cite{hawkes1971spectra}:
+\begin{frame}{O processo de Hawkes}
+  Poisson supõe eventos independentes. O \textbf{processo de Hawkes} supõe que
+  \textbf{eventos passados aumentam a probabilidade de eventos futuros}, com uma
+  influência que decai exponencialmente \cite{hawkes1971spectra}:
   \[
     \lambda(t \mid \mathcal{H}_t) = \mu + \sum_{t_i < t} \alpha \, e^{-\beta (t - t_i)}
   \]
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \begin{itemize}
-        \item $\mu$: baseline intensity.
-        \item $\alpha$: instantaneous jump caused by an event.
-        \item $\beta$: how fast that influence decays.
+        \item $\mu$: intensidade de base.
+        \item $\alpha$: salto instantâneo causado por um evento.
+        \item $\beta$: quão rápido essa influência decai.
       \end{itemize}
       \vspace{0.3em}
-      The exponential decay is a \textbf{recency bias}: recent events matter more.
+      O decaimento exponencial é um \textbf{viés de recência}: eventos recentes
+      importam mais.
     \end{column}
     \begin{column}{0.46\textwidth}
       \centering
@@ -326,125 +328,127 @@
 \end{frame}
 
 % Slide 11: Cox process (NEW)
-\begin{frame}{The Cox process, and where Hawkes sits}
-  Increasingly rich ways of specifying the intensity:
+\begin{frame}{O processo de Cox, e onde o Hawkes se encaixa}
+  Formas cada vez mais ricas de especificar a intensidade:
   \vspace{0.4em}
   \begin{enumerate}
-    \item \textbf{Homogeneous Poisson:} intensity $\lambda$ is constant.
-    \item \textbf{Non-homogeneous Poisson:} $\lambda(t)$ varies in time, but
-          deterministically.
-    \item \textbf{Cox process} (doubly stochastic Poisson): $\lambda(t)$ is itself
-          a \emph{random} process, driven by factors external to the events.
-    \item \textbf{Hawkes process:} $\lambda(t)$ is random
-          because it depends on the \emph{past events of the process itself}, each
-          one temporarily raising the intensity.
+    \item \textbf{Poisson homogêneo:} a intensidade $\lambda$ é constante.
+    \item \textbf{Poisson não homogêneo:} $\lambda(t)$ varia no tempo, mas de
+          forma determinística.
+    \item \textbf{Processo de Cox} (Poisson duplamente estocástico): $\lambda(t)$
+          é ele próprio um processo \emph{aleatório}, guiado por fatores externos
+          aos eventos.
+    \item \textbf{Processo de Hawkes:} $\lambda(t)$ é aleatório porque depende dos
+          \emph{eventos passados do próprio processo}, cada um elevando
+          temporariamente a intensidade.
   \end{enumerate}
   \vspace{0.5em}
-  \begin{block}{Why this matters here}
-    Hawkes also has a stochastic intensity, but unlike Cox its randomness is
-    \textbf{endogenous}: $\lambda(t)$ is a functional of the process's own past (a
-    \emph{self-exciting} process, not a doubly stochastic one). It is exactly this
-    dependence on history, with exponential decay, that motivates the recency bias
-    of our model.
+  \begin{block}{Por que isso importa aqui}
+    O Hawkes também tem intensidade estocástica, mas, diferente do Cox, sua
+    aleatoriedade é \textbf{endógena}: $\lambda(t)$ é um funcional do próprio
+    passado do processo (um processo \emph{auto-excitante}, não duplamente
+    estocástico). É exatamente essa dependência do histórico, com decaimento
+    exponencial, que motiva o viés de recência do nosso modelo.
   \end{block}
 \end{frame}
 
 % ============================================================
-\section{Neural models and attention}
+\section{Modelos neurais e atenção}
 % ============================================================
 
 % Slide 12: Neural Hawkes Process
 \begin{frame}{Neural Hawkes Process (NHP)}
-  The classical Hawkes process is limited: influence is always excitatory,
-  constant per type, and decays exponentially. Mei and Eisner \cite{mei2017neural} relax
-  these assumptions with neural networks.
+  O processo de Hawkes clássico é limitado: a influência é sempre excitatória,
+  constante por tipo, e decai exponencialmente. Mei e Eisner \cite{mei2017neural}
+  relaxam essas suposições com redes neurais.
   \begin{itemize}
-    \item Allow $\alpha, \mu \in \mathbb{R}$, so events can \textbf{inhibit} as
-          well as excite; a \textbf{softplus} keeps the intensity positive.
-    \item Replace the additive sum by a \textbf{continuous-time LSTM} (CT-LSTM):
-          the memory cell decays exponentially between events.
+    \item Permitem $\alpha, \mu \in \mathbb{R}$, de modo que os eventos podem
+          \textbf{inibir} além de excitar; um \textbf{softplus} mantém a
+          intensidade positiva.
+    \item Substituem a soma aditiva por uma \textbf{LSTM de tempo contínuo}
+          (CT-LSTM): a célula de memória decai exponencialmente entre eventos.
   \end{itemize}
   \[
     \lambda_k(t) = f_k\!\left(\mathbf{w}_k^\top \mathbf{h}(t)\right), \qquad
     \mathbf{c}(t) = \bar{\mathbf{c}} + (\mathbf{c} - \bar{\mathbf{c}})\,
       e^{-\bm{\delta}(t - t_i)}
   \]
-  A simple but strong model: still a top benchmark today, and an important
-  baseline in our experiments.
+  Um modelo simples, mas forte: ainda é um dos melhores benchmarks hoje, e uma
+  baseline importante nos nossos experimentos.
 \end{frame}
 
 % Slide 13: Transformers and attention
-\begin{frame}{Transformers and the attention mechanism}
-  RNNs (including the CT-LSTM) process events \textbf{sequentially}, which is slow
-  and struggles with long sequences. The Transformer \cite{vaswani2017attention}
-  removes recurrence: all events are processed at once through \textbf{attention}.
+\begin{frame}{Transformers e o mecanismo de atenção}
+  RNNs (incluindo a CT-LSTM) processam eventos \textbf{sequencialmente}, o que é
+  lento e tem dificuldade com sequências longas. O Transformer
+  \cite{vaswani2017attention} elimina a recorrência: todos os eventos são
+  processados de uma vez pela \textbf{atenção}.
   \[
     \text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V
   \]
   \begin{itemize}
-    \item Each event attends to every other event; the weights measure relevance.
-    \item \textbf{Multi-head} attention runs $h$ projections in parallel and
-          concatenates them.
+    \item Cada evento presta atenção a todos os outros; os pesos medem a relevância.
+    \item A atenção \textbf{multi-cabeça} roda $h$ projeções em paralelo e as
+          concatena.
   \end{itemize}
   \vspace{-0.2em}
   \begin{figure}
     \centering
-    \includegraphics[height=0.32\textheight,keepaspectratio]{figura-attention}
+    \includegraphics[height=0.29\textheight,keepaspectratio]{figura-attention}
 
-    {\tiny\color{gray} Source: \cite{vaswani2017attention}}
+    {\tiny\color{gray} Fonte: \cite{vaswani2017attention}}
   \end{figure}
 \end{frame}
 
 % Slide 14: positional encoding
-\begin{frame}{Positional encoding: attention has no order}
-  Attention is \textbf{permutation equivariant}: reordering the inputs merely
-  reorders the outputs, so on its own it does not know the order or timing of
-  events. Position must be injected.
-  \vspace{0.3em}
+\begin{frame}{Codificação posicional: a atenção não tem ordem}
+  A atenção é \textbf{equivariante a permutações}: reordenar as entradas apenas
+  reordena as saídas, então, sozinha, ela não conhece a ordem nem o tempo dos
+  eventos. A posição precisa ser injetada.
+  \vspace{-0.2em}
   \begin{columns}[T]
     \begin{column}{0.54\textwidth}
       \small
       \begin{itemize}
-        \item \textbf{Original Transformer:} add a sinusoidal encoding of the
-              \emph{discrete position} to each token embedding.
-        \item Each dimension is a sine/cosine of a different frequency: fast on
-              the left, slow on the right, giving every position a unique
-              signature.
-        \item \textbf{For TPPs} we need the actual \emph{timestamp}, not just the
-              order, since the moment of the event matters.
+        \item \textbf{Transformer original:} soma uma codificação senoidal da
+              \emph{posição discreta} a cada embedding de token.
+        \item Cada dimensão é um seno/cosseno de uma frequência diferente: rápida
+              à esquerda, lenta à direita, com assinatura única por posição.
+        \item \textbf{Para TPPs} precisamos do \emph{instante} de fato, não só da
+              ordem, já que o momento do evento importa.
       \end{itemize}
     \end{column}
     \begin{column}{0.44\textwidth}
       \centering
-      \includegraphics[width=\textwidth,height=0.62\textheight,keepaspectratio]{fig_positional_encoding}
+      \includegraphics[width=\textwidth,height=0.58\textheight,keepaspectratio]{fig_positional_encoding}
 
-      {\scriptsize Sinusoidal encoding: position (rows) vs. dimension (columns).}
+      {\scriptsize Codificação senoidal: posição (linhas) vs. dimensão (colunas).}
     \end{column}
   \end{columns}
 \end{frame}
 
 % Slide 15: THP
 \begin{frame}{Transformer Hawkes Process (THP)}
-  Zuo et al. \cite{zuo2020transformer} adapt the Transformer to TPPs with a
-  \textbf{temporal encoding} that uses the timestamp $t_j$ instead of a discrete
-  position:
+  Zuo et al. \cite{zuo2020transformer} adaptam o Transformer para TPPs com uma
+  \textbf{codificação temporal} que usa o instante $t_j$ em vez de uma posição
+  discreta:
   \[
     [z(t_j)]_i =
     \begin{cases}
-      \cos\!\left(t_j / 10000^{(i-1)/M}\right), & i \text{ odd},\\[2pt]
-      \sin\!\left(t_j / 10000^{i/M}\right), & i \text{ even}.
+      \cos\!\left(t_j / 10000^{(i-1)/M}\right), & i \text{ ímpar},\\[2pt]
+      \sin\!\left(t_j / 10000^{i/M}\right), & i \text{ par}.
     \end{cases}
   \]
   \vspace{-0.8em}
   \begin{columns}[T]
     \begin{column}{0.54\textwidth}
-      The encoding is added to the type embedding, then passed through
-      self-attention and a feed-forward network. The intensity is
+      A codificação é somada ao embedding de tipo, e então passa por autoatenção
+      e uma rede feed-forward. A intensidade é
       \[
         \resizebox{\linewidth}{!}{$
         \lambda_k(t) = f_k\!\Big(
-          \underbrace{\alpha_k \tfrac{t-t_j}{t_j}}_{\text{current}}
-          + \underbrace{\mathbf{w}_k^\top \mathbf{h}(t_j)}_{\text{history}}
+          \underbrace{\alpha_k \tfrac{t-t_j}{t_j}}_{\text{atual}}
+          + \underbrace{\mathbf{w}_k^\top \mathbf{h}(t_j)}_{\text{histórico}}
           + \underbrace{b_k}_{\text{base}}\Big)
         $.}
       \]
@@ -452,61 +456,62 @@
     \begin{column}{0.44\textwidth}
       \centering
       \includegraphics[width=0.80\textwidth,height=0.47\textheight,keepaspectratio]{figura-thp}\\[0.2em]
-      {\tiny\color{gray} Source: \cite{zuo2020transformer}}
+      {\tiny\color{gray} Fonte: \cite{zuo2020transformer}}
     \end{column}
   \end{columns}
 \end{frame}
 
 % ============================================================
-\section{Related work: length extrapolation}
+\section{Trabalhos relacionados: extrapolação de comprimento}
 % ============================================================
 
 % Slide 16: extrapolation in LLMs
-\begin{frame}{Length extrapolation in language models}
-  A model trained on sequences of length $L_{\text{train}}$ should stay stable when
-  tested on $L_{\text{test}} > L_{\text{train}}$ \cite{press2022train}.
+\begin{frame}{Extrapolação de comprimento em modelos de linguagem}
+  Um modelo treinado em sequências de comprimento $L_{\text{train}}$ deveria se
+  manter estável quando testado em $L_{\text{test}} > L_{\text{train}}$
+  \cite{press2022train}.
   \vspace{0.3em}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \begin{itemize}
-        \item Absolute sinusoidal positions produce encoding patterns never seen in training for larger indices: perplexity explodes.
-        \item Rotary encodings (RoPE) help by using \emph{relative} positions, but
-              Press et al. \cite{press2022train} showed they still fail for much
-              longer sequences.
-        \item Only \textbf{ALiBi}, with a linear distance penalty, stays flat far
-              beyond the training length.
+        \item Posições senoidais absolutas produzem padrões de codificação nunca vistos no treino para índices maiores: a perplexidade explode.
+        \item Codificações rotativas (RoPE) ajudam ao usar posições
+              \emph{relativas}, mas Press et al. \cite{press2022train} mostraram
+              que elas ainda falham para sequências muito mais longas.
+        \item Só o \textbf{ALiBi}, com uma penalidade linear de distância, se
+              mantém estável bem além do comprimento de treino.
       \end{itemize}
     \end{column}
     \begin{column}{0.46\textwidth}
       \centering
       \includegraphics[width=\textwidth,height=0.56\textheight,keepaspectratio]{fig_alibi_extrapolation}\\[0.2em]
-      {\tiny\color{gray} Source: \cite{press2022train}}
+      {\tiny\color{gray} Fonte: \cite{press2022train}}
     \end{column}
   \end{columns}
 \end{frame}
 
 % Slide 17: same problem in TPPs
-\begin{frame}{The same problem in TPPs: train short, test long}
-  We adapt the \emph{train short, test long} protocol \cite{press2022train} to
-  point processes, using the \textbf{number of events} as the length.
+\begin{frame}{O mesmo problema em TPPs: treinar curto, testar longo}
+  Adaptamos o protocolo \emph{treinar curto, testar longo} \cite{press2022train}
+  para processos pontuais, usando o \textbf{número de eventos} como comprimento.
   \vspace{0.4em}
   \begin{itemize}
-    \item Train on sequences of a fixed length (e.g. $L = 50$ events).
-    \item Test on sequences $\alpha$ times longer, $\alpha \in \{1, 2, 5, 10\}$.
-    \item At $\alpha = 10\times$: train on 50 events, test on 500.
+    \item Treinar em sequências de comprimento fixo (por exemplo, $L = 50$ eventos).
+    \item Testar em sequências $\alpha$ vezes mais longas, $\alpha \in \{1, 2, 5, 10\}$.
+    \item Em $\alpha = 10\times$: treinar com 50 eventos, testar com 500.
   \end{itemize}
   \vspace{0.5em}
-  \begin{block}{What we measure}
-    Whether the NLL stays stable as $\alpha$ grows. A model with a proper recency
-    bias should barely degrade.
+  \begin{block}{O que medimos}
+    Se a NLL se mantém estável conforme $\alpha$ cresce. Um modelo com um viés de
+    recência adequado deve degradar muito pouco.
   \end{block}
 \end{frame}
 
 % Slide 18: RoPE
 \begin{frame}{Rotary Position Embedding (RoPE)}
-  Su et al. \cite{su2024roformer} noticed that attention only needs the
-  \textbf{relative} position. RoPE rotates pairs of embedding dimensions by an
-  angle proportional to the position:
+  Su et al. \cite{su2024roformer} notaram que a atenção só precisa da posição
+  \textbf{relativa}. O RoPE rotaciona pares de dimensões do embedding por um
+  ângulo proporcional à posição:
   \[
     \mathbf{R}_j(\Delta) =
     \begin{bmatrix} \cos(\theta_j \Delta) & \sin(\theta_j \Delta) \\
@@ -516,75 +521,77 @@
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
       \begin{itemize}
-        \item Applied to $\mathbf{q}$ and $\mathbf{k}$ before the dot product.
-        \item The score ends up depending only on the difference of positions.
+        \item Aplicado a $\mathbf{q}$ e $\mathbf{k}$ antes do produto interno.
+        \item O score acaba dependendo apenas da diferença de posições.
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
       \centering
       \includegraphics[width=0.85\textwidth,height=0.53\textheight,keepaspectratio]{fig_rope_to_hope}\\[0.2em]
-      {\tiny\color{gray} Adapted from \cite{su2024roformer}}
+      {\tiny\color{gray} Adaptado de \cite{su2024roformer}}
     \end{column}
   \end{columns}
 \end{frame}
 
 % Slide 19: RoTHP
-\begin{frame}{RoTHP: RoPE for point processes}
-  Dai et al. \cite{dai2026rothp} bring RoPE to TPPs: rotate by the \textbf{timestamp}
-  instead of the discrete index.
+\begin{frame}{RoTHP: RoPE para processos pontuais}
+  Dai et al. \cite{dai2026rothp} trazem o RoPE para TPPs: rotacionar pelo
+  \textbf{instante} em vez do índice discreto.
   \vspace{0.4em}
   \begin{itemize}
-    \item The attention score depends only on $\Delta t = t_i - t_j$.
-    \item This makes the likelihood \textbf{time-invariant}: shifting all times by
-          a constant $\sigma$ leaves the result unchanged.
-    \item Robust to timestamp noise (clock desynchronization), common in real
-          data. New state of the art on several TPP benchmarks.
+    \item O score de atenção depende apenas de $\Delta t = t_i - t_j$.
+    \item Isso torna a verossimilhança \textbf{invariante no tempo}: deslocar
+          todos os tempos por uma constante $\sigma$ não altera o resultado.
+    \item Robusto a ruído nos instantes (dessincronização de relógio), comum em
+          dados reais. Novo estado da arte em vários benchmarks de TPP.
   \end{itemize}
   \vspace{0.4em}
-  \begin{block}{But there is a catch}
-    The rotary kernel is built from $\cos$ and $\sin$: it \textbf{oscillates}. This
-    is the limitation our method addresses.
+  \begin{block}{Mas há um porém}
+    O kernel rotativo é construído a partir de $\cos$ e $\sin$: ele
+    \textbf{oscila}. Essa é a limitação que nosso método ataca.
   \end{block}
 \end{frame}
 
 % Slide 20: ALiBi + recency bias (NEW)
-\begin{frame}{ALiBi and the recency inductive bias}
-  Press et al. \cite{press2022train} take a different route: no embedding at all, just a
-  fixed \textbf{linear penalty} on the attention score:
+\begin{frame}{ALiBi e o viés indutivo de recência}
+  Press et al. \cite{press2022train} seguem um caminho diferente: nenhum
+  embedding, apenas uma \textbf{penalidade linear} fixa no score de atenção:
   \[
     \text{softmax}\!\left(\mathbf{q}_i \mathbf{K}^\top
       + m \cdot [-(i{-}1), \ldots, -2, -1, 0]\right)
   \]
   \begin{itemize}
-    \item The penalty grows with distance, so distant tokens are suppressed. The
-          slope $m$ is fixed per head, never learned.
-    \item This is an \textbf{inductive bias toward recency}, built into the
-          architecture rather than learned from data.
+    \item A penalidade cresce com a distância, então tokens distantes são
+          suprimidos. A inclinação $m$ é fixa por cabeça, nunca aprendida.
+    \item Isso é um \textbf{viés indutivo em direção à recência}, embutido na
+          arquitetura em vez de aprendido dos dados.
   \end{itemize}
-  \begin{block}{The connection to Hawkes}
-    This is exactly the Hawkes kernel idea (influence $\propto e^{-\beta \Delta t}$
-    decays with distance). THP and RoTHP dropped this structural guarantee when
-    they replaced the kernel with free attention. \textbf{HoTHP puts it back.}
+  \begin{block}{A conexão com o Hawkes}
+    É exatamente a ideia do kernel de Hawkes (a influência
+    $\propto e^{-\beta \Delta t}$ decai com a distância). O THP e o RoTHP abriram
+    mão dessa garantia estrutural ao trocar o kernel por atenção livre.
+    \textbf{O HoTHP a devolve.}
   \end{block}
 \end{frame}
 
 % ============================================================
-\section{Methodology: HoTHP}
+\section{Metodologia: HoTHP}
 % ============================================================
 
 % Slide 21: RoTHP oscillation limitation
-\begin{frame}{The oscillatory limitation of RoTHP}
-  RoTHP's score depends only on $\Delta t = t_i - t_j$, but its kernel is built
-  from $\cos$ and $\sin$, so it \textbf{oscillates} instead of decaying.
+\begin{frame}{A limitação oscilatória do RoTHP}
+  O score do RoTHP depende apenas de $\Delta t = t_i - t_j$, mas seu kernel é
+  construído a partir de $\cos$ e $\sin$, então ele \textbf{oscila} em vez de
+  decair.
   \begin{columns}[T]
     \begin{column}{0.44\textwidth}
       \begin{itemize}
-        \item \textbf{RoPE} (blue) decays only \emph{on average}: noisy,
-              non-monotonic, and it never dies out.
-        \item A Hawkes kernel $\varphi(\Delta t)=\alpha e^{-\beta\Delta t}$ is
-              \emph{strictly} decreasing. RoPE violates this.
-        \item In extrapolation the phase may land on a \textbf{peak}: a distant
-              event outscores a nearby one.
+        \item O \textbf{RoPE} (azul) decai apenas \emph{em média}: ruidoso, não
+              monótono, e nunca some de fato.
+        \item Um kernel de Hawkes $\varphi(\Delta t)=\alpha e^{-\beta\Delta t}$ é
+              \emph{estritamente} decrescente. O RoPE viola isso.
+        \item Na extrapolação a fase pode cair em um \textbf{pico}: um evento
+              distante recebe score maior que um próximo.
       \end{itemize}
       \vspace{0.2em}
 
@@ -597,9 +604,9 @@
 \end{frame}
 
 % Slide 22: trig -> hyperbolic
-\begin{frame}{From the trigonometric kernel to the hyperbolic kernel}
-  Following HoPE \cite{dai2025hope}, replace the rotation block $\mathbf{R}_j$ by a
-  \textbf{hyperbolic boost} $\mathbf{B}_j$:
+\begin{frame}{Do kernel trigonométrico ao kernel hiperbólico}
+  Seguindo o HoPE \cite{dai2025hope}, substituímos o bloco de rotação
+  $\mathbf{R}_j$ por um \textbf{boost hiperbólico} $\mathbf{B}_j$:
   \[
     \resizebox{0.78\textwidth}{!}{$
     \mathbf{R}_j(\Delta t) =
@@ -615,27 +622,27 @@
     \includegraphics[width=0.92\textwidth,height=0.5\textheight,keepaspectratio]{fig_rope_vs_hothp_geom}
   \end{center}
   \vspace{-0.4em}
-  {\footnotesize The rotation preserves the \textbf{circle} ($\cos,\sin$ oscillate); the
-  Lorentz boost preserves the \textbf{hyperbola} ($\cosh,\sinh$ are monotonic). We control this growth  with the decay envelope
+  {\footnotesize A rotação preserva o \textbf{círculo} ($\cos,\sin$ oscilam); o
+  boost de Lorentz preserva a \textbf{hipérbole} ($\cosh,\sinh$ são monótonos).
+  Controlamos esse crescimento com o envelope de decaimento
   $e^{-|\Delta t|\theta'}$.}
 \end{frame}
 
 % Slide 23: exponential decay + theta prime
-\begin{frame}{Exponential decay and the parameter $\theta'$}
-  HoPE \cite{dai2025hope} adds a learnable $\theta'$ and damps $\mathbf{q}, \mathbf{k}$
-  so the score decays. In continuous time:
+\begin{frame}{Decaimento exponencial e o parâmetro $\theta'$}
+  O HoPE \cite{dai2025hope} adiciona um $\theta'$ aprendível e amortece
+  $\mathbf{q}, \mathbf{k}$ para que o score decaia. Em tempo contínuo:
   \[
     g(\Delta t) = e^{-|\Delta t|\,\theta'}\; \mathbf{q}^\top \mathbf{B}(\theta, \Delta t)\, \mathbf{k}
   \]
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
       \begin{itemize}
-        \item If $\theta' > \max_j \theta_j$, the decay dominates the hyperbolic
-              growth: the score \textbf{decays exponentially to zero} with
-              $|\Delta t|$, without oscillation.
-        \item This is a \textbf{structural} recency bias: it holds even for
-              $\Delta t$ never seen in training. This is what enables
-              extrapolation.
+        \item Se $\theta' > \max_j \theta_j$, o decaimento domina o crescimento
+              hiperbólico: o score \textbf{decai exponencialmente até zero} com
+              $|\Delta t|$, sem oscilação.
+        \item Esse é um viés de recência \textbf{estrutural}: vale mesmo para
+              $\Delta t$ nunca visto no treino. É isso que permite a extrapolação.
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
@@ -646,18 +653,18 @@
 \end{frame}
 
 % Slide 24a: the score, one pair at a time
-\begin{frame}{HoTHP score: one dimension-pair at a time}
-  Each head splits into $d/2$ \textbf{pairs}. Pair $p$ has frequency $\theta_p$
-  and components $(q_1^{(p)}, q_2^{(p)})$ and $(k_1^{(p)}, k_2^{(p)})$.
+\begin{frame}{Score do HoTHP: um par de dimensões por vez}
+  Cada cabeça se divide em $d/2$ \textbf{pares}. O par $p$ tem frequência
+  $\theta_p$ e componentes $(q_1^{(p)}, q_2^{(p)})$ e $(k_1^{(p)}, k_2^{(p)})$.
   \vspace{0.3em}
-  \begin{block}{Score of one pair $=$ hyperbolic rotation by $\Delta t$}
+  \begin{block}{Score de um par $=$ rotação hiperbólica por $\Delta t$}
     \[
       s^{(p)} = (q_1 k_1 + q_2 k_2)\,\cosh(\theta_p \Delta t)
               + (q_1 k_2 + q_2 k_1)\,\sinh(\theta_p \Delta t)
     \]
   \end{block}
-  Full score $=$ sum over pairs, with the recency envelope $e^{-|\Delta t|\theta'}$
-  and the usual $1/\sqrt{d}$ scaling ($\Delta t = t_i - t_j$):
+  Score completo $=$ soma sobre os pares, com o envelope de recência
+  $e^{-|\Delta t|\theta'}$ e o fator usual $1/\sqrt{d}$ ($\Delta t = t_i - t_j$):
   \[
     s_{ij} = \frac{1}{\sqrt{d}} \sum_{p=1}^{d/2}
       e^{-|\Delta t|\theta'}\; s^{(p)} .
@@ -666,16 +673,16 @@
 \end{frame}
 
 % Slide 24b: from cosh/sinh definitions down to the stable form
-\begin{frame}{We never evaluate $\cosh/\sinh$, only exponentials}
-  \textbf{Step 1.} Replace each by its definition ($\cosh$ is even, so
+\begin{frame}{Nunca avaliamos $\cosh/\sinh$, apenas exponenciais}
+  \textbf{Passo 1.} Substituímos cada um pela sua definição ($\cosh$ é par, então
   $\theta_p\Delta t \to \theta_p|\Delta t|$):
   \[
     \cosh(\theta_p \Delta t) = \tfrac{1}{2}\big(e^{\theta_p|\Delta t|} + e^{-\theta_p|\Delta t|}\big),
     \qquad
     \sinh(\theta_p \Delta t) = \tfrac{\mathrm{sign}(\Delta t)}{2}\big(e^{\theta_p|\Delta t|} - e^{-\theta_p|\Delta t|}\big).
   \]
-  \textbf{Step 2.} Multiply the $\cosh$ term by the envelope and \emph{merge the
-  exponents} (this is the whole trick):
+  \textbf{Passo 2.} Multiplicamos o termo do $\cosh$ pelo envelope e \emph{juntamos
+  os expoentes} (esse é todo o truque):
   \begin{align*}
     e^{-|\Delta t|\theta'}\cosh(\theta_p \Delta t)
       &= \tfrac{1}{2}\Big(
@@ -685,86 +692,89 @@
           e^{-|\Delta t|(\theta' - \theta_p)}
         + e^{-|\Delta t|(\theta' + \theta_p)}\Big).
   \end{align*}
-  \textbf{Step 3.} Since $\theta' > \max_p \theta_p$ by construction, both
-  $\theta'-\theta_p>0$ and $\theta'+\theta_p>0$: \alert{every exponent is
-  negative}, so each term lands in $(0,1]$, no overflow, no \texttt{NaN}.
+  \textbf{Passo 3.} Como $\theta' > \max_p \theta_p$ por construção, tanto
+  $\theta'-\theta_p>0$ quanto $\theta'+\theta_p>0$: \alert{todo expoente é
+  negativo}, então cada termo fica em $(0,1]$, sem overflow, sem \texttt{NaN}.
   \vspace{0.2em}
-  {\small (The $\sinh$ term merges the same way, giving
+  {\small (O termo do $\sinh$ se junta da mesma forma, resultando em
   $\tfrac{\mathrm{sign}(\Delta t)}{2}\big(e^{-|\Delta t|(\theta'-\theta_p)} - e^{-|\Delta t|(\theta'+\theta_p)}\big)$.)}
 \end{frame}
 
 % Slide 25: architecture + where the bias acts
-\begin{frame}{Architecture: where the exponential bias acts}
-  HoTHP is a Transformer encoder with hyperbolic multi-head attention. \textbf{No}
-  time information is added to the embedding; time enters only through the kernel.
-  The bias acts in \textbf{two distinct steps}:
+\begin{frame}{Arquitetura: onde o viés exponencial atua}
+  O HoTHP é um encoder Transformer com atenção multi-cabeça hiperbólica.
+  \textbf{Nenhuma} informação de tempo é somada ao embedding; o tempo entra
+  apenas pelo kernel. O viés atua em \textbf{duas etapas distintas}:
   \vspace{0.3em}
   \begin{enumerate}
-    \item \textbf{Hyperbolic attention} $\to \mathbf{h}(t_j)$: the decay decides
-          \emph{which past events} shape the hidden state. Recent events get more
-          weight.
-    \item \textbf{Intensity} $\lambda_k(t) = \mathrm{softplus}\!\big(
+    \item \textbf{Atenção hiperbólica} $\to \mathbf{h}(t_j)$: o decaimento decide
+          \emph{quais eventos passados} moldam o estado oculto. Eventos recentes
+          recebem mais peso.
+    \item \textbf{Intensidade} $\lambda_k(t) = \mathrm{softplus}\!\big(
           \alpha_k (t-t_j) + \mathbf{w}_k^\top \mathbf{h}(t_j) + b_k\big)$:
-          linear in the \emph{elapsed} time $t-t_j$, so shifting all timestamps
-          changes nothing; $\alpha_k$ is free (can rise or fall after an event).
+          linear no tempo \emph{decorrido} $t-t_j$, então deslocar todos os
+          instantes não muda nada; $\alpha_k$ é livre (pode subir ou descer após
+          um evento).
   \end{enumerate}
-  \begin{block}{Consequence}
-    The recency bias does \textbf{not} require the process to be self-exciting. It
-    only requires that recent events be more informative. It helps on
-    self-exciting \emph{and} self-inhibiting processes.
+  \begin{block}{Consequência}
+    O viés de recência \textbf{não} exige que o processo seja auto-excitante.
+    Exige apenas que eventos recentes sejam mais informativos. Ele ajuda em
+    processos auto-excitantes \emph{e} auto-inibitórios.
   \end{block}
 \end{frame}
 
 % Slide 26: kernel comparison zones
-\begin{frame}{RoTHP vs. HoTHP kernel: training and extrapolation zones}
+\begin{frame}{Kernel RoTHP vs. HoTHP: zonas de treino e extrapolação}
   \begin{figure}
     \centering
     \includegraphics[width=0.74\textwidth]{fig_kernel_rothp_vs_hothp}
   \end{figure}
   \vspace{-0.3em}
-  {\small In the \textbf{training zone}, both models fit the data. In the
-  \textbf{extrapolation zone}, the RoTHP trigonometric kernel keeps oscillating in
-  unseen phases, while the HoTHP hyperbolic kernel decays exponentially to zero,
-  without oscillation, like the classical Hawkes kernel (dashed).}
+  {\small Na \textbf{zona de treino}, os dois modelos ajustam os dados. Na
+  \textbf{zona de extrapolação}, o kernel trigonométrico do RoTHP continua
+  oscilando em fases não vistas, enquanto o kernel hiperbólico do HoTHP decai
+  exponencialmente até zero, sem oscilação, como o kernel de Hawkes clássico
+  (tracejado).}
 \end{frame}
 
 % ============================================================
-\section{Experiments and results}
+\section{Experimentos e resultados}
 % ============================================================
 
 % Slide 27: setup
-\begin{frame}{Experimental setup}
+\begin{frame}{Configuração experimental}
   \begin{itemize}
-    \item \textbf{Synthetic data:} multivariate Hawkes with exponential kernel,
-          two regimes: \emph{slow decay} ($\beta$ small) and \emph{fast decay}
-          ($\beta$ large). We know the ground truth.
-    \item \textbf{Real data (EasyTPP \cite{xue2024easytpp}):} Taxi, StackOverflow,
+    \item \textbf{Dados sintéticos:} Hawkes multivariado com kernel exponencial,
+          dois regimes: \emph{decaimento lento} ($\beta$ pequeno) e
+          \emph{decaimento rápido} ($\beta$ grande). Conhecemos o processo gerador.
+    \item \textbf{Dados reais (EasyTPP \cite{xue2024easytpp}):} Taxi, StackOverflow,
           Amazon, Retweet.
-    \item \textbf{Protocol:} train short, test long, factors
-          $\alpha \in \{1,2,5,10\}$ (synthetic) and $\{1,2,5\}$ (real).
-    \item \textbf{Models:} NHP, THP, RoTHP, HoTHP. THP/RoTHP/HoTHP share the same
-          architecture and intensity, differing \textbf{only in how time enters
-          the attention} (a controlled comparison).
-    \item \textbf{Metrics:} NLL (main), RMSE, type accuracy. Synthetic: 10 seeds +
-          Wilcoxon signed-rank test. Real: 3 seeds (no Wilcoxon).
+    \item \textbf{Protocolo:} treinar curto, testar longo, fatores
+          $\alpha \in \{1,2,5,10\}$ (sintético) e $\{1,2,5\}$ (real).
+    \item \textbf{Modelos:} NHP, THP, RoTHP, HoTHP. THP/RoTHP/HoTHP compartilham a
+          mesma arquitetura e intensidade, diferindo \textbf{apenas em como o
+          tempo entra na atenção} (uma comparação controlada).
+    \item \textbf{Métricas:} NLL (principal), RMSE, acurácia de tipo. Sintético:
+          10 sementes + teste de Wilcoxon (postos sinalizados). Real: 3 sementes
+          (sem Wilcoxon).
   \end{itemize}
 \end{frame}
 
 % Slide 28: synthetic NLL table
-\begin{frame}{Synthetic results: NLL under extrapolation}
+\begin{frame}{Resultados sintéticos: NLL sob extrapolação}
   \begin{table}
     \centering \small
     \begin{tabular}{llcccc}
       \toprule
-      Scenario & Model & $1\times$ & $2\times$ & $5\times$ & $10\times$ \\
+      Cenário & Modelo & $1\times$ & $2\times$ & $5\times$ & $10\times$ \\
       \midrule
-      \multirow{4}{*}{Slow decay}
+      \multirow{4}{*}{Decaim.\ lento}
         & NHP    & $\mathbf{1.470}$ & $2.197$ & $2.667$ & $\underline{2.817}$ \\
         & THP    & $\underline{1.475}$ & $3.926$ & $4.127$ & $4.199$ \\
         & RoTHP  & $1.499$ & $\underline{2.007}$ & $\underline{2.642}$ & $3.001$ \\
         & HoTHP  & $1.545$ & $\mathbf{1.609}$ & $\mathbf{1.943}$ & $\mathbf{2.364}$ \\
       \midrule
-      \multirow{4}{*}{Fast decay}
+      \multirow{4}{*}{Decaim.\ rápido}
         & NHP    & $\mathbf{1.663}$ & $\underline{1.833}$ & $\underline{2.057}$ & $\underline{2.153}$ \\
         & THP    & $\underline{1.677}$ & $3.391$ & $3.761$ & $3.897$ \\
         & RoTHP  & $1.681$ & $2.039$ & $2.146$ & $2.275$ \\
@@ -773,45 +783,45 @@
     \end{tabular}
   \end{table}
   \vspace{0.2em}
-  {\small NLL (mean, 10 seeds), lower is better. \textbf{HoTHP wins at every
-  extrapolation factor} ($2\times, 5\times, 10\times$) in both scenarios; the small
-  cost at $1\times$ reverses immediately. Advantage significant (Wilcoxon,
-  $p<0.05$) in all cases.}
+  {\small NLL (média, 10 sementes), menor é melhor. \textbf{O HoTHP vence em todos
+  os fatores de extrapolação} ($2\times, 5\times, 10\times$) nos dois cenários; o
+  pequeno custo em $1\times$ se reverte logo em seguida. Vantagem significativa
+  (Wilcoxon, $p<0.05$) em todos os casos.}
 \end{frame}
 
 % Slide 29: synthetic NLL figure
-\begin{frame}{Synthetic results: NLL vs. extrapolation factor}
+\begin{frame}{Resultados sintéticos: NLL vs. fator de extrapolação}
   \begin{figure}
     \centering
     \includegraphics[width=0.9\textwidth]{fig_extrapolation_nll_sintetico}
   \end{figure}
   \vspace{-0.3em}
-  {\small In fast decay, the HoTHP NLL grows only $0.085$ from $1\times$ to
-  $10\times$ (almost flat), while the THP diverges and RoTHP/NHP degrade more. The
-  recency bias is aligned with the exponential kernel that generated the data.}
+  {\small No decaimento rápido, a NLL do HoTHP cresce apenas $0.085$ de $1\times$
+  a $10\times$ (quase plana), enquanto o THP diverge e RoTHP/NHP degradam mais. O
+  viés de recência está alinhado com o kernel exponencial que gerou os dados.}
 \end{frame}
 
 % Slide 30: synthetic RMSE
-\begin{frame}{Synthetic results: RMSE}
+\begin{frame}{Resultados sintéticos: RMSE}
   \begin{figure}
     \centering
     \includegraphics[width=0.9\textwidth]{fig_extrapolation_rmse_sintetico}
   \end{figure}
   \vspace{-0.3em}
-  {\small Unlike the NLL, the RMSE does not separate the models: they stay close
-  at every factor. The HoTHP advantage shows up in the \textbf{likelihood}
-  (modeling the full temporal distribution), not in the pointwise prediction of
-  the next interval.}
+  {\small Diferente da NLL, o RMSE não separa os modelos: eles ficam próximos em
+  todos os fatores. A vantagem do HoTHP aparece na \textbf{verossimilhança}
+  (modelar a distribuição temporal completa), não na predição pontual do próximo
+  intervalo.}
 \end{frame}
 
 % Slide 31: real datasets + NLL table
-\begin{frame}{Real data: datasets and NLL}
+\begin{frame}{Dados reais: conjuntos e NLL}
   \begin{columns}[T]
     \begin{column}{0.36\textwidth}
       {\scriptsize
       \begin{tabular}{lcc}
         \toprule
-        Dataset & Types & $L_{\text{train}}$ \\
+        Conjunto & Tipos & $L_{\text{train}}$ \\
         \midrule
         Amazon        & 16 & 18 \\
         StackOverflow & 22 & 20 \\
@@ -821,14 +831,14 @@
       \end{tabular}}
       \vspace{0.6em}
 
-      {\scriptsize Raw timestamps (shift to zero only), 3 seeds. Retweet is
-      studied separately (ablation).}
+      {\scriptsize Instantes crus (apenas deslocados para zero), 3 sementes. O
+      Retweet é estudado à parte (ablação).}
     \end{column}
     \begin{column}{0.62\textwidth}
       {\scriptsize
       \begin{tabular}{llccc}
         \toprule
-        Dataset & Model & $1\times$ & $2\times$ & $5\times$ \\
+        Conjunto & Modelo & $1\times$ & $2\times$ & $5\times$ \\
         \midrule
         \multirow{4}{*}{Taxi}
           & THP   & $-0.273$ & $-0.314$ & $-0.243$ \\
@@ -852,19 +862,19 @@
     \end{column}
   \end{columns}
   \vspace{0.3em}
-  {\small Within the Transformer family, HoTHP has the best NLL on Amazon and Taxi
-  at every factor, and is the only one that keeps \emph{improving} on Amazon as the
-  sequence grows.}
+  {\small Dentro da família Transformer, o HoTHP tem a melhor NLL na Amazon e no
+  Taxi em todos os fatores, e é o único que continua \emph{melhorando} na Amazon
+  conforme a sequência cresce.}
 \end{frame}
 
 % Slide 32: accuracy - HoTHP leads on the datasets where recency helps
-\begin{frame}{Real data: type-prediction accuracy}
+\begin{frame}{Dados reais: acurácia de predição de tipo}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
       {\scriptsize
       \begin{tabular}{llccc}
         \toprule
-        Dataset & Model & $1\times$ & $2\times$ & $5\times$ \\
+        Conjunto & Modelo & $1\times$ & $2\times$ & $5\times$ \\
         \midrule
         \multirow{4}{*}{Amazon}
           & NHP   & $.293$ & $.306$ & $.315$ \\
@@ -891,19 +901,19 @@
       \includegraphics[width=\textwidth]{fig_real_acc}
 
       \vspace{0.4em}
-      {\scriptsize $\dagger$ Retweet normalized (raw timestamps overflow all
-      Transformers); NHP not run there.}
+      {\scriptsize $\dagger$ Retweet normalizado (instantes crus estouram todos os
+      Transformers); NHP não foi rodado nele.}
     \end{column}
   \end{columns}
   \vspace{0.1em}
-  {\small HoTHP has the \textbf{best accuracy at every factor, on every dataset
-  where recency helps}. It beats the Transformer family and also NHP, whose lead
-  was confined to NLL. On Amazon the margin \emph{grows} with the sequence length
-  ($+0.020$ over the best baseline at $5\times$).}
+  {\small O HoTHP tem a \textbf{melhor acurácia em todos os fatores, em todo
+  conjunto onde a recência ajuda}. Ele supera a família Transformer e também o
+  NHP, cuja vantagem se restringia à NLL. Na Amazon a margem \emph{cresce} com o
+  comprimento da sequência ($+0.020$ sobre a melhor baseline em $5\times$).}
 \end{frame}
 
 % Slide 33: learned intensities
-\begin{frame}{What the models learn: conditional intensities}
+\begin{frame}{O que os modelos aprendem: intensidades condicionais}
   \begin{columns}[T]
     \begin{column}{0.46\textwidth}
       \centering
@@ -911,38 +921,36 @@
     \end{column}
     \begin{column}{0.52\textwidth}
       \small
-      Learned $\lambda^*(t)$ on representative test sequences:
+      $\lambda^*(t)$ aprendido em sequências de teste:
       \begin{itemize}
         \small
-        \item \textbf{Amazon:} intensity grows between events and falls at each
-              event (\emph{self-inhibiting}). Yet HoTHP wins: the most recent
-              event is still the most informative.
-        \item \textbf{StackOverflow:} intensity is almost flat (little temporal
-              memory); the models tie.
-        \item \textbf{Retweet:} models react only to the initial burst, then
-              collapse to $\lambda^* \approx 0$ (extreme temporal scale).
+        \item \textbf{Amazon:} intensidade cresce entre eventos e cai a cada um
+              (\emph{auto-inibitório}). Ainda assim o HoTHP vence.
+        \item \textbf{StackOverflow:} intensidade quase plana (pouca memória);
+              os modelos empatam.
+        \item \textbf{Retweet:} reagem só à rajada inicial e colapsam para
+              $\lambda^* \approx 0$ (escala extrema).
       \end{itemize}
       \vspace{-0.3em}
-      \begin{block}{Confirms the two-step view}
-        \small The recency bias acts on \textbf{attention} (which past events
-        matter), not on the intensity sign. That is why it helps even on a
-        self-inhibiting process.
+      \begin{block}{Confirma a visão em duas etapas}
+        \small O viés atua na \textbf{atenção} (quais eventos importam), não no
+        sinal da intensidade. Por isso ajuda até em processos auto-inibitórios.
       \end{block}
     \end{column}
   \end{columns}
 \end{frame}
 
 % Slide 34: Retweet ablation + cost
-\begin{frame}{Ablation on Retweet, and computational cost}
+\begin{frame}{Ablação no Retweet e custo computacional}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \textbf{Retweet: scale or bias?}
+      \textbf{Retweet: escala ou viés?}
       {\scriptsize
       \begin{tabular}{llcc}
         \toprule
-        Version & Model & $1\times$ & $5\times$ \\
+        Versão & Modelo & $1\times$ & $5\times$ \\
         \midrule
-        \multirow{3}{*}{Raw}
+        \multirow{3}{*}{Cru}
           & THP   & $15.9$ & $2.3{\times}10^{4}$ \\
           & RoTHP & $15.9$ & $7.0{\times}10^{5}$ \\
           & HoTHP & $15.9$ & $1.4{\times}10^{5}$ \\
@@ -955,92 +963,95 @@
       \end{tabular}}
       \vspace{0.4em}
 
-      {\small The problem was the \textbf{scale}. After normalization, HoTHP is the
-      only model with a negative (stable) NLL at $5\times$.}
+      {\small O problema era a \textbf{escala}. Após a normalização, o HoTHP é o
+      único modelo com NLL negativa (estável) em $5\times$.}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \textbf{Cost vs. benefit}
+      \textbf{Custo vs. benefício}
       \begin{itemize}
         \small
-        \item HoTHP computes the kernel per event \emph{pair}: $O(L^2)$.
-        \item On real data it is $1.07\times$ (Taxi) to $2.44\times$ (Retweet)
-              slower than RoTHP, but \textbf{cheaper than the NHP} (the strongest
-              NLL baseline).
-        \item Cost is paid once, at training. At inference, what matters is a
-              \emph{valid} result: RoTHP at $5\times$ gives NLL $47.6$, HoTHP gives
-              $-0.651$.
+        \item O HoTHP calcula o kernel por \emph{par} de eventos: $O(L^2)$.
+        \item Nos dados reais ele é de $1.07\times$ (Taxi) a $2.44\times$ (Retweet)
+              mais lento que o RoTHP, mas \textbf{mais barato que o NHP} (a
+              baseline mais forte em NLL).
+        \item O custo é pago uma vez, no treino. Na inferência, o que importa é um
+              resultado \emph{válido}: o RoTHP em $5\times$ dá NLL $47.6$, o HoTHP
+              dá $-0.651$.
       \end{itemize}
     \end{column}
   \end{columns}
 \end{frame}
 
 % ============================================================
-\section{Conclusion}
+\section{Conclusão}
 % ============================================================
 
 % Slide: what changed since the qualification (committee feedback)
-\begin{frame}{Since the qualification}
-  Following the committee's feedback (qualification, 10 July 2026), the
-  dissertation was revised on four fronts:
+\begin{frame}{Desde a qualificação}
+  Seguindo o retorno da banca (qualificação, 10 de julho de 2026), a dissertação
+  foi revisada em quatro frentes:
   \vspace{0.4em}
   \begin{itemize}
-    \item \textbf{Notation and readability:} acronyms expanded in the abstract, a
-          list of symbols added, unified notation ($\gamma_k$ for the intensity
-          slope, $\rho$ for the extrapolation factor), and the modulus corrected
-          in the kernel equation ($e^{-|\Delta t|\theta'}$).
-    \item \textbf{Deeper foundations:} a Poisson--Hawkes taxonomy, the explicit
-          Poisson\,$\to$\,Hawkes likelihood link, and a discussion of the RoPE
-          period limitation.
-    \item \textbf{More results:} RMSE now reported on the real datasets, and
-          sources added to every reused figure.
-    \item \textbf{Writing:} the conclusion and the future-work chapter completed.
+    \item \textbf{Notação e legibilidade:} siglas expandidas no resumo, lista de
+          símbolos adicionada, notação unificada ($\gamma_k$ para a inclinação da
+          intensidade, $\rho$ para o fator de extrapolação) e o módulo corrigido
+          na equação do kernel ($e^{-|\Delta t|\theta'}$).
+    \item \textbf{Fundamentação mais profunda:} uma taxonomia Poisson--Hawkes, a
+          ligação explícita de verossimilhança Poisson\,$\to$\,Hawkes e uma
+          discussão sobre a limitação de período do RoPE.
+    \item \textbf{Mais resultados:} RMSE agora reportado nos conjuntos reais, e
+          fontes adicionadas a toda figura reaproveitada.
+    \item \textbf{Escrita:} a conclusão e o capítulo de trabalhos futuros
+          concluídos.
   \end{itemize}
 \end{frame}
 
 % Slide 35: contributions
-\begin{frame}{Contributions}
+\begin{frame}{Contribuições}
   \begin{itemize}
-    \item \textbf{HoTHP:} a Transformer Hawkes Process with a \textbf{hyperbolic}
-          rotary kernel, combining time-invariance with a structural exponential
-          recency bias in a single attention mechanism.
-    \item A learnable $\theta'$, parametrized so that $\theta' > \max_j \theta_j$
-          \textbf{by construction}, guaranteeing exponential decay of the score
-          and numerical stability.
-    \item Under \emph{train short, test long}, HoTHP keeps the NLL stable up to
-          $10\times$ on synthetic data (significant by Wilcoxon), and is the best
-          of the Transformer family on Amazon and Taxi.
-    \item An analysis separating \emph{where} the bias acts (attention vs.
-          intensity), explaining why it helps even on self-inhibiting processes.
-    \item Implementation and experiments in the EasyTPP framework.
+    \item \textbf{HoTHP:} um Transformer Hawkes Process com kernel rotativo
+          \textbf{hiperbólico}, combinando invariância no tempo com um viés de
+          recência exponencial estrutural em um único mecanismo de atenção.
+    \item Um $\theta'$ aprendível, parametrizado de modo que
+          $\theta' > \max_j \theta_j$ \textbf{por construção}, garantindo o
+          decaimento exponencial do score e estabilidade numérica.
+    \item Sob \emph{treinar curto, testar longo}, o HoTHP mantém a NLL estável até
+          $10\times$ nos dados sintéticos (significativo por Wilcoxon), e é o
+          melhor da família Transformer na Amazon e no Taxi.
+    \item Uma análise separando \emph{onde} o viés atua (atenção vs. intensidade),
+          explicando por que ele ajuda mesmo em processos auto-inibitórios.
+    \item Implementação e experimentos no framework EasyTPP.
   \end{itemize}
 \end{frame}
 
 % Slide: limitations and future work
-\begin{frame}{Limitations and future work}
-  \textbf{Limitations}
+\begin{frame}{Limitações e trabalhos futuros}
+  \textbf{Limitações}
   \begin{itemize}
-    \item The exponential bias hurts when distant events are as relevant as recent
-          ones (long-range memory).
-    \item Extreme temporal scales need normalization to avoid numerical saturation
-          (as on raw Retweet).
-    \item $\theta'$ is a \textbf{single global} decay rate; processes with multiple
-          temporal scales may require multiple rates.
+    \item O viés exponencial atrapalha quando eventos distantes são tão relevantes
+          quanto os recentes (memória de longo alcance).
+    \item Escalas temporais extremas precisam de normalização para evitar
+          saturação numérica (como no Retweet cru).
+    \item $\theta'$ é uma taxa de decaimento \textbf{global única}; processos com
+          múltiplas escalas temporais podem exigir múltiplas taxas.
   \end{itemize}
   \vspace{0.2em}
-  \textbf{Future work}
+  \textbf{Trabalhos futuros}
   \begin{itemize}
-    \item \textbf{Multiple decay scales:} one learnable $\theta'$ per head
-          (ALiBi-style), each specializing in a temporal scale.
-    \item \textbf{Alternative decay shapes:} power-law instead of exponential,
-          for long-range memory (aftershocks, cascades).
-    \item \textbf{Broader evaluation:} long-horizon benchmarks (HoTPP), new domains.
-    \item \textbf{Beyond attention:} does the recency bias transfer to state-space
-          models (Mamba) and LLM-based TPPs?
+    \item \textbf{Múltiplas escalas de decaimento:} um $\theta'$ aprendível por
+          cabeça (ao estilo do ALiBi), cada uma se especializando em uma escala
+          temporal.
+    \item \textbf{Formas alternativas de decaimento:} lei de potência em vez de
+          exponencial, para memória de longo alcance (réplicas sísmicas, cascatas).
+    \item \textbf{Avaliação mais ampla:} benchmarks de horizonte longo (HoTPP),
+          novos domínios.
+    \item \textbf{Além da atenção:} o viés de recência se transfere para modelos
+          de espaço de estados (Mamba) e TPPs baseados em LLM?
   \end{itemize}
 \end{frame}
 
 % Slide 38: thanks
-\begin{frame}{Thank you}
+\begin{frame}{Obrigado}
   \begin{center}
     \large \textbf{Hugo Ramos Soares} \\
     \normalsize
@@ -1051,7 +1062,7 @@
 \end{frame}
 
 % References (real frame so BibTeX runs and \cite{} resolves)
-\begin{frame}[noframenumbering,allowframebreaks]{References}
+\begin{frame}[noframenumbering,allowframebreaks]{Referências}
   \setbeamertemplate{bibliography item}{\insertbiblabel}
   \scriptsize
   \bibliographystyle{plain}
@@ -1064,84 +1075,90 @@
 \appendix
 
 % Backup D2: the most important expected question
-\begin{frame}[noframenumbering]{Backup: why hyperbolic, not a single $e^{-\beta|\Delta t|}$ or ALiBi?}
-  Expanding the score gives a \textbf{content-weighted mixture of exponentials}:
+\begin{frame}[noframenumbering]{Backup: por que hiperbólico, e não um único $e^{-\beta|\Delta t|}$ ou ALiBi?}
+  Expandindo o score, obtemos uma \textbf{mistura de exponenciais ponderada pelo
+  conteúdo}:
   \[
     s_{ij} = \frac{1}{\sqrt d}\sum_{p=1}^{d/2}\Big[
       c_p(\mathbf{q},\mathbf{k})\,e^{-(\theta'-\theta_p)|\Delta t|}
     + d_p(\mathbf{q},\mathbf{k})\,e^{-(\theta'+\theta_p)|\Delta t|}\Big]
   \]
-  Three things a single $e^{-\beta|\Delta t|}$ or an ALiBi bias do \textbf{not} give:
+  Três coisas que um único $e^{-\beta|\Delta t|}$ ou um viés tipo ALiBi
+  \textbf{não} dão:
   \begin{enumerate}
-    \item \textbf{Content-dependent coefficients} $c_p, d_p$ (the $\mathbf{q}\cdot\mathbf{k}$
-          products per dimension pair), which can be positive or negative; ALiBi's
-          penalty is fixed and content-independent.
-    \item \textbf{A spectrum of decay rates} $\{\theta'-\theta_p,\ \theta'+\theta_p\}$:
-          since $\theta_p$ ranges from $1$ down to $\sim 10^{-4}$, slow components
-          ($\theta'-\theta_1$, near zero) keep longer memory while fast components
-          ($\theta'+\theta_p$) forget quickly. A single $\beta$ has one scale.
-    \item \textbf{Time-invariance} (the score depends only on $\Delta t$), which the
-          discrete ALiBi does not provide in continuous time.
+    \item \textbf{Coeficientes dependentes do conteúdo} $c_p, d_p$ (os
+          $\mathbf{q}\cdot\mathbf{k}$ produtos por par de dimensões), que podem ser
+          positivos ou negativos; a penalidade do ALiBi é fixa e independente do
+          conteúdo.
+    \item \textbf{Um espectro de taxas de decaimento} $\{\theta'-\theta_p,\ \theta'+\theta_p\}$:
+          como $\theta_p$ varia de $1$ até $\sim 10^{-4}$, componentes lentas
+          ($\theta'-\theta_1$, perto de zero) retêm memória mais longa, enquanto
+          componentes rápidas ($\theta'+\theta_p$) esquecem depressa. Um único
+          $\beta$ tem uma só escala.
+    \item \textbf{Invariância no tempo} (o score depende apenas de $\Delta t$), que
+          o ALiBi discreto não oferece em tempo contínuo.
   \end{enumerate}
 \end{frame}
 
 % Backup D8: is the Transformer family competitive? + THP replication finding
-\begin{frame}[noframenumbering]{Backup: is the Transformer family competitive? (NHP vs THP)}
-  \textbf{NHP wins NLL on Amazon/Taxi: expected, not a bug.} It matches the
-  EasyTPP benchmark: continuous-time recurrent models fit the inter-event density
-  natively. Our question is \emph{within-family} (fixed architecture, only the
-  kernel changes): HoTHP is the best of the three, beats NHP on \textbf{accuracy}
-  (Amazon, SO), and beats \emph{all} baselines on synthetic NLL (10 seeds, Wilcoxon).
-  \vspace{0.3em}
-  \begin{block}{We also investigated the NHP\,$>$\,THP inversion directly}
-    Reproducing the \textbf{original} THP on its own MIMIC-II data:
+\begin{frame}[noframenumbering]{Backup: a família Transformer é competitiva? (NHP vs THP)}
+  \textbf{O NHP vence em NLL na Amazon/Taxi: é esperado, não um bug.} Isso condiz
+  com o benchmark do EasyTPP: modelos recorrentes em tempo contínuo modelam a
+  densidade entre eventos de forma nativa. Nossa pergunta é \emph{dentro da
+  família} (arquitetura fixa, só o kernel muda): o HoTHP é o melhor dos três,
+  supera o NHP em \textbf{acurácia} (Amazon, SO) e supera \emph{todas} as
+  baselines na NLL sintética (10 sementes, Wilcoxon).
+  \vspace{0.1em}
+  \begin{block}{Também investigamos a inversão NHP\,$>$\,THP diretamente}
+    Reproduzindo o THP \textbf{original} nos próprios dados MIMIC-II dele:
     \begin{itemize}
-      \item Under a consistent integration routine, NHP $\geq$ THP even there.
-      \item The THP paper's high log-likelihood is an artifact of its Monte-Carlo
-            solver variant: the \textbf{implementation} effect on LL ($\approx 2.76$
-            nats) is about $10\times$ the \textbf{model} effect ($\approx 0.28$ nats).
+      \item Sob uma rotina de integração consistente, NHP $\geq$ THP mesmo ali.
+      \item A LL alta do artigo do THP vem da variante de solver Monte Carlo: o
+            efeito de \textbf{implementação} na LL ($\approx 2.76$ nats) é
+            $\sim 10\times$ o de \textbf{modelo} ($\approx 0.28$ nats).
     \end{itemize}
-    So log-likelihoods from different implementations are not directly comparable.
-    The inversion is not an artifact of our reimplementation.
+    Ou seja, LLs de implementações diferentes não são comparáveis; a inversão não
+    é artefato da nossa reimplementação.
   \end{block}
-  {\footnotesize (Complementary investigation, in a separate codebase; not a chapter of the dissertation.)}
+  {\footnotesize (Investigação complementar, em uma base de código separada; não é um capítulo da dissertação.)}
 \end{frame}
 
 % Backup J2: learned theta' values -- PLACEHOLDER, fill before the defense
-\begin{frame}[noframenumbering]{Backup: what did $\theta'$ converge to?}
-  Parametrized so that $\theta' = \mathrm{softplus}(\text{raw}) + 1 + 10^{-4}
-  > \max_p \theta_p = 1$ \textbf{by construction}.
-  \vspace{0.4em}
+\begin{frame}[noframenumbering]{Backup: para quanto o $\theta'$ convergiu?}
+  Parametrizado de modo que $\theta' = \mathrm{softplus}(\text{raw}) + 1 + 10^{-4}
+  > \max_p \theta_p = 1$ \textbf{por construção}.
+  \vspace{0.2em}
   \begin{center}
     \begin{tabular}{lc}
       \toprule
-      Scenario / dataset & Learned $\theta'$ \\
+      Cenário / conjunto & $\theta'$ aprendido \\
       \midrule
-      Synthetic, fast decay & \alert{[fill]} \\
-      Synthetic, slow decay & \alert{[fill]} \\
-      Amazon / Taxi / StackOverflow & \alert{[fill]} \\
+      Sintético, decaim.\ rápido & \alert{[preencher]} \\
+      Sintético, decaim.\ lento & \alert{[preencher]} \\
+      Amazon / Taxi / StackOverflow & \alert{[preencher]} \\
       \bottomrule
     \end{tabular}
   \end{center}
-  \vspace{0.4em}
-  \textbf{Expectation:} in \emph{fast decay}, $\theta'$ larger (shorter memory);
-  in \emph{slow decay}, $\theta'$ smaller.
-  \vspace{0.3em}
+  \vspace{0.2em}
+  \textbf{Expectativa:} no \emph{decaimento rápido}, $\theta'$ maior (memória mais
+  curta); no \emph{decaimento lento}, $\theta'$ menor.
+  \vspace{0.2em}
 
-  {\footnotesize \alert{TODO before the defense:} extract
-  $\theta' = \mathrm{softplus}(\text{raw})+1+10^{-4}$ from the checkpoints and fill
-  the table.}
+  {\footnotesize \alert{TODO antes da defesa:} extrair
+  $\theta' = \mathrm{softplus}(\text{raw})+1+10^{-4}$ dos checkpoints e preencher
+  a tabela.}
 \end{frame}
 
 % Backup D6: the compensator integral (the "Monte Carlo" terminology point)
-\begin{frame}[noframenumbering]{Backup: how is the compensator integral computed?}
+\begin{frame}[noframenumbering]{Backup: como a integral do compensador é calculada?}
   \begin{itemize}
-    \item The \textbf{same routine} for all four models, defined once in the EasyTPP
-          base class.
-    \item A \textbf{deterministic grid} of 20 nodes per inter-event interval (a fixed
-          \texttt{linspace} quadrature; the text calls it Monte Carlo).
-    \item \textbf{Key point:} any estimator bias is \emph{identical} across models, so
-          the NLL ranking does not depend on the integral approximation.
+    \item A \textbf{mesma rotina} para os quatro modelos, definida uma única vez na
+          classe base do EasyTPP.
+    \item Uma \textbf{grade determinística} de 20 nós por intervalo entre eventos
+          (uma quadratura \texttt{linspace} fixa; o texto a chama de Monte Carlo).
+    \item \textbf{Ponto central:} qualquer viés do estimador é \emph{idêntico}
+          entre os modelos, então o ranking de NLL não depende da aproximação da
+          integral.
   \end{itemize}
 \end{frame}
 
