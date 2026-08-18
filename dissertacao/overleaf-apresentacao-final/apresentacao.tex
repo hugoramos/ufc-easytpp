@@ -1,9 +1,7 @@
-\documentclass[aspectratio=169]{beamer}
-\usetheme{Madrid}
+\documentclass[aspectratio=169,9pt]{beamer}
+\usetheme{metropolis}
+\metroset{numbering=fraction, progressbar=frametitle, block=fill}
 
-\usepackage{lmodern}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
 \usepackage[brazilian]{babel}
 \usepackage{amsmath,amssymb,bm}
 \usepackage{graphicx}
@@ -12,19 +10,25 @@
 \usepackage{tikz}
 \usetikzlibrary{decorations.pathreplacing}
 
-% flat blocks: avoid Madrid shadow rendering artefacts
-\setbeamertemplate{blocks}[rounded][shadow=false]
+% accent color (UFC-ish deep blue/teal)
+\definecolor{accent}{HTML}{2A6F97}
+\setbeamercolor{frametitle}{bg=accent}
+\setbeamercolor{progress bar}{fg=accent}
+\setbeamercolor{alerted text}{fg=accent}
+
+% smaller title-page fonts so the long title + committee fit
+\setbeamerfont{title}{size=\large,series=\bfseries}
+\setbeamerfont{subtitle}{size=\normalsize}
 
 \graphicspath{{figures/}}
 
 \title[HoTHP]{HoTHP: Hyperbolic Rotary Position Embedding-based Transformer Hawkes Process}
 \subtitle{Extrapolação de comprimento em Processos Pontuais Temporais}
 \author[H. R. Soares]{Hugo Ramos Soares}
-\institute[UFC]{Universidade Federal do Ceará \\[1em]
-    {\small Orientador: César Lincoln C. Mattos (UFC)} \\
-    {\small Coorientador: João Paulo Pordeus Gomes (UFC)} \\[0.3em]
-    {\small Banca: José Antonio Fernandes de Macêdo (UFC) \\
-    Diego Parente Paiva Mesquita (FGV)}
+\institute[UFC]{Universidade Federal do Ceará \\[0.5em]
+    {\footnotesize Orientador: César Lincoln C. Mattos (UFC) \quad
+     Coorientador: João Paulo Pordeus Gomes (UFC)} \\[0.2em]
+    {\footnotesize Banca: José Antonio Fernandes de Macêdo (UFC), Diego Parente Paiva Mesquita (FGV)}
 }
 \date{Mestrado - Defesa Final, 28 de agosto de 2026}
 
@@ -32,7 +36,7 @@
 
 % ============================================================
 % Slide 1: title
-\begin{frame}
+\begin{frame}[shrink=25]
   \titlepage
 \end{frame}
 
@@ -619,7 +623,7 @@
   \]
   \vspace{-0.4em}
   \begin{center}
-    \includegraphics[width=0.92\textwidth,height=0.5\textheight,keepaspectratio]{fig_rope_vs_hothp_geom}
+    \includegraphics[width=0.92\textwidth,height=0.46\textheight,keepaspectratio]{fig_rope_vs_hothp_geom}
   \end{center}
   \vspace{-0.4em}
   {\footnotesize A rotação preserva o \textbf{círculo} ($\cos,\sin$ oscilam); o
@@ -1035,7 +1039,7 @@
     \item $\theta'$ é uma taxa de decaimento \textbf{global única}; processos com
           múltiplas escalas temporais podem exigir múltiplas taxas.
   \end{itemize}
-  \vspace{0.2em}
+  \vspace{-0.2em}
   \textbf{Trabalhos futuros}
   \begin{itemize}
     \item \textbf{Múltiplas escalas de decaimento:} um $\theta'$ aprendível por
