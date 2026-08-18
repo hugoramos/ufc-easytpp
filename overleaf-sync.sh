@@ -1,21 +1,39 @@
 #!/usr/bin/env bash
 #
-# Sincroniza a pasta da dissertação (dissertacao/overleaf-dissertacao) com o
-# projeto Overleaf, usando git subtree. O token de acesso ao Overleaf fica
-# guardado no keychain do macOS (não neste arquivo, não no repositório).
+# Sincroniza as pastas de projetos Overleaf com seus projetos na web, usando
+# git subtree. O token de acesso ao Overleaf fica guardado no keychain do
+# macOS (não neste arquivo, não no repositório).
 #
-#   ./overleaf-sync.sh pull       # traz para o repo as edições feitas no Overleaf
-#   ./overleaf-sync.sh push       # envia para o Overleaf os commits feitos no repo
-#   ./overleaf-sync.sh status     # mostra as diferenças, sem alterar nada
-#   ./overleaf-sync.sh bootstrap  # (uma única vez) sobrescreve o Overleaf com o repo
+#   ./overleaf-sync.sh pull  [alvo]   # traz para o repo as edições feitas no Overleaf
+#   ./overleaf-sync.sh push  [alvo]   # envia para o Overleaf os commits feitos no repo
+#   ./overleaf-sync.sh status [alvo]  # mostra as diferenças, sem alterar nada
+#   ./overleaf-sync.sh bootstrap [alvo]  # (uma única vez) vincula o repo ao Overleaf
+#
+# [alvo] é opcional e escolhe qual projeto sincronizar (padrão: dissertacao):
+#   dissertacao   -> dissertacao/overleaf-dissertacao        (remote overleaf)
+#   apresentacao  -> dissertacao/overleaf-apresentacao-final (remote overleaf-apres)
 #
 # Fluxo recomendado: sempre 'pull' ANTES de editar e 'push' DEPOIS de commitar.
 #
 set -euo pipefail
 
-PREFIX="dissertacao/overleaf-dissertacao"
-REMOTE="overleaf"
 BRANCH="main"
+
+# Seleciona PREFIX e REMOTE conforme o projeto-alvo.
+case "${2:-dissertacao}" in
+  dissertacao)
+    PREFIX="dissertacao/overleaf-dissertacao"
+    REMOTE="overleaf"
+    ;;
+  apresentacao)
+    PREFIX="dissertacao/overleaf-apresentacao-final"
+    REMOTE="overleaf-apres"
+    ;;
+  *)
+    echo "alvo desconhecido: '${2}'. Use 'dissertacao' ou 'apresentacao'." >&2
+    exit 1
+    ;;
+esac
 
 cd "$(git rev-parse --show-toplevel)"
 
@@ -35,7 +53,7 @@ case "${1:-}" in
     require_clean
     git fetch "$REMOTE" "$BRANCH"
     if ! git merge --allow-unrelated-histories -X subtree="$PREFIX" --no-edit \
-           "$REMOTE/$BRANCH" -m "sync: pull do Overleaf"; then
+           "$REMOTE/$BRANCH" -m "sync: pull do Overleaf ($PREFIX)"; then
       echo "CONFLITO ao trazer as edições do Overleaf. Resolva os conflitos, então:"
       echo "  git add <arquivos> && git commit"
       exit 1
@@ -55,7 +73,7 @@ case "${1:-}" in
       git merge --abort 2>/dev/null || true
       git checkout main; git branch -D _ovl_tmp >/dev/null 2>&1 || true
       echo "CONFLITO: o Overleaf tem edições que divergem do repo."
-      echo "Rode './overleaf-sync.sh pull', resolva os conflitos, commite, e tente o push de novo."
+      echo "Rode './overleaf-sync.sh pull ${2:-dissertacao}', resolva os conflitos, commite, e tente o push de novo."
       exit 1
     fi
     if ! git push "$REMOTE" "_ovl_tmp:$BRANCH"; then
@@ -104,7 +122,7 @@ case "${1:-}" in
     echo "Rode 'git push origin main' para levar o join ao GitHub."
     ;;
   *)
-    echo "uso: $0 {pull|push|status|bootstrap}" >&2
+    echo "uso: $0 {pull|push|status|bootstrap} [dissertacao|apresentacao]" >&2
     exit 1
     ;;
 esac
