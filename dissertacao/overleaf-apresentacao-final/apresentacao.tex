@@ -9,6 +9,8 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{multirow}
+\usepackage{tikz}
+\usetikzlibrary{decorations.pathreplacing}
 
 % flat blocks: avoid Madrid shadow rendering artefacts
 \setbeamertemplate{blocks}[rounded][shadow=false]
@@ -24,7 +26,7 @@
     {\small Banca: José Antonio Fernandes de Macêdo (UFC) \\
     Diego Parente Paiva Mesquita (FGV)}
 }
-\date{Proposta - July 2026}
+\date{Mestrado - Defesa Final, 28 de agosto de 2026}
 
 \begin{document}
 
@@ -32,6 +34,70 @@
 % Slide 1: title
 \begin{frame}
   \titlepage
+\end{frame}
+
+% ============================================================
+% Opening hook (accessible framing before the technical content)
+% ============================================================
+
+% Hook slide 1: everything happens in time
+\begin{frame}{Everything happens in time}
+  \begin{columns}[T]
+    \begin{column}{0.32\textwidth}
+      \centering
+      \includegraphics[height=0.34\textheight,keepaspectratio]{hook_phone}\\[0.5em]
+      {\small A message arrives.\\ Then another.}
+    \end{column}
+    \begin{column}{0.32\textwidth}
+      \centering
+      \includegraphics[height=0.34\textheight,keepaspectratio]{hook_hospital}\\[0.5em]
+      {\small A patient is seen,\\ and returns months later.}
+    \end{column}
+    \begin{column}{0.32\textwidth}
+      \centering
+      \includegraphics[height=0.34\textheight,keepaspectratio]{hook_seismogram}\\[0.5em]
+      {\small The ground shakes.\\ When will it shake again?}
+    \end{column}
+  \end{columns}
+  \vspace{0.8em}
+  \begin{center}
+    \large The question behind all of them:\\[0.25em]
+    {\Large \textbf{when does the next one happen?}}
+  \end{center}
+  \vspace{0.3em}
+  {\scriptsize\color{gray} Images: Wikimedia Commons.}
+\end{frame}
+
+% Hook slide 2: learn from little, predict far ahead
+\begin{frame}{Learn from little, predict far ahead}
+  \centering
+  \vspace{0.6em}
+  \begin{tikzpicture}[scale=0.9,every node/.style={font=\small}]
+    % baseline
+    \draw[->,thick] (0,0) -- (12.2,0) node[right]{time};
+    % observed events (short history), close together
+    \foreach \x in {0.5,1.2,1.7,2.4,3.0} \filldraw (\x,0) circle (2.4pt);
+    % divider between seen and unseen
+    \draw[dashed,gray] (3.5,-1.1) -- (3.5,1.3);
+    % future events (sparse, unknown)
+    \foreach \x in {4.9,6.7,8.6,10.6} {\draw[thick] (\x,0) circle (2.4pt);
+      \node[above=3pt] at (\x,0.15) {\textbf{?}};}
+    % braces
+    \draw[decorate,decoration={brace,amplitude=6pt},thick] (0.3,0.55) -- (3.2,0.55)
+      node[midway,above=7pt]{seen (\textbf{training})};
+    \draw[decorate,decoration={brace,amplitude=6pt},thick] (4.6,0.9) -- (10.9,0.9)
+      node[midway,above=7pt]{unseen (\textbf{much longer})};
+    % bottom labels
+    \node[align=center] at (1.75,-0.75) {we only see a\\ \textbf{short history}};
+    \node[align=center] at (7.8,-0.75) {we want to anticipate\\ what comes \textbf{far ahead}};
+  \end{tikzpicture}
+
+  \vspace{1.0em}
+  \begin{block}{The challenge of this work}
+    \centering
+    Train on \textbf{short} sequences of events, and stay reliable on
+    \textbf{much longer} ones.
+  \end{block}
 \end{frame}
 
 % Slide 2: outline
@@ -323,7 +389,9 @@
   \vspace{-0.2em}
   \begin{figure}
     \centering
-    \includegraphics[height=0.36\textheight,keepaspectratio]{figura-attention}
+    \includegraphics[height=0.32\textheight,keepaspectratio]{figura-attention}
+
+    {\tiny\color{gray} Source: \cite{vaswani2017attention}}
   \end{figure}
 \end{frame}
 
@@ -383,7 +451,8 @@
     \end{column}
     \begin{column}{0.44\textwidth}
       \centering
-      \includegraphics[width=0.82\textwidth,height=0.55\textheight,keepaspectratio]{figura-thp}
+      \includegraphics[width=0.80\textwidth,height=0.47\textheight,keepaspectratio]{figura-thp}\\[0.2em]
+      {\tiny\color{gray} Source: \cite{zuo2020transformer}}
     \end{column}
   \end{columns}
 \end{frame}
@@ -410,7 +479,8 @@
     \end{column}
     \begin{column}{0.46\textwidth}
       \centering
-      \includegraphics[width=\textwidth,height=0.56\textheight,keepaspectratio]{fig_alibi_extrapolation}
+      \includegraphics[width=\textwidth,height=0.56\textheight,keepaspectratio]{fig_alibi_extrapolation}\\[0.2em]
+      {\tiny\color{gray} Source: \cite{press2022train}}
     \end{column}
   \end{columns}
 \end{frame}
@@ -452,7 +522,8 @@
     \end{column}
     \begin{column}{0.5\textwidth}
       \centering
-      \includegraphics[width=\textwidth,height=0.58\textheight,keepaspectratio]{fig_rope_to_hope}
+      \includegraphics[width=0.85\textwidth,height=0.53\textheight,keepaspectratio]{fig_rope_to_hope}\\[0.2em]
+      {\tiny\color{gray} Adapted from \cite{su2024roformer}}
     \end{column}
   \end{columns}
 \end{frame}
@@ -907,6 +978,25 @@
 \section{Conclusion}
 % ============================================================
 
+% Slide: what changed since the qualification (committee feedback)
+\begin{frame}{Since the qualification}
+  Following the committee's feedback (qualification, 10 July 2026), the
+  dissertation was revised on four fronts:
+  \vspace{0.4em}
+  \begin{itemize}
+    \item \textbf{Notation and readability:} acronyms expanded in the abstract, a
+          list of symbols added, unified notation ($\gamma_k$ for the intensity
+          slope, $\rho$ for the extrapolation factor), and the modulus corrected
+          in the kernel equation ($e^{-|\Delta t|\theta'}$).
+    \item \textbf{Deeper foundations:} a Poisson--Hawkes taxonomy, the explicit
+          Poisson\,$\to$\,Hawkes likelihood link, and a discussion of the RoPE
+          period limitation.
+    \item \textbf{More results:} RMSE now reported on the real datasets, and
+          sources added to every reused figure.
+    \item \textbf{Writing:} the conclusion and the future-work chapter completed.
+  \end{itemize}
+\end{frame}
+
 % Slide 35: contributions
 \begin{frame}{Contributions}
   \begin{itemize}
@@ -925,34 +1015,7 @@
   \end{itemize}
 \end{frame}
 
-% Slide 36: timeline / cronograma
-\begin{frame}{Timeline to the defense}
-  Qualification: \textbf{10 July 2026}. Final defense planned for \textbf{August 2026}.
-  \vspace{0.4em}
-  \begin{table}
-    \centering \small
-    \begin{tabular}{lccccc}
-      \toprule
-       & Jun & \multicolumn{2}{c}{Jul} & \multicolumn{2}{c}{Aug} \\
-      \cmidrule(lr){2-2}\cmidrule(lr){3-4}\cmidrule(lr){5-6}
-      Activity & 2nd & 1st & 2nd & 1st & 2nd \\
-      \midrule
-      Prepare qualification talk        & X & X &   &   &   \\
-      Defense (Jul 10)            &   & X &   &   &   \\
-      Incorporate committee feedback    &   &   & X & X &   \\
-      Additional experiments            & X &   & X & X &   \\
-      Finish writing (conclusion, abstract) & X &   & X & X & X \\
-      Final review with advisor         &   &   &   &   & X \\
-      Prepare and present final defense &   &   &   &   & X \\
-      \bottomrule
-    \end{tabular}
-  \end{table}
-  \vspace{0.2em}
-  {\small Main items: committee feedback, more seeds for real-data significance
-  tests, refined normalization ablations, and finishing the writing.}
-\end{frame}
-
-% Slide 37: limitations and future work
+% Slide: limitations and future work
 \begin{frame}{Limitations and future work}
   \textbf{Limitations}
   \begin{itemize}
@@ -963,15 +1026,16 @@
     \item $\theta'$ is a \textbf{single global} decay rate; processes with multiple
           temporal scales may require multiple rates.
   \end{itemize}
-  \vspace{0.3em}
+  \vspace{0.2em}
   \textbf{Future work}
   \begin{itemize}
-    \item More seeds on real data to enable the Wilcoxon test there.
-    \item Replicate the original THP benchmark (where THP outperforms NHP)
-          and apply HoTHP on top of that implementation, to check whether
-          the NHP advantage observed here comes from the EasyTPP
-          reimplementation.
-    \item Multiple decay rates (per head or per dimension pair).
+    \item \textbf{Multiple decay scales:} one learnable $\theta'$ per head
+          (ALiBi-style), each specializing in a temporal scale.
+    \item \textbf{Alternative decay shapes:} power-law instead of exponential,
+          for long-range memory (aftershocks, cascades).
+    \item \textbf{Broader evaluation:} long-horizon benchmarks (HoTPP), new domains.
+    \item \textbf{Beyond attention:} does the recency bias transfer to state-space
+          models (Mamba) and LLM-based TPPs?
   \end{itemize}
 \end{frame}
 
@@ -982,7 +1046,7 @@
     \normalsize
     Universidade Federal do Ceará \\
     Orientador: César Lincoln C. Mattos \\
-    Coorientador: João Paulo Pordeus \\
+    Coorientador: João Paulo Pordeus Gomes \\
   \end{center}
 \end{frame}
 
@@ -992,6 +1056,93 @@
   \scriptsize
   \bibliographystyle{plain}
   \bibliography{refs}
+\end{frame}
+
+% ============================================================
+% BACKUP SLIDES (not counted, shown only if the committee asks)
+% ============================================================
+\appendix
+
+% Backup D2: the most important expected question
+\begin{frame}[noframenumbering]{Backup: why hyperbolic, not a single $e^{-\beta|\Delta t|}$ or ALiBi?}
+  Expanding the score gives a \textbf{content-weighted mixture of exponentials}:
+  \[
+    s_{ij} = \frac{1}{\sqrt d}\sum_{p=1}^{d/2}\Big[
+      c_p(\mathbf{q},\mathbf{k})\,e^{-(\theta'-\theta_p)|\Delta t|}
+    + d_p(\mathbf{q},\mathbf{k})\,e^{-(\theta'+\theta_p)|\Delta t|}\Big]
+  \]
+  Three things a single $e^{-\beta|\Delta t|}$ or an ALiBi bias do \textbf{not} give:
+  \begin{enumerate}
+    \item \textbf{Content-dependent coefficients} $c_p, d_p$ (the $\mathbf{q}\cdot\mathbf{k}$
+          products per dimension pair), which can be positive or negative; ALiBi's
+          penalty is fixed and content-independent.
+    \item \textbf{A spectrum of decay rates} $\{\theta'-\theta_p,\ \theta'+\theta_p\}$:
+          since $\theta_p$ ranges from $1$ down to $\sim 10^{-4}$, slow components
+          ($\theta'-\theta_1$, near zero) keep longer memory while fast components
+          ($\theta'+\theta_p$) forget quickly. A single $\beta$ has one scale.
+    \item \textbf{Time-invariance} (the score depends only on $\Delta t$), which the
+          discrete ALiBi does not provide in continuous time.
+  \end{enumerate}
+\end{frame}
+
+% Backup D8: is the Transformer family competitive? + THP replication finding
+\begin{frame}[noframenumbering]{Backup: is the Transformer family competitive? (NHP vs THP)}
+  \textbf{NHP wins NLL on Amazon/Taxi: expected, not a bug.} It matches the
+  EasyTPP benchmark: continuous-time recurrent models fit the inter-event density
+  natively. Our question is \emph{within-family} (fixed architecture, only the
+  kernel changes): HoTHP is the best of the three, beats NHP on \textbf{accuracy}
+  (Amazon, SO), and beats \emph{all} baselines on synthetic NLL (10 seeds, Wilcoxon).
+  \vspace{0.3em}
+  \begin{block}{We also investigated the NHP\,$>$\,THP inversion directly}
+    Reproducing the \textbf{original} THP on its own MIMIC-II data:
+    \begin{itemize}
+      \item Under a consistent integration routine, NHP $\geq$ THP even there.
+      \item The THP paper's high log-likelihood is an artifact of its Monte-Carlo
+            solver variant: the \textbf{implementation} effect on LL ($\approx 2.76$
+            nats) is about $10\times$ the \textbf{model} effect ($\approx 0.28$ nats).
+    \end{itemize}
+    So log-likelihoods from different implementations are not directly comparable.
+    The inversion is not an artifact of our reimplementation.
+  \end{block}
+  {\footnotesize (Complementary investigation, in a separate codebase; not a chapter of the dissertation.)}
+\end{frame}
+
+% Backup J2: learned theta' values -- PLACEHOLDER, fill before the defense
+\begin{frame}[noframenumbering]{Backup: what did $\theta'$ converge to?}
+  Parametrized so that $\theta' = \mathrm{softplus}(\text{raw}) + 1 + 10^{-4}
+  > \max_p \theta_p = 1$ \textbf{by construction}.
+  \vspace{0.4em}
+  \begin{center}
+    \begin{tabular}{lc}
+      \toprule
+      Scenario / dataset & Learned $\theta'$ \\
+      \midrule
+      Synthetic, fast decay & \alert{[fill]} \\
+      Synthetic, slow decay & \alert{[fill]} \\
+      Amazon / Taxi / StackOverflow & \alert{[fill]} \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  \vspace{0.4em}
+  \textbf{Expectation:} in \emph{fast decay}, $\theta'$ larger (shorter memory);
+  in \emph{slow decay}, $\theta'$ smaller.
+  \vspace{0.3em}
+
+  {\footnotesize \alert{TODO before the defense:} extract
+  $\theta' = \mathrm{softplus}(\text{raw})+1+10^{-4}$ from the checkpoints and fill
+  the table.}
+\end{frame}
+
+% Backup D6: the compensator integral (the "Monte Carlo" terminology point)
+\begin{frame}[noframenumbering]{Backup: how is the compensator integral computed?}
+  \begin{itemize}
+    \item The \textbf{same routine} for all four models, defined once in the EasyTPP
+          base class.
+    \item A \textbf{deterministic grid} of 20 nodes per inter-event interval (a fixed
+          \texttt{linspace} quadrature; the text calls it Monte Carlo).
+    \item \textbf{Key point:} any estimator bias is \emph{identical} across models, so
+          the NLL ranking does not depend on the integral approximation.
+  \end{itemize}
 \end{frame}
 
 \end{document}
