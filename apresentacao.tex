@@ -308,6 +308,59 @@
   todos os modelos que comparamos.
 \end{frame}
 
+% Slide 9b: LL intuition (a budget of intensity)
+\begin{frame}{A intuição da verossimilhança: um orçamento de intensidade}
+  Os dois termos competem: subir a intensidade nos eventos reais \textbf{recompensa}
+  (1º termo, $\sum \log \lambda$), mas \textbf{toda} a área sob a curva é
+  \textbf{penalizada} (2º termo, o compensador $\Lambda$).
+  \vspace{0.2em}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \centering
+      \textbf{\small Intensidade alta e chapada}\\[0.2em]
+      \begin{tikzpicture}[scale=0.66,>=stealth]
+        \fill[red!16] (0,0) rectangle (6,2.2);
+        \draw[->] (0,0) -- (6.3,0) node[right]{\scriptsize $t$};
+        \draw[->] (0,0) -- (0,2.9) node[above]{\scriptsize $\lambda(t)$};
+        \draw[thick,blue!55!black] (0,2.2) -- (6,2.2);
+        \foreach \x in {0.9,2.0,3.0,4.2,5.0}{
+          \filldraw (\x,0) circle (2pt);
+          \draw[->,green!45!black,very thick] (\x,2.2) -- ++(0,0.55);
+          \node[green!40!black] at (\x,3.0) {\tiny $+$};
+        }
+      \end{tikzpicture}\\[0.1em]
+      {\scriptsize \textbf{Área grande}: boa recompensa, mas paga muita penalidade.}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \centering
+      \textbf{\small Intensidade concentrada}\\[0.2em]
+      \begin{tikzpicture}[scale=0.66,>=stealth]
+        \fill[red!16] (0,0) -- (0,0.3) -- (0.9,2.4) -- (1.3,0.35) -- (2.0,2.3)
+          -- (2.4,0.35) -- (3.0,2.4) -- (3.5,0.35) -- (4.2,2.3) -- (4.6,0.35)
+          -- (5.0,2.2) -- (6,0.3) -- (6,0) -- cycle;
+        \draw[->] (0,0) -- (6.3,0) node[right]{\scriptsize $t$};
+        \draw[->] (0,0) -- (0,2.9) node[above]{\scriptsize $\lambda(t)$};
+        \draw[thick,blue!55!black] (0,0.3) -- (0.9,2.4) -- (1.3,0.35) -- (2.0,2.3)
+          -- (2.4,0.35) -- (3.0,2.4) -- (3.5,0.35) -- (4.2,2.3) -- (4.6,0.35)
+          -- (5.0,2.2) -- (6,0.3);
+        \foreach \x/\h in {0.9/2.4,2.0/2.3,3.0/2.4,4.2/2.3,5.0/2.2}{
+          \filldraw (\x,0) circle (2pt);
+          \draw[->,green!45!black,very thick] (\x,\h) -- ++(0,0.5);
+          \node[green!40!black] at (\x,\h+0.75) {\tiny $+$};
+        }
+      \end{tikzpicture}\\[0.1em]
+      {\scriptsize \textbf{Área pequena}: recompensa parecida, paga pouca penalidade.}
+    \end{column}
+  \end{columns}
+  \vspace{0.2em}
+  \onslide<2->{%
+  \begin{block}{O orçamento de intensidade}
+    Os dois recebem recompensa parecida nos eventos, mas o da direita gasta muito
+    menos intensidade \emph{fora} deles. A verossimilhança premia \textbf{concentrar}
+    a intensidade nos instantes certos, não espalhá-la.
+  \end{block}}
+\end{frame}
+
 % Slide 10: Hawkes process
 \begin{frame}{O processo de Hawkes}
   Poisson supõe eventos independentes. O \textbf{processo de Hawkes} supõe que
