@@ -185,19 +185,20 @@
   \end{itemize}
   \vspace{0.6em}
   \begin{block}{Contribuição deste trabalho: HoTHP}
-    Um Transformer Hawkes Process cujo kernel de atenção é \textbf{hiperbólico}
-    em vez de trigonométrico. Ele embute um \textbf{viés de recência exponencial}
-    diretamente na atenção, espelhando a estrutura do processo de Hawkes, e
-    mantém a verossimilhança estável sob extrapolação de comprimento.
+    Um modelo da família Transformer que embute um \textbf{viés de recência
+    exponencial} (eventos recentes pesam mais), espelhando a estrutura do
+    processo de Hawkes, e por isso mantém a verossimilhança estável quando a
+    sequência de teste é muito mais longa que a de treino.
+    {\small (\emph{Como} esse viés entra na atenção, vemos na metodologia.)}
   \end{block}
 \end{frame}
 
 % Slide: objective and research question
 \begin{frame}{Objetivo e pergunta de pesquisa}
   \begin{block}{Pergunta de pesquisa}
-    Substituir o kernel \textbf{oscilatório} por um kernel com
-    \textbf{decaimento exponencial} no mecanismo de atenção melhora a capacidade
-    de extrapolação de comprimento dos processos pontuais temporais neurais?
+    No mecanismo de atenção (detalhado adiante), substituir um kernel que
+    \textbf{oscila} por um que \textbf{decai exponencialmente} melhora a capacidade de extrapolação de comprimento dos
+    processos pontuais temporais neurais?
   \end{block}
   \vspace{0.5em}
   Para responder, nós:
