@@ -1182,30 +1182,35 @@
   {\footnotesize (Investigação complementar, em uma base de código separada; não é um capítulo da dissertação.)}
 \end{frame}
 
-% Backup J2: learned theta' values -- PLACEHOLDER, fill before the defense
+% Backup J2: learned theta' values -- filled from checkpoints
 \begin{frame}[noframenumbering]{Backup: para quanto o $\theta'$ convergiu?}
-  Parametrizado de modo que $\theta' = \mathrm{softplus}(\text{raw}) + 1 + 10^{-4}
-  > \max_p \theta_p = 1$ \textbf{por construção}.
+  Parametrizado de modo que $\theta' = \mathrm{softplus}(\text{raw}) + \max_p \theta_p + 10^{-4}$
+  \textbf{por construção}.
   \vspace{0.2em}
   \begin{center}
     \begin{tabular}{lc}
       \toprule
       Cenário / conjunto & $\theta'$ aprendido \\
       \midrule
-      Sintético, decaim.\ rápido & \alert{[preencher]} \\
-      Sintético, decaim.\ lento & \alert{[preencher]} \\
-      Amazon / Taxi / StackOverflow & \alert{[preencher]} \\
+      Sintético, decaim.\ rápido (10 seeds) & $1.665 \pm 0.105$ \\
+      Sintético, decaim.\ lento (10 seeds)  & $1.872 \pm 0.110$ \\
+      Amazon (3 seeds)        & $1.415 \pm 0.026$ \\
+      Taxi (3 seeds)          & $2.020 \pm 0.005$ \\
+      StackOverflow (3 seeds) & $1.973 \pm 0.012$ \\
       \bottomrule
     \end{tabular}
   \end{center}
   \vspace{0.2em}
-  \textbf{Expectativa:} no \emph{decaimento rápido}, $\theta'$ maior (memória mais
-  curta); no \emph{decaimento lento}, $\theta'$ menor.
+  \textbf{Achado, contrário à expectativa ingênua:} o decaimento \emph{lento}
+  aprende $\theta'$ \textbf{maior} (mais rápido) que o decaimento \emph{rápido}.
+  Explicação: $\Delta t$ entra normalizado pelo gap médio de cada sequência
+  ($\approx 1$, Seção~4.7), então $\theta'$ mede decaimento relativo a essa
+  unidade normalizada, não a taxa física $\beta$ do gerador. A normalização
+  remove justamente a escala absoluta que a intuição ingênua pressupõe.
   \vspace{0.2em}
 
-  {\footnotesize \alert{TODO antes da defesa:} extrair
-  $\theta' = \mathrm{softplus}(\text{raw})+1+10^{-4}$ dos checkpoints e preencher
-  a tabela.}
+  {\footnotesize Extraído de checkpoints salvos localmente
+  (\texttt{hope\_emb.theta\_prime\_raw}).}
 \end{frame}
 
 % Backup D6: the compensator integral (the "Monte Carlo" terminology point)
@@ -1214,7 +1219,7 @@
     \item A \textbf{mesma rotina} para os quatro modelos, definida uma única vez na
           classe base do EasyTPP.
     \item Uma \textbf{grade determinística} de 20 nós por intervalo entre eventos
-          (uma quadratura \texttt{linspace} fixa; o texto a chama de Monte Carlo).
+          (uma quadratura \texttt{linspace} fixa, não amostragem aleatória).
     \item \textbf{Ponto central:} qualquer viés do estimador é \emph{idêntico}
           entre os modelos, então o ranking de NLL não depende da aproximação da
           integral.
