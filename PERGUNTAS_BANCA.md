@@ -1,10 +1,187 @@
-# Preparação para a banca de qualificação — perguntas prováveis
+# Preparação para a banca — qualificação e defesa final
 
-Qualificação: 10/07/2026. Banca: César Lincoln (orientador), João Paulo Pordeus
+Mesma banca nas duas etapas: César Lincoln (orientador), João Paulo Pordeus
 (coorientador), José Antônio Macêdo, Diego Mesquita (FGV EMAp).
 
 Cada pergunta vem com a resposta sugerida, sempre ancorada no que a dissertação
 e o código realmente dizem. **Não improvise além disso.**
+
+A seção abaixo é a atualização para a **defesa final (agosto/2026)**, depois de
+incorporado o retorno da qualificação (10/07/2026). Todas as perguntas D1-D10,
+C1-C4, M1-M4, J1-J4 e G1-G4 mais abaixo continuam válidas (arquitetura e
+experimentos centrais não mudaram) — leia-as primeiro, depois esta seção para o
+que é novo.
+
+---
+
+## Atualização para a defesa final (agosto/2026)
+
+### A. Pendências encontradas revisando o material — status atualizado
+
+Estas três já foram corrigidas diretamente nos arquivos (2026-08-25):
+
+1. ~~**Slide de backup com TODO literal não preenchido.**~~ **Corrigido.** O
+   frame "Backup: para quanto o $\theta'$ convergiu?" tinha `[preencher]` nas
+   três células da tabela. Extraí `hope_emb.theta_prime_raw` dos checkpoints
+   salvos localmente (`dissertacao/final-material/HoTHP_validation_synthetic_dataset/`
+   para os sintéticos, `checkpoints/{amazon,taxi,stackoverflow}/HoTHP/` para os
+   reais) e preenchi com valores reais:
+
+   | Cenário / conjunto | $\theta'$ aprendido |
+   |---|---|
+   | Sintético, decaimento rápido (10 seeds) | $1.665 \pm 0.105$ |
+   | Sintético, decaimento lento (10 seeds) | $1.872 \pm 0.110$ |
+   | Amazon (3 seeds) | $1.415 \pm 0.026$ |
+   | Taxi (3 seeds) | $2.020 \pm 0.005$ |
+   | StackOverflow (3 seeds) | $1.973 \pm 0.012$ |
+
+   **Achado que contraria a expectativa que estava escrita no slide:** o
+   decaimento *lento* aprende $\theta'$ **maior** (decaimento mais rápido) do
+   que o decaimento *rápido* — o oposto do que a hipótese original previa.
+   Reescrevi o slide para explicar isso: $\Delta t$ entra no kernel já
+   normalizado pelo gap médio de cada sequência ($\approx 1$, Seção 4.7), então
+   $\theta'$ mede o decaimento relativo a essa unidade normalizada, não a taxa
+   física $\beta$ do gerador — a normalização remove justamente a escala
+   absoluta que a intuição ingênua pressupunha. **Leve isso na ponta da língua
+   para a arguição**, porque agora é um número real que a banca pode
+   confrontar, não mais uma expectativa não testada.
+
+   ⚠️ **Verificar antes da defesa:** os checkpoints encontrados usam seeds
+   `2019`, `2020`, `2021` nos dados reais, enquanto o texto da dissertação
+   (`4-metodologia.tex`, Seção "Compared models") diz que os experimentos
+   principais usam seeds `42, 142, 242`. Os números acima são de checkpoints
+   reais e treinados com a arquitetura correta, mas não confirmei que são
+   exatamente as mesmas rodadas que geraram as Tabelas 5.x. Se não forem,
+   reextrair com os checkpoints certos (mesmo procedimento, só trocar o
+   caminho dos `.pt`).
+
+2. **Contradição entre a conclusão e o capítulo de resultados sobre o Taxi
+   (NÃO corrigida — dissertação já foi enviada à banca, não mexer no texto).**
+   `6-conclusao.tex` diz "ties on Stackoverflow and Taxi", mas
+   `5-resultados.tex` descreve o oposto para o Taxi dentro da família
+   Transformer: "the HoTHP again has the best NLL of the three at every
+   factor and is the most stable in extrapolation... while the HoTHP stays at
+   $-0.266 \pm 0.007$" contra $-0.137 \pm 0.148$ do RoTHP em 5×. Como o
+   documento já foi entregue, isso fica só como munição para a arguição: se
+   perguntarem sobre o Taxi, a resposta correta é a do capítulo 5 (vitória
+   dentro da família), não a frase resumida (e imprecisa) da conclusão. Vale
+   avisar a banca da imprecisão de boa vontade se sobrar tempo, em vez de
+   deixar que a percebam sozinhos.
+
+3. **"Monte Carlo" no corpo do texto (NÃO corrigida, mesmo motivo).**
+   `4-metodologia.tex` ainda diz "the same Monte Carlo estimate of the
+   compensator integral". A resposta honesta (grade determinística de 20 nós
+   por intervalo, não amostragem aleatória) é a D6, já escrita mais abaixo
+   neste documento — leve-a pronta se alguém, principalmente o Diego,
+   perguntar sobre o termo.
+
+Esta ainda é uma decisão a tomar, não um erro para corrigir sozinho:
+
+4. **Learning rate assimétrico nos sintéticos, sem grid search documentado
+   para os baselines.** `4-metodologia.tex` explica que o HoTHP usa
+   $5\times10^{-4}$ nos sintéticos "porque o kernel hiperbólico treinou de
+   forma menos estável em $10^{-3}$", enquanto NHP/THP/RoTHP usam $10^{-3}$
+   sem que o texto diga se essa taxa foi de fato testada para eles ou apenas
+   herdada. Só há grid search documentado para o HoTHP na Amazon (dados
+   reais). Não editei isso porque não sei se um grid search para os baselines
+   nos sintéticos de fato foi rodado — só você sabe. Se foi, vale citar no
+   texto; se não foi, a resposta em arguição é a que já está pronta na seção
+   B mais abaixo.
+
+### B. Perguntas novas geradas pelo conteúdo adicionado desde a qualificação
+
+#### Do José Antônio Macêdo (dados urbanos/trajetórias — ele vai notar isso no Taxi)
+
+**"Vocês escrevem uma seção inteira dizendo que o viés de recência falha em
+processos periódicos, e citam explicitamente ritmo diário/semanal de corridas
+de táxi como exemplo desse tipo de processo (Seção 5.5.2). Mas o HoTHP é
+justamente o melhor da família Transformer no dataset Taxi. Isso não é uma
+contradição?"**
+Resposta sugerida: Não, porque a limitação vale para o alcance temporal
+efetivamente representado na sequência, e o Taxi usa $L_{\text{train}}=7$ e
+$L_{5\times}=38$ eventos — sequências curtas demais para que um ciclo
+diário/semanal apareça dentro delas. A periodicidade da demanda de táxi é um
+efeito de nível populacional (a cidade como um todo, agregada ao longo do
+dia), não uma propriedade que preencha a janela de 7 a 38 eventos que o modelo
+de fato observa por sequência. A limitação da Seção 5.5.2 é sobre um regime
+que este benchmark específico não testa (dependências que abrangem centenas de
+eventos), não uma contradição com o resultado observado.
+
+#### Do César Lincoln (ele vai puxar o design experimental)
+
+**"O protocolo train-short/test-long, por definição, favorece um modelo com
+viés de recência — vocês mesmos escrevem isso na Seção 5.5.1 ('the protocol
+also rewards a recency bias almost by construction'). Isso não enfraquece a
+validade da comparação, já que é basicamente um benchmark desenhado para o
+seu próprio modelo vencer?"**
+Resposta sugerida: A honestidade sobre isso está no texto de propósito. Dois
+contrapontos: (i) nos sintéticos, o viés de recência não é arbitrário, é a
+definição matemática de um processo de Hawkes com kernel exponencial — o
+"favorecimento" é o próprio objeto de estudo, não um artefato do desenho
+experimental; (ii) nos dados reais, onde a estrutura geradora é desconhecida,
+o resultado é misto (empates no Stackoverflow, perda para o NHP em NLL bruta
+na Amazon/Taxi), o que mostra que a avaliação não está artificialmente armada
+a favor do HoTHP — se estivesse, ele venceria em NLL absoluta em todos os
+datasets reais também, e não vence.
+
+#### Do Diego Mesquita (ele vai perguntar sobre o slide de replicação do THP)
+
+**"O slide de backup menciona que vocês reproduziram o THP original no
+MIMIC-II e encontraram uma LL inflada por causa da variante de solver Monte
+Carlo do artigo. Se a LL reportada na literatura do THP é inflada, isso não
+compromete usar o THP como baseline em toda a comparação da dissertação?"**
+Resposta sugerida: Não, porque dentro da dissertação todos os quatro modelos
+(NHP, THP, RoTHP, HoTHP) usam exatamente a mesma rotina de integração,
+definida uma única vez na classe base do EasyTPP (`TorchBaseModel`) — qualquer
+viés desse estimador é idêntico entre os modelos, então não afeta o ranking
+interno. O achado do MIMIC-II é sobre outra coisa: LLs publicadas em artigos
+diferentes, com implementações diferentes do integral, não são comparáveis
+entre si. Foi exatamente esse achado que motivou reimplementar tudo sob um
+único pipeline (EasyTPP) em vez de citar números de LL da literatura
+diretamente — é o argumento a favor do desenho da própria dissertação, não uma
+fragilidade dela. (Deixar claro que essa investigação é complementar, em uma
+base de código separada do EasyTPP, e não um capítulo da dissertação.)
+
+#### Do João Paulo Pordeus (ele vai comparar custo computacional com o mundo real de prognóstico)
+
+**"Vocês dizem no capítulo de conclusão que a atenção remove o gargalo
+sequencial das RNNs, mas a própria Tabela de tempo de treino mostra o NHP
+recorrente sendo o mais lento de todos, e ele é o baseline mais forte em NLL.
+Isso não contradiz o argumento de que Transformers são mais rápidos?"**
+Resposta sugerida: O argumento sobre paralelismo é assintótico (custo por
+época, por passo de otimização) e continua verdadeiro: dentro de uma época, a
+atenção processa a sequência inteira em paralelo, enquanto a CT-LSTM processa
+evento por evento, com sete equações de gate por passo (Equações 217-226 da
+fundamentação teórica). O NHP ser o mais lento no relógio de parede reflete
+esse custo por passo mais alto multiplicado pelo número de passos sequenciais,
+não uma vitória da complexidade quadrática $O(L^2)$ da atenção sobre a linear
+$O(L)$ da recorrência — em L pequeno (50 a 500 eventos), a constante da
+recorrência sequencial domina; a vantagem assintótica da atenção só se
+inverteria em sequências muito mais longas do que as usadas aqui.
+
+### C. Perguntas gerais sobre o que mudou desde a qualificação
+
+**"O que exatamente vocês fizeram com o nosso retorno da qualificação?"**
+Resposta: os 14 itens da lista de feedback foram endereçados um a um (ver
+slide "Desde a qualificação" da apresentação final) — a mais substantiva foi a
+adição da Seção 2.4 (taxonomia Poisson-Hawkes), a formalização da ligação
+verossimilhança Poisson→Hawkes ao final da 2.3.1, a discussão sobre o período
+do RoPE ao final da 4.1 (por que um período maior não resolve a oscilação sem
+perder resolução temporal), a tabela de RMSE nos dados reais, e as três novas
+subseções de discussão no Capítulo 5 (viés de recência vs. memória de longo
+alcance, processos periódicos, custo computacional vs. benefício), além da
+conclusão e do capítulo de trabalhos futuros, que estavam propositalmente
+comentados na qualificação por orientação do César.
+
+**"Por que vocês não testaram nenhuma das alternativas de trabalho futuro,
+como o Mamba Hawkes Process, se ele já resolve o custo quadrático?"**
+Resposta: o escopo desta dissertação é uma pergunta específica sobre o kernel
+posicional dentro do mecanismo de atenção, estabelecida a partir do RoTHP como
+baseline direto. O Mamba Hawkes Process é uma família de arquitetura
+totalmente diferente (state-space, não atenção) e muito recente (2024, dos
+mesmos autores do RoTHP) — testar se o viés de recência hiperbólico transfere
+para lá é uma pergunta de pesquisa natural, mas separada, e por isso foi
+listada como trabalho futuro em vez de incorporada ao escopo já delimitado.
 
 ---
 
