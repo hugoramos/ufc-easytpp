@@ -634,7 +634,7 @@
   \vspace{-0.4em}
   {\footnotesize A rotação preserva o \textbf{círculo} ($\cos,\sin$ oscilam); o
   boost de Lorentz preserva a \textbf{hipérbole} ($\cosh,\sinh$ são monótonos).
-  Controlamos esse crescimento com o envelope de decaimento
+  Controlamos esse crescimento com o fator de decaimento
   $e^{-|\Delta t|\theta'}$.}
 \end{frame}
 
@@ -671,7 +671,7 @@
               + (q_1 k_2 + q_2 k_1)\,\sinh(\theta_p \Delta t)
     \]
   \end{block}
-  Score completo $=$ soma sobre os pares, com o envelope de recência
+  Score completo $=$ soma sobre os pares, com o fator de recência
   $e^{-|\Delta t|\theta'}$ e o fator usual $1/\sqrt{d}$ ($\Delta t = t_i - t_j$):
   \[
     s_{ij} = \frac{1}{\sqrt{d}} \sum_{p=1}^{d/2}
@@ -688,7 +688,7 @@
     \qquad
     \sinh(\theta_p \Delta t) = \tfrac{\mathrm{sign}(\Delta t)}{2}\big(e^{\theta_p|\Delta t|} - e^{-\theta_p|\Delta t|}\big).
   \]
-  \textbf{Passo 2.} Multiplicamos o termo do $\cosh$ pelo envelope e \emph{juntamos
+  \textbf{Passo 2.} Multiplicamos o termo do $\cosh$ pelo fator e \emph{juntamos
   os expoentes} (esse é todo o truque):
   \begin{align*}
     e^{-|\Delta t|\theta'}\cosh(\theta_p \Delta t)
@@ -701,7 +701,7 @@
   \end{align*}
   \textbf{Passo 3.} Como $\theta' > \max_p \theta_p$ por construção, tanto
   $\theta'-\theta_p>0$ quanto $\theta'+\theta_p>0$: \alert{todo expoente é
-  negativo}, então cada termo fica em $(0,1]$, sem overflow, sem \texttt{NaN}.
+  negativo}, então cada termo fica em sem overflow, sem \texttt{NaN}.
   \vspace{0.2em}
   {\small (O termo do $\sinh$ se junta da mesma forma, resultando em
   $\tfrac{\mathrm{sign}(\Delta t)}{2}\big(e^{-|\Delta t|(\theta'-\theta_p)} - e^{-|\Delta t|(\theta'+\theta_p)}\big)$.)}
@@ -978,7 +978,7 @@
 \section{Conclusão}
 
 \begin{frame}{Desde a qualificação}
-  Seguindo o retorno da banca (qualificação, 10 de julho de 2026), a dissertação
+  Seguindo o retorno da banca (proposta, 10 de julho de 2026), a dissertação
   foi revisada em quatro frentes:
   \vspace{0.4em}
   \begin{itemize}
@@ -1031,8 +1031,6 @@
           temporal.
     \item \textbf{Formas alternativas de decaimento:} lei de potência em vez de
           exponencial, para memória de longo alcance (réplicas sísmicas, cascatas).
-    \item \textbf{Avaliação mais ampla:} benchmarks de horizonte longo (HoTPP),
-          novos domínios.
     \item \textbf{Além da atenção:} o viés de recência se transfere para modelos
           de espaço de estados (Mamba) e TPPs baseados em LLM?
   \end{itemize}
